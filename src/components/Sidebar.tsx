@@ -225,7 +225,7 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 
 	return (
 		<div
-			className="fixed left-0 top-0 h-full w-20 z-50"
+			className="fixed left-0 bottom-0 h-[calc(100vh-2.5rem)] w-20 z-50"
 			onMouseEnter={() => handleHover(true)}
 			onMouseLeave={() => handleHover(false)}
 		>

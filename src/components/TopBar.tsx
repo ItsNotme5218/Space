@@ -23,7 +23,7 @@ export const TopBar = ({ onHoverChange }: TopBarProps) => {
 
 	return (
 		<div
-			className="fixed top-0 left-0 right-0 h-6 z-40"
+			className="fixed top-0 left-0 right-0 h-10 z-40"
 			onMouseEnter={() => handleHover(true)}
 			onMouseLeave={() => handleHover(false)}
 		>
