@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Sessions } from './Sessions';
 import {
 	Gamepad2,
 	LayoutGrid,
@@ -21,6 +22,8 @@ interface SidebarProps {
 	activeItem: string;
 	onItemClick: (id: string) => void;
 	onHoverChange?: (hovered: boolean) => void;
+	activeSession: number;
+	onSessionChange: (session: number) => void;
 }
 
 const VDivider = ({
@@ -36,8 +39,8 @@ const VDivider = ({
 			style={{
 				filter: blur > 0 ? `blur(${blur}px)` : undefined,
 				transform,
-                pointerEvents: 'none',
-                marginTop: '-2px',
+				pointerEvents: 'none',
+				marginTop: '-2px'
 			}}
 		>
 			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
@@ -50,7 +53,7 @@ const VDivider = ({
 			</svg>
 		</div>
 	);
-}
+};
 
 const NightPlusIcon = () => {
 	return (
@@ -188,7 +191,7 @@ const NightPlusIcon = () => {
 			/>
 		</svg>
 	);
-}
+};
 
 const LogoImage = () => {
 	return (
@@ -213,9 +216,15 @@ const LogoImage = () => {
 			/>
 		</div>
 	);
-}
+};
 
-export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps) => {
+export const Sidebar = ({
+	activeItem,
+	onItemClick,
+	onHoverChange,
+	activeSession,
+	onSessionChange
+}: SidebarProps) => {
 	const [hovered, setHovered] = useState(false);
 
 	const handleHover = (isHovered: boolean) => {
@@ -225,7 +234,7 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 
 	return (
 		<div
-			className="fixed left-0 bottom-0 h-[calc(100vh-2.5rem)] w-20 z-50"
+			className="fixed left-0 bottom-0 h-[calc(100vh-2.5rem)] w-20 z-50 flex flex-col items-center"
 			onMouseEnter={() => handleHover(true)}
 			onMouseLeave={() => handleHover(false)}
 		>
@@ -265,11 +274,23 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 						<LogoImage />
 					</motion.button>
 
-                    <VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
-                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
-					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
-					<VDivider blur={1.5} transform='translateY(-8px)'/>
-					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
+					<VDivider
+						blur={2}
+						transform="translateY(12px) scaleY(1.7)"
+					/>
+					<VDivider
+						blur={3}
+						transform="translateY(6px) scaleY(0.8)"
+					/>
+					<VDivider
+						blur={2}
+						transform="translateY(-2px) scaleY(0.5)"
+					/>
+					<VDivider blur={1.5} transform="translateY(-8px)" />
+					<VDivider
+						blur={1}
+						transform="translateY(-16px) scaleY(0.5)"
+					/>
 
 					{navItems.slice(0, 2).map(item => {
 						const Icon = item.icon;
@@ -297,11 +318,23 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 						);
 					})}
 
-					<VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
-                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
-					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
-					<VDivider blur={1.5} transform='translateY(-8px)'/>
-					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
+					<VDivider
+						blur={2}
+						transform="translateY(12px) scaleY(1.7)"
+					/>
+					<VDivider
+						blur={3}
+						transform="translateY(6px) scaleY(0.8)"
+					/>
+					<VDivider
+						blur={2}
+						transform="translateY(-2px) scaleY(0.5)"
+					/>
+					<VDivider blur={1.5} transform="translateY(-8px)" />
+					<VDivider
+						blur={1}
+						transform="translateY(-16px) scaleY(0.5)"
+					/>
 
 					{navItems.slice(2, 5).map(item => {
 						const Icon = item.icon;
@@ -329,11 +362,23 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 						);
 					})}
 
-					<VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
-                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
-					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
-					<VDivider blur={1.5} transform='translateY(-8px)'/>
-					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
+					<VDivider
+						blur={2}
+						transform="translateY(12px) scaleY(1.7)"
+					/>
+					<VDivider
+						blur={3}
+						transform="translateY(6px) scaleY(0.8)"
+					/>
+					<VDivider
+						blur={2}
+						transform="translateY(-2px) scaleY(0.5)"
+					/>
+					<VDivider blur={1.5} transform="translateY(-8px)" />
+					<VDivider
+						blur={1}
+						transform="translateY(-16px) scaleY(0.5)"
+					/>
 
 					<motion.button
 						whileHover={{ scale: 1.1 }}
@@ -344,6 +389,12 @@ export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps
 					</motion.button>
 				</div>
 			</motion.nav>
+
+			<Sessions
+				activeSession={activeSession}
+				onSessionChange={onSessionChange}
+				hovered={hovered}
+			/>
 		</div>
 	);
-}
+};

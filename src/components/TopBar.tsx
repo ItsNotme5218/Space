@@ -61,4 +61,4 @@ export const TopBar = ({ onHoverChange }: TopBarProps) => {
 			</motion.header>
 		</div>
 	);
-}
+};
