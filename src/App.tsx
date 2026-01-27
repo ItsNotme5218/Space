@@ -84,6 +84,8 @@ const App = () => {
 						className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
 						style={{
 							filter: 'brightness(1) backdrop-blur(4px)'
+              /* add a brightness slider in settings or quick menu maybe idk.
+              Or even audio volume, kinda like the volume booster chrome extension */
 						}}
 					/>
 				</motion.div>
