@@ -24,6 +24,7 @@ interface SidebarProps {
 	onHoverChange?: (hovered: boolean) => void;
 	activeSession: number;
 	onSessionChange: (session: number) => void;
+	alwaysVisible?: boolean;
 }
 
 const VDivider = ({
@@ -223,7 +224,8 @@ export const Sidebar = ({
 	onItemClick,
 	onHoverChange,
 	activeSession,
-	onSessionChange
+	onSessionChange,
+	alwaysVisible = false
 }: SidebarProps) => {
 	const [hovered, setHovered] = useState(false);
 
@@ -231,6 +233,8 @@ export const Sidebar = ({
 		setHovered(isHovered);
 		onHoverChange?.(isHovered);
 	};
+
+	const isVisible = alwaysVisible || hovered;
 
 	return (
 		<div
@@ -245,13 +249,13 @@ export const Sidebar = ({
 					boxShadow:
 						'0 0 8px 4px rgba(203, 166, 247, 0.5), 0 0 20px 8px rgba(139, 92, 246, 0.3), 0 0 2px 1px rgba(139, 92, 246, 0.5) inset'
 				}}
-				animate={{ opacity: hovered ? 0 : 1, x: hovered ? -20 : 0 }}
+				animate={{ opacity: isVisible ? 0 : 1, x: isVisible ? -20 : 0 }}
 				transition={{ duration: 0.2 }}
 			/>
 
 			<motion.nav
 				initial={{ x: -80, opacity: 0 }}
-				animate={{ x: hovered ? 8 : -80, opacity: hovered ? 1 : 0 }}
+				animate={{ x: isVisible ? 8 : -80, opacity: isVisible ? 1 : 0 }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 				className="fixed left-0 top-1/2 -translate-y-1/2 w-16"
 			>
