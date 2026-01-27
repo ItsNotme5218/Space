@@ -43,7 +43,7 @@ const App = () => {
 	};
 
 	return (
-		<div className="h-screen bg-[#101010] flex flex-col overflow-hidden" style={{ perspective: '1200px' }}>
+		<div className="h-screen bg-[#000000] flex flex-col overflow-hidden" style={{ perspective: '1200px' }}>
 			<motion.div
 				animate={{ height: topBarHovered ? 40 : 0 }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}

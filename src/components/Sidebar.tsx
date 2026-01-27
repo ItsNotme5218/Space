@@ -251,9 +251,9 @@ export const Sidebar = ({
 
 			<motion.nav
 				initial={{ x: -80, opacity: 0 }}
-				animate={{ x: hovered ? 10 : -80, opacity: hovered ? 1 : 0 }}
+				animate={{ x: hovered ? 8 : -80, opacity: hovered ? 1 : 0 }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed left-0 top-1/2 -translate-y-1/2"
+				className="fixed left-0 top-1/2 -translate-y-1/2 w-16"
 			>
 				<div
 					className="rounded-[1.75rem] border border-[#1B1B1B] flex flex-col items-center"
@@ -388,13 +388,12 @@ export const Sidebar = ({
 						<NightPlusIcon />
 					</motion.button>
 				</div>
-			</motion.nav>
 
-			<Sessions
-				activeSession={activeSession}
-				onSessionChange={onSessionChange}
-				hovered={hovered}
-			/>
+				<Sessions
+					activeSession={activeSession}
+					onSessionChange={onSessionChange}
+				/>
+			</motion.nav>
 		</div>
 	);
 };
