@@ -31,11 +31,17 @@ export const ExpandedMosaic = () => {
 						border: '1px solid rgba(139, 92, 246, 0.3)'
 					}}
 				>
-					{[0, 1, 2, 3].map(i => ( // array should be changed to a stat json later
-						<div key={i} className="flex items-center gap-2">
-							<span className="text-white/60 text-sm">stat</span>
-						</div>
-					))}
+					{[0, 1, 2, 3].map(
+						(
+							i // array should be changed to a stat json later
+						) => (
+							<div key={i} className="flex items-center gap-2">
+								<span className="text-white/60 text-sm">
+									stat
+								</span>
+							</div>
+						)
+					)}
 				</motion.div>
 			</div>
 

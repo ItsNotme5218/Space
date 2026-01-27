@@ -39,7 +39,9 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 
 		if (isExpanded) {
 			return {
-				gridColumn: expandRight ? `${col + 1} / span 2` : `${col} / span 2`,
+				gridColumn: expandRight
+					? `${col + 1} / span 2`
+					: `${col} / span 2`,
 				gridRow: expandDown ? `${row + 1} / span 2` : `${row} / span 2`,
 				zIndex: 50
 			};
@@ -53,7 +55,9 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 
 	const isHiddenByExpansion = (index: number) => {
 		if (expandedId === null) return false;
-		const expandedIndex = currentItems.findIndex(item => item.id === expandedId);
+		const expandedIndex = currentItems.findIndex(
+			item => item.id === expandedId
+		);
 		if (expandedIndex === -1) return false;
 		if (currentItems[index]?.id === expandedId) return false;
 
@@ -61,14 +65,20 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		const row = Math.floor(index / cols);
 		const expCol = expandedIndex % cols;
 		const expRow = Math.floor(expandedIndex / cols);
-		const { expandRight: expR, expandDown: expD } = getExpandDirection(expandedIndex);
+		const { expandRight: expR, expandDown: expD } =
+			getExpandDirection(expandedIndex);
 
 		const expColStart = expR ? expCol : expCol - 1;
 		const expColEnd = expColStart + 1;
 		const expRowStart = expD ? expRow : expRow - 1;
 		const expRowEnd = expRowStart + 1;
 
-		return col >= expColStart && col <= expColEnd && row >= expRowStart && row <= expRowEnd;
+		return (
+			col >= expColStart &&
+			col <= expColEnd &&
+			row >= expRowStart &&
+			row <= expRowEnd
+		);
 	};
 
 	const handleCardClick = useCallback((id: number) => {
@@ -115,12 +125,18 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 									<GridCard
 										key={`${currentPage}-${item.id}`}
 										item={item}
-
 										isExpanded={expandedId === item.id}
 										isHovered={hoveredId === item.id}
-										isHiddenByExpansion={isHiddenByExpansion(index)}
-										expandedStyle={getExpandedStyle(index, expandedId === item.id)}
-										initialDelay={index * staggerDelay * 1000}
+										isHiddenByExpansion={isHiddenByExpansion(
+											index
+										)}
+										expandedStyle={getExpandedStyle(
+											index,
+											expandedId === item.id
+										)}
+										initialDelay={
+											index * staggerDelay * 1000
+										}
 										onCardClick={handleCardClick}
 										onHoverStart={handleHoverStart}
 										onHoverEnd={handleHoverEnd}
