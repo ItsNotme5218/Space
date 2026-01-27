@@ -20,6 +20,7 @@ const navItems = [
 interface SidebarProps {
 	activeItem: string;
 	onItemClick: (id: string) => void;
+	onHoverChange?: (hovered: boolean) => void;
 }
 
 const VDivider = ({
@@ -214,17 +215,22 @@ const LogoImage = () => {
 	);
 }
 
-export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
+export const Sidebar = ({ activeItem, onItemClick, onHoverChange }: SidebarProps) => {
 	const [hovered, setHovered] = useState(false);
+
+	const handleHover = (isHovered: boolean) => {
+		setHovered(isHovered);
+		onHoverChange?.(isHovered);
+	};
 
 	return (
 		<div
 			className="fixed left-0 top-0 h-full w-20 z-50"
-			onMouseEnter={() => setHovered(true)}
-			onMouseLeave={() => setHovered(false)}
+			onMouseEnter={() => handleHover(true)}
+			onMouseLeave={() => handleHover(false)}
 		>
 			<motion.div
-				className="fixed -left-12 top-1/2 -translate-y-1/2 w-14 h-80 rounded-[1.75rem] border border-violet-400/20"
+				className="fixed -left-12 top-1/2 -translate-y-1/2 w-13 h-80 rounded-[1.75rem] border border-violet-400/20"
 				style={{
 					background: 'rgba(14, 14, 16, 0.5)',
 					boxShadow:
@@ -236,7 +242,7 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 
 			<motion.nav
 				initial={{ x: -80, opacity: 0 }}
-				animate={{ x: hovered ? 12 : -80, opacity: hovered ? 1 : 0 }}
+				animate={{ x: hovered ? 10 : -80, opacity: hovered ? 1 : 0 }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 				className="fixed left-0 top-1/2 -translate-y-1/2"
 			>
