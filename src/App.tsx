@@ -6,7 +6,8 @@ import './App.css';
 
 const sessionUrls = [
 	'https://example.com',
-	'https://www.wikipedia.org'
+	'https://www.wikipedia.org',
+	'about:blank'
 ];
 
 const App = () => {
@@ -43,7 +44,10 @@ const App = () => {
 	};
 
 	return (
-		<div className="h-screen bg-[#000000] flex flex-col overflow-hidden" style={{ perspective: '1200px' }}>
+		<div
+			className="h-screen bg-[#000000] flex flex-col overflow-hidden"
+			style={{ perspective: '1200px' }}
+		>
 			<motion.div
 				animate={{ height: topBarHovered ? 40 : 0 }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -55,8 +59,15 @@ const App = () => {
 					transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 					className="shrink-0"
 				/>
-				<main className="flex-1 p-2 relative" style={{ transformStyle: 'preserve-3d' }}>
-					<AnimatePresence initial={false} custom={direction} mode="popLayout">
+				<main
+					className="flex-1 p-2 relative"
+					style={{ transformStyle: 'preserve-3d' }}
+				>
+					<AnimatePresence
+						initial={false}
+						custom={direction}
+						mode="popLayout"
+					>
 						<motion.div
 							key={activeSession}
 							custom={direction}
@@ -65,7 +76,11 @@ const App = () => {
 							animate="center"
 							exit="exit"
 							transition={{
-								x: { type: 'spring', stiffness: 300, damping: 30 },
+								x: {
+									type: 'spring',
+									stiffness: 300,
+									damping: 30
+								},
 								opacity: { duration: 0.25 },
 								scale: { duration: 0.35 },
 								rotateY: { duration: 0.35 }
@@ -76,7 +91,9 @@ const App = () => {
 							<iframe
 								src={sessionUrls[activeSession - 1]}
 								className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
-								style={{ background: '#1a1a1a' }}
+								style={{
+									filter: 'brightness(1) backdrop-blur(4px)'
+								}} // we should add a brightness slider lmao
 							/>
 						</motion.div>
 					</AnimatePresence>

@@ -306,7 +306,7 @@ export const Sidebar = ({
 									isActive
 										? {
 												boxShadow:
-													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 4px 4px -2px rgba(255,255,255,0.25)'
+													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)'
 											}
 										: {}
 								}
@@ -350,7 +350,7 @@ export const Sidebar = ({
 									isActive
 										? {
 												boxShadow:
-													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 4px 4px -2px rgba(255,255,255,0.25)'
+													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)'
 											}
 										: {}
 								}
