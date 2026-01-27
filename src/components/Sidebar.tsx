@@ -22,25 +22,27 @@ interface SidebarProps {
 	onItemClick: (id: string) => void;
 }
 
-function VDivider({
+const VDivider = ({
 	blur = 0,
 	transform
 }: {
 	blur?: number;
 	transform?: string;
-}) {
+}) => {
 	return (
 		<div
 			className="w-full flex justify-center my-2"
 			style={{
 				filter: blur > 0 ? `blur(${blur}px)` : undefined,
-				transform
+				transform,
+                pointerEvents: 'none',
+                marginTop: '-2px',
 			}}
 		>
 			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
 				<path
 					d="M0 1C8 1 12 7 16 7C20 7 24 1 32 1"
-					stroke="rgba(255,255,255,0.08)"
+					stroke="rgba(255,255,255,0.2)"
 					strokeWidth="2"
 					strokeLinecap="round"
 				/>
@@ -49,7 +51,7 @@ function VDivider({
 	);
 }
 
-function NightPlusIcon() {
+const NightPlusIcon = () => {
 	return (
 		<svg width="29" height="29" viewBox="0 0 29 29" fill="none">
 			<defs>
@@ -187,7 +189,7 @@ function NightPlusIcon() {
 	);
 }
 
-function LogoImage() {
+const LogoImage = () => {
 	return (
 		<div className="relative w-8 h-8">
 			<img
@@ -257,9 +259,11 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 						<LogoImage />
 					</motion.button>
 
-					<VDivider blur={1} transform="translateY(10px)" />
-					<VDivider blur={1.5} />
-					<VDivider blur={2} transform="translateY(-4px)" />
+                    <VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
+                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
+					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
+					<VDivider blur={1.5} transform='translateY(-8px)'/>
+					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
 
 					{navItems.slice(0, 2).map(item => {
 						const Icon = item.icon;
@@ -287,9 +291,11 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 						);
 					})}
 
-					<VDivider blur={1} transform="translateY(10px)" />
-					<VDivider blur={1.5} />
-					<VDivider blur={2} transform="translateY(-4px)" />
+					<VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
+                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
+					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
+					<VDivider blur={1.5} transform='translateY(-8px)'/>
+					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
 
 					{navItems.slice(2, 5).map(item => {
 						const Icon = item.icon;
@@ -317,9 +323,11 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 						);
 					})}
 
-					<VDivider blur={1} transform="translateY(10px)" />
-					<VDivider blur={1.5} />
-					<VDivider blur={2} transform="translateY(-4px)" />
+					<VDivider blur={2} transform="translateY(12px) scaleY(1.7)" />
+                    <VDivider blur={3} transform="translateY(6px) scaleY(0.8)" />
+					<VDivider blur={2} transform="translateY(-2px) scaleY(0.5)" />
+					<VDivider blur={1.5} transform='translateY(-8px)'/>
+					<VDivider blur={1} transform="translateY(-16px) scaleY(0.5)" />
 
 					<motion.button
 						whileHover={{ scale: 1.1 }}
