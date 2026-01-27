@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 import { GridCard } from './GridCard';
 import { Pagination } from './Pagination';
@@ -17,28 +17,13 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
        const [currentPage, setCurrentPage] = useState(0);
        const [expandedId, setExpandedId] = useState<number | null>(null);
        const [hoveredId, setHoveredId] = useState<number | null>(null);
-       const [isGridReady, setIsGridReady] = useState(false);
+       const [staggerKey, setStaggerKey] = useState(0);
 
        const totalPages = Math.ceil(items.length / itemsPerPage);
        const currentItems = items.slice(
 	       currentPage * itemsPerPage,
 	       (currentPage + 1) * itemsPerPage
        );
-
-	useEffect(() => {
-	       if (expandedId !== null) {
-		       // eslint-disable-next-line react-hooks/set-state-in-effect
-		       setIsGridReady(true);
-		       return;
-	       }
-	       if (expandedId === null && isGridReady) {
-		       setIsGridReady(true);
-		       return;
-	       }
-	       setIsGridReady(false);
-	       const timeout = setTimeout(() => setIsGridReady(true), currentItems.length * staggerDelay * 1000 + 100);
-	       return () => clearTimeout(timeout);
-	}, [currentPage, items, staggerDelay, expandedId, currentItems.length, isGridReady]);
 
        const getExpandDirection = (index: number) => {
 	       const col = index % cols;
@@ -97,10 +82,9 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		);
 	};
 
-	       const handleCardClick = useCallback((id: number) => {
-		       if (!isGridReady) return;
-		       setExpandedId(prev => (prev === id ? null : id));
-	       }, [isGridReady]);
+       const handleCardClick = useCallback((id: number) => {
+	       setExpandedId(prev => (prev === id ? null : id));
+       }, []);
 
 	const handleHoverStart = useCallback((id: number) => {
 		setHoveredId(id);
@@ -112,16 +96,19 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 
 	const handleNextPage = useCallback(() => {
 		setExpandedId(null);
+		setStaggerKey(k => k + 1);
 		setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
 	}, [totalPages]);
 
 	const handlePrevPage = useCallback(() => {
 		setExpandedId(null);
+		setStaggerKey(k => k + 1);
 		setCurrentPage(prev => Math.max(prev - 1, 0));
 	}, []);
 
 	const handlePageSelect = useCallback((page: number) => {
 		setExpandedId(null);
+		setStaggerKey(k => k + 1);
 		setCurrentPage(page);
 	}, []);
 
@@ -140,13 +127,14 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 							       <AnimatePresence mode="popLayout">
 								       {currentItems.map((item, index) => (
 									       <GridCard
-										       key={`${currentPage}-${item.id}`}
+										       key={`${staggerKey}-${item.id}`}
 										       item={item}
 										       isExpanded={expandedId === item.id}
 										       isHovered={hoveredId === item.id}
 										       isHiddenByExpansion={isHiddenByExpansion(index)}
 										       expandedStyle={getExpandedStyle(index, expandedId === item.id)}
-										       initialDelay={!isGridReady ? index * staggerDelay * 1000 : 0}
+										       staggerIndex={index}
+										       staggerDelay={staggerDelay}
 										       onCardClick={handleCardClick}
 										       onHoverStart={handleHoverStart}
 										       onHoverEnd={handleHoverEnd}

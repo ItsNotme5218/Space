@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ExpandedMosaic } from './ExpandedMosaic';
 import { CollapsedCard } from './CollapsedCard';
@@ -10,7 +10,8 @@ interface GridCardProps {
 	isHovered: boolean;
 	isHiddenByExpansion: boolean;
 	expandedStyle: React.CSSProperties;
-	initialDelay: number;
+	staggerIndex: number;
+	staggerDelay: number;
 	onCardClick: (id: number) => void;
 	onHoverStart: (id: number) => void;
 	onHoverEnd: () => void;
@@ -23,11 +24,15 @@ export const GridCard = memo(
 		isHovered,
 		isHiddenByExpansion,
 		expandedStyle,
-		initialDelay,
+		staggerIndex,
+		staggerDelay,
 		onCardClick,
 		onHoverStart,
 		onHoverEnd
 	}: GridCardProps) => {
+		const [hasAnimated, setHasAnimated] = useState(false);
+		const delay = hasAnimated ? 0 : staggerIndex * staggerDelay;
+
 		return (
 			<div
 				className="relative w-full h-full"
@@ -42,6 +47,7 @@ export const GridCard = memo(
 					onClick={() => onCardClick(item.id)}
 					onMouseEnter={() => onHoverStart(item.id)}
 					onMouseLeave={onHoverEnd}
+					onAnimationComplete={() => setHasAnimated(true)}
 					initial={{ opacity: 0, scale: 0.8, y: 20 }}
 					animate={{
 						opacity: isHiddenByExpansion ? 0 : 1,
@@ -51,8 +57,8 @@ export const GridCard = memo(
 					}}
 					transition={{
 						layout: { type: 'spring', stiffness: 400, damping: 35 },
-						opacity: { duration: 0.25, delay: initialDelay / 1000 },
-						scale: { duration: 0.25, delay: initialDelay / 1000 },
+						opacity: { duration: 0.25, delay },
+						scale: { duration: 0.25, delay },
 						y: { type: 'spring', stiffness: 500, damping: 30 },
 						rotateX: { type: 'spring', stiffness: 400, damping: 25 }
 					}}
