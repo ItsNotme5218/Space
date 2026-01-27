@@ -63,137 +63,296 @@ export const AppsPage = () => {
 		<div className="h-full w-full flex flex-col p-4 overflow-hidden">
 			<div className="flex-1 flex justify-center items-center">
 				<div className="w-[75%] h-[90%] ml-[5%] relative">
-				<div
-					className="grid gap-3 h-full"
-					style={{
-						gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-						gridTemplateRows: `repeat(${ROWS}, 1fr)`
-					}}
-				>
-					{currentApps.map((app, index) => {
-						const isExpanded = expandedId === app.id;
-						const isHovered = hoveredId === app.id;
-						const { expandRight, expandDown } = getExpandDirection(index);
-						const col = index % COLS;
-						const row = Math.floor(index / COLS);
+					<div
+						className="grid gap-3 h-full"
+						style={{
+							gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+							gridTemplateRows: `repeat(${ROWS}, 1fr)`
+						}}
+					>
+						{currentApps.map((app, index) => {
+							const isExpanded = expandedId === app.id;
+							const isHovered = hoveredId === app.id;
+							const { expandRight, expandDown } =
+								getExpandDirection(index);
+							const col = index % COLS;
+							const row = Math.floor(index / COLS);
 
-						const expandedStyle = isExpanded
-							? {
-									gridColumn: expandRight
-										? `${col + 1} / span 2`
-										: `${col} / span 2`,
-									gridRow: expandDown
-										? `${row + 1} / span 2`
-										: `${row} / span 2`,
-									zIndex: 50
-								}
-							: {
-									gridColumn: `${col + 1} / span 1`,
-									gridRow: `${row + 1} / span 1`,
-									zIndex: 1
-								};
+							const expandedStyle = isExpanded
+								? {
+										gridColumn: expandRight
+											? `${col + 1} / span 2`
+											: `${col} / span 2`,
+										gridRow: expandDown
+											? `${row + 1} / span 2`
+											: `${row} / span 2`,
+										zIndex: 50
+									}
+								: {
+										gridColumn: `${col + 1} / span 1`,
+										gridRow: `${row + 1} / span 1`,
+										zIndex: 1
+									};
 
-						const isHiddenByExpansion =
-							expandedId !== null &&
-							!isExpanded &&
-							(() => {
-								const expandedIndex = currentApps.findIndex(
-									a => a.id === expandedId
-								);
-								if (expandedIndex === -1) return false;
-								const expCol = expandedIndex % COLS;
-								const expRow = Math.floor(expandedIndex / COLS);
-								const { expandRight: expR, expandDown: expD } =
-									getExpandDirection(expandedIndex);
+							const isHiddenByExpansion =
+								expandedId !== null &&
+								!isExpanded &&
+								(() => {
+									const expandedIndex = currentApps.findIndex(
+										a => a.id === expandedId
+									);
+									if (expandedIndex === -1) return false;
+									const expCol = expandedIndex % COLS;
+									const expRow = Math.floor(
+										expandedIndex / COLS
+									);
+									const {
+										expandRight: expR,
+										expandDown: expD
+									} = getExpandDirection(expandedIndex);
 
-								const expColStart = expR ? expCol : expCol - 1;
-								const expColEnd = expColStart + 1;
-								const expRowStart = expD ? expRow : expRow - 1;
-								const expRowEnd = expRowStart + 1;
+									const expColStart = expR
+										? expCol
+										: expCol - 1;
+									const expColEnd = expColStart + 1;
+									const expRowStart = expD
+										? expRow
+										: expRow - 1;
+									const expRowEnd = expRowStart + 1;
 
-								return (
-									col >= expColStart &&
-									col <= expColEnd &&
-									row >= expRowStart &&
-									row <= expRowEnd
-								);
-							})();
+									return (
+										col >= expColStart &&
+										col <= expColEnd &&
+										row >= expRowStart &&
+										row <= expRowEnd
+									);
+								})();
 
-						return (
-							<motion.div
-								key={`${animationKey}-${app.id}`}
-								layout
-								onClick={() => handleCardClick(app.id)}
-								onMouseEnter={() => setHoveredId(app.id)}
-								onMouseLeave={() => setHoveredId(null)}
-								initial={{ opacity: 0, scale: 0.8, y: 20 }}
-								animate={{
-									opacity: isHiddenByExpansion ? 0 : 1,
-									scale: isHiddenByExpansion ? 0.8 : 1,
-									y: isHovered && !isExpanded ? -8 : 0
-								}}
-								transition={{
-									layout: { type: 'spring', stiffness: 300, damping: 30 },
-									opacity: { duration: 0.3, delay: index * staggerDelay },
-									scale: { duration: 0.3, delay: index * staggerDelay },
-									y: { type: 'spring', stiffness: 400, damping: 25 }
-								}}
-								className="relative rounded-2xl overflow-hidden cursor-pointer"
-								style={{
-									...expandedStyle,
-									background: isExpanded
-										? 'rgba(30, 15, 45, 0.95)'
-										: 'rgba(20, 10, 30, 0.8)',
-									border: isExpanded
-										? '1px solid rgba(139, 92, 246, 0.5)'
-										: '1px solid rgba(139, 92, 246, 0.3)',
-									boxShadow: isExpanded
-										? '0 0 40px 8px rgba(139, 92, 246, 0.4), 0 0 80px 16px rgba(139, 92, 246, 0.2)'
-										: isHovered
-											? '0 0 20px 4px rgba(139, 92, 246, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4)'
-											: '0 0 12px 2px rgba(139, 92, 246, 0.15)',
-									pointerEvents: isHiddenByExpansion ? 'none' : 'auto'
-								}}
-							>
-								{isExpanded ? (
-									<motion.div
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										className="absolute inset-0 flex flex-col p-4"
-									>
-										<div className="flex-1 rounded-xl mb-3" style={{ background: 'rgba(0, 0, 0, 0.4)' }} />
-										<div className="h-6 w-1/2 rounded-md mb-2" style={{ background: 'rgba(255, 255, 255, 0.2)' }} />
-										<div className="h-4 w-3/4 rounded-md mb-4" style={{ background: 'rgba(255, 255, 255, 0.1)' }} />
-										<div className="flex gap-2">
-											<div className="h-8 w-20 rounded-full" style={{ background: 'rgba(139, 92, 246, 0.6)' }} />
-											<div className="h-8 w-16 rounded-full" style={{ background: 'rgba(255, 255, 255, 0.1)' }} />
-										</div>
-									</motion.div>
-								) : (
-									<motion.div
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										className="absolute inset-0 flex flex-col"
-									>
-										<div className="flex-1" />
+							return (
+								<motion.div
+									key={`${animationKey}-${app.id}`}
+									layout
+									onClick={() => handleCardClick(app.id)}
+									onMouseEnter={() => setHoveredId(app.id)}
+									onMouseLeave={() => setHoveredId(null)}
+									initial={{ opacity: 0, scale: 0.8, y: 20 }}
+									animate={{
+										opacity: isHiddenByExpansion ? 0 : 1,
+										scale: isHiddenByExpansion ? 0.8 : 1,
+										y: isHovered && !isExpanded ? -8 : 0
+									}}
+									transition={{
+										layout: {
+											type: 'spring',
+											stiffness: 300,
+											damping: 30
+										},
+										opacity: {
+											duration: 0.3,
+											delay: index * staggerDelay
+										},
+										scale: {
+											duration: 0.3,
+											delay: index * staggerDelay
+										},
+										y: {
+											type: 'spring',
+											stiffness: 400,
+											damping: 25
+										}
+									}}
+									className="relative rounded-2xl overflow-hidden cursor-pointer"
+									style={{
+										...expandedStyle,
+										background: isExpanded
+											? 'transparent'
+											: 'rgba(20, 10, 30, 0.8)',
+										border: isExpanded
+											? 'none'
+											: '1px solid rgba(139, 92, 246, 0.3)',
+										pointerEvents: isHiddenByExpansion
+											? 'none'
+											: 'auto'
+									}}
+								>
+									{isExpanded ? (
 										<motion.div
-											initial={{ height: 0, opacity: 0 }}
-											animate={{
-												height: isHovered ? 32 : 0,
-												opacity: isHovered ? 1 : 0
-											}}
-											transition={{ duration: 0.2 }}
-											className="px-3 flex items-center"
-											style={{ background: 'rgba(20, 10, 30, 0.95)' }}
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											transition={{ delay: 0.3 }}
+											className="absolute inset-0 flex gap-3 overflow-visible"
 										>
-											<div className="h-3 w-16 rounded-sm" style={{ background: 'rgba(255, 255, 255, 0.3)' }} />
+											<div className="flex flex-col gap-3 w-1/2">
+												{/* image */}
+												<motion.div
+													initial={{
+														opacity: 0,
+														scale: 0.8
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{ delay: 0.35 }}
+													className="flex-[1.2] rounded-2xl"
+													style={{
+														background:
+															'rgba(20, 10, 30, 0.8)',
+														border: '1px solid rgba(139, 92, 246, 0.3)'
+													}}
+												/>
+												{/* stats */}
+												<motion.div
+													initial={{
+														opacity: 0,
+														scale: 0.8
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{ delay: 0.45 }}
+													className="flex-1 rounded-2xl p-3 grid grid-cols-2 grid-rows-2 gap-2"
+													style={{
+														background:
+															'rgba(20, 10, 30, 0.8)',
+														border: '1px solid rgba(139, 92, 246, 0.3)'
+													}}
+												>
+													{[0, 1, 2, 3].map(
+														(
+															i // array should be changed to a stat json
+														) => (
+															<div
+																key={i}
+																className="flex items-center gap-2"
+															>
+																<span className="text-white/60 text-sm">
+																	stat
+																</span>
+															</div>
+														)
+													)}
+												</motion.div>
+											</div>
+											<div className="flex flex-col gap-3 w-1/2">
+												{/* title */}
+												<motion.div
+													initial={{
+														opacity: 0,
+														scale: 0.8
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{ delay: 0.4 }}
+													className="h-16 rounded-2xl flex items-center justify-center px-4"
+													style={{
+														background:
+															'rgba(20, 10, 30, 0.8)',
+														border: '1px solid rgba(139, 92, 246, 0.3)'
+													}}
+												>
+													<div
+														className="h-5 w-3/4 rounded-md"
+														style={{
+															background:
+																'rgba(255, 255, 255, 0.2)'
+														}}
+													/>
+												</motion.div>
+												{/* description */}
+												<motion.div
+													initial={{
+														opacity: 0,
+														scale: 0.8
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{ delay: 0.5 }}
+													className="flex-1 rounded-2xl flex items-center justify-center p-4"
+													style={{
+														background:
+															'rgba(20, 10, 30, 0.8)',
+														border: '1px solid rgba(139, 92, 246, 0.3)'
+													}}
+												>
+													<div
+														className="h-3 w-full rounded-md"
+														style={{
+															background:
+																'rgba(255, 255, 255, 0.1)'
+														}}
+													/>
+												</motion.div>
+												{/* play */}
+												<motion.div
+													initial={{
+														opacity: 0,
+														scale: 0.8
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{ delay: 0.55 }}
+													className="h-14 rounded-2xl flex items-center justify-center"
+													style={{
+														background:
+															'rgba(139, 92, 246, 0.3)',
+														border: '1px solid rgba(139, 92, 246, 0.5)'
+													}}
+												>
+													<div
+														className="h-4 w-24 rounded-md"
+														style={{
+															background:
+																'rgba(255, 255, 255, 0.3)'
+														}}
+													/>
+												</motion.div>
+											</div>
 										</motion.div>
-									</motion.div>
-								)}
-							</motion.div>
-						);
-					})}
-				</div>
+									) : (
+										<motion.div
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											className="absolute inset-0 flex flex-col"
+										>
+											<div className="flex-1" />
+											<motion.div
+												initial={{
+													height: 0,
+													opacity: 0
+												}}
+												animate={{
+													height: isHovered ? 32 : 0,
+													opacity: isHovered ? 1 : 0
+												}}
+												transition={{ duration: 0.2 }}
+												className="px-3 flex items-center"
+												style={{
+													background:
+														'rgba(20, 10, 30, 0.95)'
+												}}
+											>
+												<div
+													className="h-3 w-16 rounded-sm"
+													style={{
+														background:
+															'rgba(255, 255, 255, 0.3)'
+													}}
+												/>
+											</motion.div>
+										</motion.div>
+									)}
+								</motion.div>
+							);
+						})}
+					</div>
 				</div>
 			</div>
 

@@ -54,7 +54,11 @@ const App = () => {
 			return <AppsPage />;
 		}
 		return (
-			<AnimatePresence initial={false} custom={direction} mode="popLayout">
+			<AnimatePresence
+				initial={false}
+				custom={direction}
+				mode="popLayout"
+			>
 				<motion.div
 					key={activeSession}
 					custom={direction}
@@ -101,7 +105,9 @@ const App = () => {
 			)}
 			<div className="flex-1 flex overflow-hidden">
 				<motion.div
-					animate={{ width: isSpecialPage ? 72 : sidebarHovered ? 72 : 0 }}
+					animate={{
+						width: isSpecialPage ? 72 : sidebarHovered ? 72 : 0
+					}}
 					transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 					className="shrink-0"
 				/>
