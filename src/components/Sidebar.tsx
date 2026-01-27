@@ -274,12 +274,12 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className={`w-10 h-10 rounded-2xl flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
+								className={`w-10 h-10 rounded-full flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
 								style={
 									isActive
 										? {
 												boxShadow:
-													'0px 4px 10px 0px rgba(14,14,16,0.25), inset 0px -4px 5px -2px rgba(255,255,255,0.05)'
+													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 4px 4px -2px rgba(255,255,255,0.25)'
 											}
 										: {}
 								}
@@ -306,12 +306,12 @@ export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className={`w-10 h-10 rounded-2xl flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
+								className={`w-10 h-10 rounded-full flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
 								style={
 									isActive
 										? {
 												boxShadow:
-													'0px 4px 10px 0px rgba(14,14,16,0.25), inset 0px -4px 5px -2px rgba(255,255,255,0.05)'
+													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 4px 4px -2px rgba(255,255,255,0.25)'
 											}
 										: {}
 								}
