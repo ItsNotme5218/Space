@@ -1,84 +1,335 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Flame,
-  Gamepad2,
-  LayoutGrid,
-  MonitorPlay,
-  History,
-  Settings,
-  Moon,
+	Gamepad2,
+	LayoutGrid,
+	MonitorPlay,
+	History,
+	Settings
 } from 'lucide-react';
+import logoImg from '@assets/logo.png';
 
 const navItems = [
-  { id: 'home', icon: Flame },
-  { id: 'games', icon: Gamepad2 },
-  { id: 'apps', icon: LayoutGrid },
-  { id: 'movies', icon: MonitorPlay },
-  { id: 'history', icon: History },
-  { id: 'settings', icon: Settings },
-  { id: 'theme', icon: Moon },
+	{ id: 'games', icon: Gamepad2 },
+	{ id: 'apps', icon: LayoutGrid },
+	{ id: 'movies', icon: MonitorPlay },
+	{ id: 'history', icon: History },
+	{ id: 'settings', icon: Settings }
 ];
 
 interface SidebarProps {
-  activeItem: string;
-  onItemClick: (id: string) => void;
+	activeItem: string;
+	onItemClick: (id: string) => void;
+}
+
+function VDivider({
+	blur = 0,
+	transform
+}: {
+	blur?: number;
+	transform?: string;
+}) {
+	return (
+		<div
+			className="w-full flex justify-center my-2"
+			style={{
+				filter: blur > 0 ? `blur(${blur}px)` : undefined,
+				transform
+			}}
+		>
+			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
+				<path
+					d="M0 1C8 1 12 7 16 7C20 7 24 1 32 1"
+					stroke="rgba(255,255,255,0.08)"
+					strokeWidth="2"
+					strokeLinecap="round"
+				/>
+			</svg>
+		</div>
+	);
+}
+
+function NightPlusIcon() {
+	return (
+		<svg width="29" height="29" viewBox="0 0 29 29" fill="none">
+			<defs>
+				<filter
+					id="filter0_ii"
+					x="0"
+					y="-2"
+					width="29"
+					height="31"
+					filterUnits="userSpaceOnUse"
+					colorInterpolationFilters="sRGB"
+				>
+					<feFlood floodOpacity="0" result="BackgroundImageFix" />
+					<feBlend
+						mode="normal"
+						in="SourceGraphic"
+						in2="BackgroundImageFix"
+						result="shape"
+					/>
+					<feColorMatrix
+						in="SourceAlpha"
+						type="matrix"
+						values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+						result="hardAlpha"
+					/>
+					<feOffset />
+					<feGaussianBlur stdDeviation="2" />
+					<feComposite
+						in2="hardAlpha"
+						operator="arithmetic"
+						k2="-1"
+						k3="1"
+					/>
+					<feColorMatrix
+						type="matrix"
+						values="0 0 0 0 0.796078 0 0 0 0 0.65098 0 0 0 0 0.968627 0 0 0 1 0"
+					/>
+					<feBlend mode="normal" in2="shape" result="effect1" />
+					<feColorMatrix
+						in="SourceAlpha"
+						type="matrix"
+						values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+						result="hardAlpha"
+					/>
+					<feOffset dy="-2" />
+					<feGaussianBlur stdDeviation="4" />
+					<feComposite
+						in2="hardAlpha"
+						operator="arithmetic"
+						k2="-1"
+						k3="1"
+					/>
+					<feColorMatrix
+						type="matrix"
+						values="0 0 0 0 0.796078 0 0 0 0 0.65098 0 0 0 0 0.968627 0 0 0 0.5 0"
+					/>
+					<feBlend mode="normal" in2="effect1" result="effect2" />
+				</filter>
+				<filter
+					id="filter1_f"
+					x="2.19"
+					y="2.45"
+					width="24.36"
+					height="24.36"
+					filterUnits="userSpaceOnUse"
+					colorInterpolationFilters="sRGB"
+				>
+					<feFlood floodOpacity="0" result="BackgroundImageFix" />
+					<feBlend
+						mode="normal"
+						in="SourceGraphic"
+						in2="BackgroundImageFix"
+						result="shape"
+					/>
+					<feGaussianBlur stdDeviation="2" result="blur" />
+				</filter>
+				<filter
+					id="filter2_f"
+					x="10.5"
+					y="5.83"
+					width="12.67"
+					height="12.67"
+					filterUnits="userSpaceOnUse"
+					colorInterpolationFilters="sRGB"
+				>
+					<feFlood floodOpacity="0" result="BackgroundImageFix" />
+					<feBlend
+						mode="normal"
+						in="SourceGraphic"
+						in2="BackgroundImageFix"
+						result="shape"
+					/>
+					<feGaussianBlur stdDeviation="2" result="blur" />
+				</filter>
+			</defs>
+			<g filter="url(#filter0_ii)">
+				<rect
+					x="1"
+					y="1"
+					width="27"
+					height="27"
+					rx="13.5"
+					fill="#11111B"
+				/>
+			</g>
+			<rect
+				x="0.5"
+				y="0.5"
+				width="28"
+				height="28"
+				rx="14"
+				stroke="#CBA6F7"
+			/>
+			<g filter="url(#filter1_f)">
+				<path
+					d="M12.4326 6.45193C10.5446 7.76485 9.30769 9.94877 9.30762 12.4226C9.30762 16.4373 12.5625 19.6922 16.5771 19.6922C19.0514 19.6921 21.235 18.4546 22.5479 16.5662C21.6292 20.1546 18.3748 22.8074 14.5 22.8074C9.91184 22.8073 6.19238 19.088 6.19238 14.4998C6.19238 10.6254 8.84474 7.37094 12.4326 6.45193Z"
+					fill="#CBA6F7"
+				/>
+			</g>
+			<g filter="url(#filter2_f)">
+				<path
+					d="M16.8369 9.82693C17.1594 9.82714 17.4209 10.0884 17.4209 10.4109V11.5789H18.5889C18.9114 11.5789 19.1726 11.8404 19.1729 12.1629C19.1729 12.4855 18.9115 12.7478 18.5889 12.7478H17.4209V13.9158C17.4208 14.2382 17.1593 14.4996 16.8369 14.4998C16.5144 14.4998 16.252 14.2383 16.252 13.9158V12.7478H15.084C14.7614 12.7478 14.5 12.4854 14.5 12.1629C14.5002 11.8405 14.7616 11.579 15.084 11.5789H16.252V10.4109C16.252 10.0883 16.5143 9.82693 16.8369 9.82693Z"
+					fill="#CBA6F7"
+				/>
+			</g>
+			<path
+				d="M12.4326 6.45193C10.5446 7.76485 9.30769 9.94877 9.30762 12.4226C9.30762 16.4373 12.5625 19.6922 16.5771 19.6922C19.0514 19.6921 21.235 18.4546 22.5479 16.5662C21.6292 20.1546 18.3748 22.8074 14.5 22.8074C9.91184 22.8073 6.19238 19.088 6.19238 14.4998C6.19238 10.6254 8.84474 7.37094 12.4326 6.45193Z"
+				fill="#CBA6F7"
+			/>
+			<path
+				d="M16.8369 9.82693C17.1594 9.82714 17.4209 10.0884 17.4209 10.4109V11.5789H18.5889C18.9114 11.5789 19.1726 11.8404 19.1729 12.1629C19.1729 12.4855 18.9115 12.7478 18.5889 12.7478H17.4209V13.9158C17.4208 14.2382 17.1593 14.4996 16.8369 14.4998C16.5144 14.4998 16.252 14.2383 16.252 13.9158V12.7478H15.084C14.7614 12.7478 14.5 12.4854 14.5 12.1629C14.5002 11.8405 14.7616 11.579 15.084 11.5789H16.252V10.4109C16.252 10.0883 16.5143 9.82693 16.8369 9.82693Z"
+				fill="#CBA6F7"
+			/>
+		</svg>
+	);
+}
+
+function LogoImage() {
+	return (
+		<div className="relative w-8 h-8">
+			<img
+				src={logoImg}
+				alt=""
+				className="absolute inset-0 w-full h-full object-cover rounded-xl"
+				style={{ opacity: 0.85 }}
+			/>
+			<img
+				src={logoImg}
+				alt=""
+				className="absolute inset-0 h-full w-full object-cover rounded-xl"
+				style={{ opacity: 0.65, filter: 'blur(1px)' }}
+			/>
+			<img
+				src={logoImg}
+				alt=""
+				className="absolute inset-0 w-full h-full object-cover rounded-xl"
+				style={{ opacity: 1, filter: 'blur(5px)' }}
+			/>
+		</div>
+	);
 }
 
 export function Sidebar({ activeItem, onItemClick }: SidebarProps) {
-  const [hovered, setHovered] = useState(false);
+	const [hovered, setHovered] = useState(false);
 
-  return (
-    <div
-      className="fixed left-0 top-0 h-full w-16 z-50"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <motion.div
-        className="fixed left-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-violet-500 to-transparent rounded-full"
-        animate={{ opacity: hovered ? 0 : 0.6 }}
-      />
+	return (
+		<div
+			className="fixed left-0 top-0 h-full w-20 z-50"
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+		>
+			<motion.div
+				className="fixed -left-12 top-1/2 -translate-y-1/2 w-14 h-80 rounded-[1.75rem] border border-violet-400/20"
+				style={{
+					background: 'rgba(14, 14, 16, 0.5)',
+					boxShadow:
+						'0 0 8px 4px rgba(203, 166, 247, 0.5), 0 0 20px 8px rgba(139, 92, 246, 0.3), 0 0 2px 1px rgba(139, 92, 246, 0.5) inset'
+				}}
+				animate={{ opacity: hovered ? 0 : 1, x: hovered ? -20 : 0 }}
+				transition={{ duration: 0.2 }}
+			/>
 
-      <motion.nav
-        initial={{ x: -60, opacity: 0 }}
-        animate={{ x: hovered ? 12 : -60, opacity: hovered ? 1 : 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-1/2 -translate-y-1/2"
-      >
-        <div className="flex flex-col items-center gap-1 p-2 bg-[#13131a]/90 backdrop-blur-xl rounded-2xl border border-[#2d2d3a]/50">
-          {navItems.map((item, index) => {
-            const Icon = item.icon;
-            const isActive = activeItem === item.id;
-            return (
-              <div key={item.id}>
-                {index === 1 && <div className="w-6 h-px bg-[#2d2d3a] mx-auto my-1" />}
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onItemClick(item.id)}
-                  className={`relative p-2.5 rounded-xl transition-colors duration-200 ${isActive ? 'text-violet-400' : 'text-gray-500 hover:text-white'}`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeGlow"
-                      className="absolute inset-0 bg-violet-500/20 rounded-xl"
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  )}
-                  <Icon className="w-5 h-5 relative z-10" />
-                </motion.button>
-                {index === 5 && <div className="w-6 h-px bg-[#2d2d3a] mx-auto my-1" />}
-              </div>
-            );
-          })}
-          <div className="w-6 h-px bg-[#2d2d3a] mx-auto my-1" />
-          <div className="flex flex-col gap-1 py-1">
-            <button className="w-6 h-6 rounded text-xs bg-[#1a1a24] text-white flex items-center justify-center">1</button>
-            <button className="w-6 h-6 rounded text-xs text-gray-500 hover:text-white flex items-center justify-center">2</button>
-            <div className="w-2 h-2 rounded-full bg-violet-500 mx-auto mt-1" />
-          </div>
-        </div>
-      </motion.nav>
-    </div>
-  );
+			<motion.nav
+				initial={{ x: -80, opacity: 0 }}
+				animate={{ x: hovered ? 12 : -80, opacity: hovered ? 1 : 0 }}
+				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+				className="fixed left-0 top-1/2 -translate-y-1/2"
+			>
+				<div
+					className="rounded-[1.75rem] border border-[#1B1B1B] flex flex-col items-center"
+					style={{
+						background: 'rgba(14, 14, 16, 0.65)',
+						boxShadow:
+							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
+						backdropFilter: 'blur(3px)',
+						padding: '1rem 0.5rem'
+					}}
+				>
+					<motion.button
+						whileHover={{ scale: 1.1 }}
+						whileTap={{ scale: 0.95 }}
+						onClick={() => onItemClick('home')}
+						className="flex items-center justify-center mb-6"
+					>
+						<LogoImage />
+					</motion.button>
+
+					<VDivider blur={1} transform="translateY(10px)" />
+					<VDivider blur={1.5} />
+					<VDivider blur={2} transform="translateY(-4px)" />
+
+					{navItems.slice(0, 2).map(item => {
+						const Icon = item.icon;
+						const isActive = activeItem === item.id;
+						return (
+							<motion.button
+								key={item.id}
+								whileHover={{ scale: 1.1 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={() => onItemClick(item.id)}
+								className={`w-10 h-10 rounded-2xl flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
+								style={
+									isActive
+										? {
+												boxShadow:
+													'0px 4px 10px 0px rgba(14,14,16,0.25), inset 0px -4px 5px -2px rgba(255,255,255,0.05)'
+											}
+										: {}
+								}
+							>
+								<Icon
+									className={`w-5 h-5 ${isActive ? 'text-white' : 'text-zinc-500'}`}
+								/>
+							</motion.button>
+						);
+					})}
+
+					<VDivider blur={1} transform="translateY(10px)" />
+					<VDivider blur={1.5} />
+					<VDivider blur={2} transform="translateY(-4px)" />
+
+					{navItems.slice(2, 5).map(item => {
+						const Icon = item.icon;
+						const isActive = activeItem === item.id;
+						return (
+							<motion.button
+								key={item.id}
+								whileHover={{ scale: 1.1 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={() => onItemClick(item.id)}
+								className={`w-10 h-10 rounded-2xl flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
+								style={
+									isActive
+										? {
+												boxShadow:
+													'0px 4px 10px 0px rgba(14,14,16,0.25), inset 0px -4px 5px -2px rgba(255,255,255,0.05)'
+											}
+										: {}
+								}
+							>
+								<Icon
+									className={`w-5 h-5 ${isActive ? 'text-white' : 'text-zinc-500'}`}
+								/>
+							</motion.button>
+						);
+					})}
+
+					<VDivider blur={1} transform="translateY(10px)" />
+					<VDivider blur={1.5} />
+					<VDivider blur={2} transform="translateY(-4px)" />
+
+					<motion.button
+						whileHover={{ scale: 1.1 }}
+						whileTap={{ scale: 0.95 }}
+						className="flex items-center justify-center mt-2!"
+					>
+						<NightPlusIcon />
+					</motion.button>
+				</div>
+			</motion.nav>
+		</div>
+	);
 }
