@@ -6,32 +6,32 @@ import type { GridItem, GridConfig } from './types';
 import { DEFAULT_GRID_CONFIG } from './types';
 
 interface ItemGridProps {
-       items: GridItem[];
-       config?: Partial<GridConfig>;
+	items: GridItem[];
+	config?: Partial<GridConfig>;
 }
 
 export const ItemGrid = ({ items, config }: ItemGridProps) => {
-       const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
-       const itemsPerPage = cols * rows;
+	const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
+	const itemsPerPage = cols * rows;
 
-       const [currentPage, setCurrentPage] = useState(0);
-       const [expandedId, setExpandedId] = useState<number | null>(null);
-       const [hoveredId, setHoveredId] = useState<number | null>(null);
-       const [staggerKey, setStaggerKey] = useState(0);
+	const [currentPage, setCurrentPage] = useState(0);
+	const [expandedId, setExpandedId] = useState<number | null>(null);
+	const [hoveredId, setHoveredId] = useState<number | null>(null);
+	const [staggerKey, setStaggerKey] = useState(0);
 
-       const totalPages = Math.ceil(items.length / itemsPerPage);
-       const currentItems = items.slice(
-	       currentPage * itemsPerPage,
-	       (currentPage + 1) * itemsPerPage
-       );
+	const totalPages = Math.ceil(items.length / itemsPerPage);
+	const currentItems = items.slice(
+		currentPage * itemsPerPage,
+		(currentPage + 1) * itemsPerPage
+	);
 
-       const getExpandDirection = (index: number) => {
-	       const col = index % cols;
-	       const row = Math.floor(index / cols);
-	       const expandRight = col < cols - 1;
-	       const expandDown = row < rows - 1;
-	       return { expandRight, expandDown };
-       };
+	const getExpandDirection = (index: number) => {
+		const col = index % cols;
+		const row = Math.floor(index / cols);
+		const expandRight = col < cols - 1;
+		const expandDown = row < rows - 1;
+		return { expandRight, expandDown };
+	};
 
 	const getExpandedStyle = (index: number, isExpanded: boolean) => {
 		const col = index % cols;
@@ -82,9 +82,9 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		);
 	};
 
-       const handleCardClick = useCallback((id: number) => {
-	       setExpandedId(prev => (prev === id ? null : id));
-       }, []);
+	const handleCardClick = useCallback((id: number) => {
+		setExpandedId(prev => (prev === id ? null : id));
+	}, []);
 
 	const handleHoverStart = useCallback((id: number) => {
 		setHoveredId(id);
@@ -112,47 +112,52 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		setCurrentPage(page);
 	}, []);
 
-	       return (
-		       <div className="h-full w-full flex flex-col p-4 overflow-hidden">
-			       <div className="flex-1 flex justify-center items-center">
-				       <div className="w-[75%] h-[90%] ml-[5%] relative">
-					       <LayoutGroup>
-						       <div
-							       className="grid gap-3 h-full"
-							       style={{
-								       gridTemplateColumns: `repeat(${cols}, 1fr)`,
-								       gridTemplateRows: `repeat(${rows}, 1fr)`
-							       }}
-						       >
-							       <AnimatePresence mode="popLayout">
-								       {currentItems.map((item, index) => (
-									       <GridCard
-										       key={`${staggerKey}-${item.id}`}
-										       item={item}
-										       isExpanded={expandedId === item.id}
-										       isHovered={hoveredId === item.id}
-										       isHiddenByExpansion={isHiddenByExpansion(index)}
-										       expandedStyle={getExpandedStyle(index, expandedId === item.id)}
-										       staggerIndex={index}
-										       staggerDelay={staggerDelay}
-										       onCardClick={handleCardClick}
-										       onHoverStart={handleHoverStart}
-										       onHoverEnd={handleHoverEnd}
-									       />
-								       ))}
-							       </AnimatePresence>
-						       </div>
-					       </LayoutGroup>
-				       </div>
-			       </div>
+	return (
+		<div className="h-full w-full flex flex-col p-4 overflow-hidden">
+			<div className="flex-1 flex justify-center items-center">
+				<div className="w-[75%] h-[90%] ml-[5%] relative">
+					<LayoutGroup>
+						<div
+							className="grid gap-3 h-full"
+							style={{
+								gridTemplateColumns: `repeat(${cols}, 1fr)`,
+								gridTemplateRows: `repeat(${rows}, 1fr)`
+							}}
+						>
+							<AnimatePresence mode="popLayout">
+								{currentItems.map((item, index) => (
+									<GridCard
+										key={`${staggerKey}-${item.id}`}
+										item={item}
+										isExpanded={expandedId === item.id}
+										isHovered={hoveredId === item.id}
+										isHiddenByExpansion={isHiddenByExpansion(
+											index
+										)}
+										expandedStyle={getExpandedStyle(
+											index,
+											expandedId === item.id
+										)}
+										staggerIndex={index}
+										staggerDelay={staggerDelay}
+										onCardClick={handleCardClick}
+										onHoverStart={handleHoverStart}
+										onHoverEnd={handleHoverEnd}
+									/>
+								))}
+							</AnimatePresence>
+						</div>
+					</LayoutGroup>
+				</div>
+			</div>
 
-			       <Pagination
-				       currentPage={currentPage}
-				       totalPages={totalPages}
-				       onPrevPage={handlePrevPage}
-				       onNextPage={handleNextPage}
-				       onPageSelect={handlePageSelect}
-			       />
-		       </div>
-	       );
+			<Pagination
+				currentPage={currentPage}
+				totalPages={totalPages}
+				onPrevPage={handlePrevPage}
+				onNextPage={handleNextPage}
+				onPageSelect={handlePageSelect}
+			/>
+		</div>
+	);
 };

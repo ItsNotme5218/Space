@@ -243,21 +243,29 @@ export const Sidebar = ({
 			onMouseLeave={() => handleHover(false)}
 		>
 			<motion.div
-				className="fixed -left-12 top-1/2 -translate-y-1/2 w-13 h-80 rounded-[1.75rem] border border-violet-400/20"
+				className="fixed -left-12 top-1/2 w-13 h-80 rounded-[1.75rem] border border-violet-400/20"
 				style={{
 					background: 'rgba(14, 14, 16, 0.5)',
 					boxShadow:
 						'0 0 8px 4px rgba(203, 166, 247, 0.5), 0 0 20px 8px rgba(139, 92, 246, 0.3), 0 0 2px 1px rgba(139, 92, 246, 0.5) inset'
 				}}
-				animate={{ opacity: isVisible ? 0 : 1, x: isVisible ? -20 : 0 }}
+				animate={{
+					opacity: isVisible ? 0 : 1,
+					x: isVisible ? -20 : 0,
+					y: '-50%'
+				}}
 				transition={{ duration: 0.2 }}
 			/>
 
 			<motion.nav
-				initial={{ x: -80, opacity: 0 }}
-				animate={{ x: isVisible ? 8 : -80, opacity: isVisible ? 1 : 0 }}
+				initial={{ x: -80, opacity: 0, y: '-50%' }}
+				animate={{
+					x: isVisible ? 8 : -80,
+					opacity: isVisible ? 1 : 0,
+					y: '-50%'
+				}}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed left-0 top-1/2 -translate-y-1/2 w-16"
+				className="fixed left-0 top-1/2 w-16"
 			>
 				<div
 					className="rounded-[1.75rem] border border-[#1B1B1B] flex flex-col items-center"
