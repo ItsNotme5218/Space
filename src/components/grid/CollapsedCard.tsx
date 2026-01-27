@@ -2,31 +2,31 @@ import { motion } from 'framer-motion';
 
 interface CollapsedCardProps {
 	isHovered: boolean;
+	itemName?: string;
 }
 
-export const CollapsedCard = ({ isHovered }: CollapsedCardProps) => {
+export const CollapsedCard = ({ isHovered, itemName }: CollapsedCardProps) => {
 	return (
-		<motion.div
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			className="absolute inset-0 flex flex-col"
-		>
-			<div className="flex-1" />
-			<motion.div
-				initial={{ height: 0, opacity: 0 }}
-				animate={{
-					height: isHovered ? 32 : 0,
-					opacity: isHovered ? 1 : 0
-				}}
-				transition={{ duration: 0.2 }}
-				className="px-3 flex items-center"
-				style={{ background: 'rgba(20, 10, 30, 0.95)' }}
-			>
-				<div
-					className="h-3 w-16 rounded-sm"
-					style={{ background: 'rgba(255, 255, 255, 0.3)' }}
-				/>
-			</motion.div>
-		</motion.div>
+        <>
+            <motion.div
+                initial={{ opacity: 0, y: 0 }}
+                animate={{
+                    opacity: isHovered ? 1 : 0,
+                    y: isHovered ? 12 : 0
+                }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 right-0 top-full text-center pointer-events-none"
+            >
+            </motion.div>
+            <motion.span
+                initial={{ opacity: 0, y: 165 }}
+                animate={{
+                    opacity: isHovered ? 1 : 0,
+                    y: isHovered ? 145 : 165
+                }}
+                className="text-md font-medium text-white/90 drop-shadow-md">
+                    {itemName || 'uhhhsdafh'}
+            </motion.span>
+        </>
 	);
 };
