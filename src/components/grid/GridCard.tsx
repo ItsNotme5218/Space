@@ -71,7 +71,6 @@ export const GridCard = memo(
 				>
 					{isExpanded ? <ExpandedMosaic /> : null}
 				</motion.div>
-				{/* Label is rendered outside the card, not affected by perspective */}
 				{!isExpanded && (
 					<CollapsedCard
 						isHovered={isHovered}

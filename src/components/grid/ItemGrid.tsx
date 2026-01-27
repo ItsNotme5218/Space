@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 import { GridCard } from './GridCard';
 import { Pagination } from './Pagination';
@@ -6,31 +6,47 @@ import type { GridItem, GridConfig } from './types';
 import { DEFAULT_GRID_CONFIG } from './types';
 
 interface ItemGridProps {
-	items: GridItem[];
-	config?: Partial<GridConfig>;
+       items: GridItem[];
+       config?: Partial<GridConfig>;
 }
 
 export const ItemGrid = ({ items, config }: ItemGridProps) => {
-	const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
-	const itemsPerPage = cols * rows;
+       const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
+       const itemsPerPage = cols * rows;
 
-	const [currentPage, setCurrentPage] = useState(0);
-	const [expandedId, setExpandedId] = useState<number | null>(null);
-	const [hoveredId, setHoveredId] = useState<number | null>(null);
+       const [currentPage, setCurrentPage] = useState(0);
+       const [expandedId, setExpandedId] = useState<number | null>(null);
+       const [hoveredId, setHoveredId] = useState<number | null>(null);
+       const [isGridReady, setIsGridReady] = useState(false);
 
-	const totalPages = Math.ceil(items.length / itemsPerPage);
-	const currentItems = items.slice(
-		currentPage * itemsPerPage,
-		(currentPage + 1) * itemsPerPage
-	);
+       const totalPages = Math.ceil(items.length / itemsPerPage);
+       const currentItems = items.slice(
+	       currentPage * itemsPerPage,
+	       (currentPage + 1) * itemsPerPage
+       );
 
-	const getExpandDirection = (index: number) => {
-		const col = index % cols;
-		const row = Math.floor(index / cols);
-		const expandRight = col < cols - 1;
-		const expandDown = row < rows - 1;
-		return { expandRight, expandDown };
-	};
+	useEffect(() => {
+	       if (expandedId !== null) {
+		       // eslint-disable-next-line react-hooks/set-state-in-effect
+		       setIsGridReady(true);
+		       return;
+	       }
+	       if (expandedId === null && isGridReady) {
+		       setIsGridReady(true);
+		       return;
+	       }
+	       setIsGridReady(false);
+	       const timeout = setTimeout(() => setIsGridReady(true), currentItems.length * staggerDelay * 1000 + 100);
+	       return () => clearTimeout(timeout);
+	}, [currentPage, items, staggerDelay, expandedId, currentItems.length, isGridReady]);
+
+       const getExpandDirection = (index: number) => {
+	       const col = index % cols;
+	       const row = Math.floor(index / cols);
+	       const expandRight = col < cols - 1;
+	       const expandDown = row < rows - 1;
+	       return { expandRight, expandDown };
+       };
 
 	const getExpandedStyle = (index: number, isExpanded: boolean) => {
 		const col = index % cols;
@@ -81,9 +97,10 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		);
 	};
 
-	const handleCardClick = useCallback((id: number) => {
-		setExpandedId(prev => (prev === id ? null : id));
-	}, []);
+	       const handleCardClick = useCallback((id: number) => {
+		       if (!isGridReady) return;
+		       setExpandedId(prev => (prev === id ? null : id));
+	       }, [isGridReady]);
 
 	const handleHoverStart = useCallback((id: number) => {
 		setHoveredId(id);
@@ -108,53 +125,46 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 		setCurrentPage(page);
 	}, []);
 
-	return (
-		<div className="h-full w-full flex flex-col p-4 overflow-hidden">
-			<div className="flex-1 flex justify-center items-center">
-				<div className="w-[75%] h-[90%] ml-[5%] relative">
-					<LayoutGroup>
-						<div
-							className="grid gap-3 h-full"
-							style={{
-								gridTemplateColumns: `repeat(${cols}, 1fr)`,
-								gridTemplateRows: `repeat(${rows}, 1fr)`
-							}}
-						>
-							<AnimatePresence mode="popLayout">
-								{currentItems.map((item, index) => (
-									<GridCard
-										key={`${currentPage}-${item.id}`}
-										item={item}
-										isExpanded={expandedId === item.id}
-										isHovered={hoveredId === item.id}
-										isHiddenByExpansion={isHiddenByExpansion(
-											index
-										)}
-										expandedStyle={getExpandedStyle(
-											index,
-											expandedId === item.id
-										)}
-										initialDelay={
-											index * staggerDelay * 1000
-										}
-										onCardClick={handleCardClick}
-										onHoverStart={handleHoverStart}
-										onHoverEnd={handleHoverEnd}
-									/>
-								))}
-							</AnimatePresence>
-						</div>
-					</LayoutGroup>
-				</div>
-			</div>
+	       return (
+		       <div className="h-full w-full flex flex-col p-4 overflow-hidden">
+			       <div className="flex-1 flex justify-center items-center">
+				       <div className="w-[75%] h-[90%] ml-[5%] relative">
+					       <LayoutGroup>
+						       <div
+							       className="grid gap-3 h-full"
+							       style={{
+								       gridTemplateColumns: `repeat(${cols}, 1fr)`,
+								       gridTemplateRows: `repeat(${rows}, 1fr)`
+							       }}
+						       >
+							       <AnimatePresence mode="popLayout">
+								       {currentItems.map((item, index) => (
+									       <GridCard
+										       key={`${currentPage}-${item.id}`}
+										       item={item}
+										       isExpanded={expandedId === item.id}
+										       isHovered={hoveredId === item.id}
+										       isHiddenByExpansion={isHiddenByExpansion(index)}
+										       expandedStyle={getExpandedStyle(index, expandedId === item.id)}
+										       initialDelay={!isGridReady ? index * staggerDelay * 1000 : 0}
+										       onCardClick={handleCardClick}
+										       onHoverStart={handleHoverStart}
+										       onHoverEnd={handleHoverEnd}
+									       />
+								       ))}
+							       </AnimatePresence>
+						       </div>
+					       </LayoutGroup>
+				       </div>
+			       </div>
 
-			<Pagination
-				currentPage={currentPage}
-				totalPages={totalPages}
-				onPrevPage={handlePrevPage}
-				onNextPage={handleNextPage}
-				onPageSelect={handlePageSelect}
-			/>
-		</div>
-	);
+			       <Pagination
+				       currentPage={currentPage}
+				       totalPages={totalPages}
+				       onPrevPage={handlePrevPage}
+				       onNextPage={handleNextPage}
+				       onPageSelect={handlePageSelect}
+			       />
+		       </div>
+	       );
 };
