@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Star } from 'lucide-react';
 
 export const ExpandedMosaic = () => {
 	return (
@@ -28,20 +29,26 @@ export const ExpandedMosaic = () => {
 					className="flex-1 rounded-2xl p-3 grid grid-cols-2 grid-rows-2 gap-2"
 					style={{
 						background: 'rgba(20, 10, 30, 0.8)',
-						border: '1px solid rgba(139, 92, 246, 0.3)'
+						boxShadow:
+							'0px 0px 8px rgba(139, 92, 246, 0.3), 0px 0px 8px 2px rgba(139, 92, 246, 0.3) inset',
+						border: '1px solid rgba(139, 92, 246, 0.3)',
+						backdropFilter: 'blur(2px)'
 					}}
 				>
-					{[0, 1, 2, 3].map(
-						(
-							i // array should be changed to a stat json later
-						) => (
-							<div key={i} className="flex items-center gap-2">
-								<span className="text-white/60 text-sm">
-									stat
-								</span>
-							</div>
-						)
-					)}
+					{
+                        [0, 1, 2, 3] // array should be changed to a stat json later
+                        .map(
+                            (
+                                i
+                            ) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <span className="text-white/60 text-sm">
+                                        stat
+                                    </span>
+                                </div>
+                            )
+					    )
+                    }
 				</motion.div>
 			</div>
 
@@ -54,7 +61,10 @@ export const ExpandedMosaic = () => {
 					className="h-16 rounded-2xl flex items-center justify-center px-4"
 					style={{
 						background: 'rgba(20, 10, 30, 0.8)',
-						border: '1px solid rgba(139, 92, 246, 0.3)'
+						boxShadow:
+							'0px 0px 8px rgba(139, 92, 246, 0.3), 0px 0px 8px 2px rgba(139, 92, 246, 0.3) inset',
+						border: '1px solid rgba(139, 92, 246, 0.3)',
+						backdropFilter: 'blur(2px)'
 					}}
 				>
 					<div
@@ -62,38 +72,58 @@ export const ExpandedMosaic = () => {
 						style={{ background: 'rgba(255, 255, 255, 0.2)' }}
 					/>
 				</motion.div>
-				{/* desc */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.8 }}
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{ delay: 0.5 }}
-					className="flex-1 rounded-2xl flex items-center justify-center p-4"
+					className="flex-1 rounded-2xl flex items-start justify-start p-4"
 					style={{
 						background: 'rgba(20, 10, 30, 0.8)',
-						border: '1px solid rgba(139, 92, 246, 0.3)'
+						boxShadow:
+							'0px 0px 8px rgba(139, 92, 246, 0.3), 0px 0px 8px 2px rgba(139, 92, 246, 0.3) inset',
+						border: '1px solid rgba(139, 92, 246, 0.3)',
+						backdropFilter: 'blur(2px)'
 					}}
-				>
-					<div
-						className="h-3 w-full rounded-md"
-						style={{ background: 'rgba(255, 255, 255, 0.1)' }}
-					/>
+				><p
+                className='px-4! py-3!'>
+					Lorem ipsum dolor sit amet consectetur adipisicing elit.
+					Vitae maxime nihil magnam sequi quasi voluptate at molestiae
+					et minus impedit iure exercitationem reprehenderit facilis
+					aut officiis quam libero, tempora voluptatem.
+                    </p>
 				</motion.div>
-				{/* play */}
-				<motion.div
-					initial={{ opacity: 0, scale: 0.8 }}
-					animate={{ opacity: 1, scale: 1 }}
-					transition={{ delay: 0.55 }}
-					className="h-14 rounded-2xl flex items-center justify-center"
-					style={{
-						background: 'rgba(139, 92, 246, 0.3)',
-						border: '1px solid rgba(139, 92, 246, 0.5)'
-					}}
-				>
-					<div
-						className="h-4 w-24 rounded-md"
-						style={{ background: 'rgba(255, 255, 255, 0.3)' }}
-					/>
-				</motion.div>
+				<div className="flex gap-2">
+					<motion.div
+						initial={{ opacity: 0, scale: 0.8 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ delay: 0.55 }}
+						className="h-14 rounded-2xl flex items-center justify-center grow"
+						style={{
+							background: 'rgba(0, 0, 0, 0.10)',
+							boxShadow:
+								'0px 0px 8px rgba(203, 166, 247, 0.50), 0px 0px 8px 2px #CBA6F7 inset',
+							border: '1px #CBA6F7 solid',
+							backdropFilter: 'blur(2px)'
+						}}
+					>
+						Launch Game
+					</motion.div>
+					<motion.div
+						initial={{ opacity: 0, scale: 0.8 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ delay: 0.6 }}
+						className="h-14 w-14 rounded-2xl flex items-center justify-center"
+						style={{
+							background: 'rgba(20, 10, 30, 0.8)',
+							boxShadow:
+								'0px 0px 8px rgba(139, 92, 246, 0.3), 0px 0px 8px 2px rgba(139, 92, 246, 0.3) inset',
+							border: '1px solid rgba(139, 92, 246, 0.3)',
+							backdropFilter: 'blur(2px)'
+						}}
+					>
+						<Star className="h-6 w-6" />
+					</motion.div>
+				</div>
 			</div>
 		</motion.div>
 	);

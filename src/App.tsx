@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { GamesPage, AppsPage } from './pages';
+import { GamesPage } from './pages/GamesPage';
+import { AppsPage } from './pages/AppsPage';
 import './App.css';
 
 const sessionUrls = [

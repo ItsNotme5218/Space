@@ -14,9 +14,9 @@ export const CollapsedCard = ({ isHovered, itemName }: CollapsedCardProps) => {
 				y: isHovered ? -24 : 0
 			}}
 			transition={{ duration: 0.2 }}
-			className="absolute left-1/2 top-full -translate-x-1/2 mt-2 text-md font-medium text-white/90 drop-shadow-md pointer-events-none"
+			className="absolute top-full mt-2 text-md font-medium text-white/90 drop-shadow-md pointer-events-none text-center w-full"
 		>
-			{itemName || 'App'}
+			{itemName || 'asdfasdf'}
 		</motion.span>
 	);
 };

@@ -66,7 +66,7 @@ export const GridCard = memo(
 					style={{
 						background: isExpanded
 							? 'transparent'
-							: 'rgba(20, 10, 30, 0.8)',
+							: 'rgba(20, 10, 30, 1)',
 						border: isExpanded
 							? 'none'
 							: '1px solid rgba(139, 92, 246, 0.3)',
