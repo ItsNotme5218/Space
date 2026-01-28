@@ -35,20 +35,14 @@ export const ExpandedMosaic = () => {
 						backdropFilter: 'blur(2px)'
 					}}
 				>
-					{
-                        [0, 1, 2, 3] // array should be changed to a stat json later
-                        .map(
-                            (
-                                i
-                            ) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <span className="text-white/60 text-sm">
-                                        stat
-                                    </span>
-                                </div>
-                            )
-					    )
-                    }
+					{[0, 1, 2, 3] // array should be changed to a stat json later
+						.map(i => (
+							<div key={i} className="flex items-center gap-2">
+								<span className="text-white/60 text-sm">
+									stat
+								</span>
+							</div>
+						))}
 				</motion.div>
 			</div>
 
@@ -84,13 +78,14 @@ export const ExpandedMosaic = () => {
 						border: '1px solid rgba(139, 92, 246, 0.3)',
 						backdropFilter: 'blur(2px)'
 					}}
-				><p
-                className='px-4! py-3!'>
-					Lorem ipsum dolor sit amet consectetur adipisicing elit.
-					Vitae maxime nihil magnam sequi quasi voluptate at molestiae
-					et minus impedit iure exercitationem reprehenderit facilis
-					aut officiis quam libero, tempora voluptatem.
-                    </p>
+				>
+					<p className="px-4! py-3!">
+						Lorem ipsum dolor sit amet consectetur adipisicing elit.
+						Vitae maxime nihil magnam sequi quasi voluptate at
+						molestiae et minus impedit iure exercitationem
+						reprehenderit facilis aut officiis quam libero, tempora
+						voluptatem.
+					</p>
 				</motion.div>
 				<div className="flex gap-2">
 					<motion.div
