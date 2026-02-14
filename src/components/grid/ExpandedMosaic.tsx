@@ -79,12 +79,9 @@ export const ExpandedMosaic = () => {
 						backdropFilter: 'blur(2px)'
 					}}
 				>
-					<p className="px-4! py-3!">
+					<p >
 						Lorem ipsum dolor sit amet consectetur adipisicing elit.
-						Vitae maxime nihil magnam sequi quasi voluptate at
-						molestiae et minus impedit iure exercitationem
-						reprehenderit facilis aut officiis quam libero, tempora
-						voluptatem.
+						Vitae maxime nihil
 					</p>
 				</motion.div>
 				<div className="flex gap-2">

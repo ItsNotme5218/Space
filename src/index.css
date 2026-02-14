@@ -16,13 +16,12 @@
 	--color-error: #ef4444;
 }
 
-*:not([class*='exception']) {
+@layer base {
+	* {
 		margin: 0;
 		padding: 0;
 		box-sizing: border-box;
-}
-
-@layer base {
+	}
 
 	html {
 		scroll-behavior: smooth;

@@ -41,12 +41,12 @@ const VDivider = ({
 }) => {
 	return (
 		<div
-			className="w-full flex justify-center my-2"
+			className="w-full flex justify-center"
 			style={{
 				filter: blur > 0 ? `blur(${blur}px)` : undefined,
 				transform,
 				pointerEvents: 'none',
-				marginTop: '-2px'
+				margin: '-2px 0 0 0',
 			}}
 		>
 			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
@@ -247,7 +247,7 @@ export const Sidebar = ({
 		if (!container || !btn) return;
 		const containerRect = container.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
-		setIndicatorY(btnRect.top - containerRect.top - btnRect.height / 2 + 18);
+		setIndicatorY(btnRect.top - containerRect.top);
 	}, [activeItem]);
 
 	useEffect(() => {
@@ -336,7 +336,7 @@ export const Sidebar = ({
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
 						onClick={() => onItemClick('')}
-						className="flex items-center justify-center mb-6"
+						className="flex items-center justify-center mb-1"
 					>
 						<LogoImage />
 					</motion.button>
@@ -369,7 +369,7 @@ export const Sidebar = ({
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className="relative w-10 h-10 rounded-full flex items-center justify-center my-1"
+								className="relative w-10 h-10 rounded-full flex items-center justify-center"
 							>
 								<Icon
 									className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-zinc-500'}`}
@@ -406,7 +406,7 @@ export const Sidebar = ({
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className="relative w-10 h-10 rounded-full flex items-center justify-center my-1"
+								className="relative w-10 h-10 rounded-full flex items-center justify-center"
 							>
 								<Icon
 									className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-zinc-500'}`}
