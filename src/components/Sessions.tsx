@@ -1,33 +1,37 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
+import type { Session } from '../App';
 
 interface SessionsProps {
+	sessions: Session[];
 	activeSession: number;
-	onSessionChange: (session: number) => void;
+	onSessionChange: (id: number) => void;
+	onAddSession: () => void;
+	onCloseSession: (id: number) => void;
 }
 
-const sessions = [
-	{ id: 1, label: '1' },
-	{ id: 2, label: '2' },
-	{ id: 3, label: '3' }
-];
-
-export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
+export const Sessions = ({
+	sessions,
+	activeSession,
+	onSessionChange,
+	onAddSession,
+	onCloseSession
+}: SessionsProps) => {
 	const [hoveredSession, setHoveredSession] = useState<number | null>(null);
 
-	const handleSessionClick = (session: { id: number }) => {
+	const handleSessionClick = (session: Session) => {
 		if (activeSession === session.id && hoveredSession === session.id) {
-			console.log('Close session', session.id);
+			onCloseSession(session.id);
 		} else {
 			onSessionChange(session.id);
 		}
 	};
 
 	return (
-		<div className="flex flex-col items-center gap-2 mt-2!">
+		<div className="flex flex-col items-center mt-2!">
 			<div className="flex flex-col items-center p-2">
-				{sessions.map(session => {
+				{sessions.map((session, index) => {
 					const isActive = activeSession === session.id;
 					const isHovered = hoveredSession === session.id;
 					const showClose = isActive && isHovered;
@@ -40,7 +44,7 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 							onMouseLeave={() => setHoveredSession(null)}
 							whileHover={{ scale: 1.08 }}
 							whileTap={{ scale: 0.92 }}
-							className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mb-2!"
+							className={`relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mb-2!`}
 							style={{
 								background: isActive
 									? 'rgba(139, 92, 246, 0.15)'
@@ -51,6 +55,9 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 								boxShadow: isActive
 									? '0 0 12px 2px rgba(139, 92, 246, 0.3), inset 0 0 8px rgba(203, 166, 247, 0.2)'
 									: 'inset 0 1px 1px rgba(255,255,255,0.03)'
+							}}
+							transition={{
+								duration: 0.1
 							}}
 						>
 							<AnimatePresence mode="wait">
@@ -73,9 +80,9 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 											rotate: 90
 										}}
 										transition={{
-											type: 'spring',
-											stiffness: 750,
-											damping: 30
+											stiffness: 250,
+											damping: 15,
+											duration: 0.2
 										}}
 									>
 										<X className="w-4 h-4 text-violet-300" />
@@ -87,13 +94,13 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 										animate={{ scale: 1, opacity: 1 }}
 										exit={{ scale: 0.5, opacity: 0 }}
 										transition={{
-											type: 'spring',
-											stiffness: 750,
-											damping: 30
+											stiffness: 500,
+											damping: 30,
+											duration: 0.2
 										}}
 										className={`text-sm font-medium ${isActive ? 'text-violet-300' : 'text-zinc-500'}`}
 									>
-										{session.label}
+										{index + 1}
 									</motion.span>
 								)}
 							</AnimatePresence>
@@ -109,7 +116,8 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 									transition={{
 										type: 'spring',
 										stiffness: 500,
-										damping: 15
+										damping: 15,
+										duration: 0.1
 									}}
 								/>
 							)}
@@ -119,6 +127,7 @@ export const Sessions = ({ activeSession, onSessionChange }: SessionsProps) => {
 			</div>
 
 			<motion.button
+				onClick={onAddSession}
 				whileHover={{ scale: 1.1, rotate: 90 }}
 				whileTap={{ scale: 0.9 }}
 				transition={{ type: 'spring', stiffness: 200, damping: 10 }}

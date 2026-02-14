@@ -18,12 +18,17 @@ const navItems = [
 	{ id: 'settings', icon: Settings }
 ];
 
+import type { Session } from '../App';
+
 interface SidebarProps {
 	activeItem: string;
 	onItemClick: (id: string) => void;
 	onHoverChange?: (hovered: boolean) => void;
+	sessions: Session[];
 	activeSession: number;
-	onSessionChange: (session: number) => void;
+	onSessionChange: (id: number) => void;
+	onAddSession: () => void;
+	onCloseSession: (id: number) => void;
 	alwaysVisible?: boolean;
 }
 
@@ -223,8 +228,11 @@ export const Sidebar = ({
 	activeItem,
 	onItemClick,
 	onHoverChange,
+	sessions,
 	activeSession,
 	onSessionChange,
+	onAddSession,
+	onCloseSession,
 	alwaysVisible = false
 }: SidebarProps) => {
 	const [hovered, setHovered] = useState(false);
@@ -243,7 +251,7 @@ export const Sidebar = ({
 			onMouseLeave={() => handleHover(false)}
 		>
 			<motion.div
-				className="fixed -left-12 top-1/2 w-13 h-80 rounded-[1.75rem] border border-violet-400/20"
+				className="fixed -left-12 top-1/2 w-13 h-80 rounded-full border border-violet-400/20"
 				style={{
 					background: 'rgba(14, 14, 16, 0.5)',
 					boxShadow:
@@ -268,13 +276,13 @@ export const Sidebar = ({
 				className="fixed left-0 top-1/2 w-16"
 			>
 				<div
-					className="rounded-[1.75rem] border border-[#1B1B1B] flex flex-col items-center"
+					className="rounded-full border border-[#1B1B1B] flex flex-col items-center"
 					style={{
 						background: 'rgba(14, 14, 16, 0.65)',
 						boxShadow:
 							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
 						backdropFilter: 'blur(3px)',
-						padding: '1rem 0.5rem'
+						padding: '1.15rem 0.5rem'
 					}}
 				>
 					<motion.button
@@ -288,7 +296,7 @@ export const Sidebar = ({
 
 					<VDivider
 						blur={2}
-						transform="translateY(12px) scaleY(1.7)"
+						transform="translateY(12px) scaleY(1.2)"
 					/>
 					<VDivider
 						blur={3}
@@ -301,7 +309,7 @@ export const Sidebar = ({
 					<VDivider blur={1.5} transform="translateY(-8px)" />
 					<VDivider
 						blur={1}
-						transform="translateY(-16px) scaleY(0.5)"
+						transform="translateY(-15px) scaleY(0.6)"
 					/>
 
 					{navItems.slice(0, 2).map(item => {
@@ -332,7 +340,7 @@ export const Sidebar = ({
 
 					<VDivider
 						blur={2}
-						transform="translateY(12px) scaleY(1.7)"
+						transform="translateY(12px) scaleY(1.2)"
 					/>
 					<VDivider
 						blur={3}
@@ -345,7 +353,7 @@ export const Sidebar = ({
 					<VDivider blur={1.5} transform="translateY(-8px)" />
 					<VDivider
 						blur={1}
-						transform="translateY(-16px) scaleY(0.5)"
+						transform="translateY(-15px) scaleY(0.6)"
 					/>
 
 					{navItems.slice(2, 5).map(item => {
@@ -376,7 +384,7 @@ export const Sidebar = ({
 
 					<VDivider
 						blur={2}
-						transform="translateY(12px) scaleY(1.7)"
+						transform="translateY(12px) scaleY(1.2)"
 					/>
 					<VDivider
 						blur={3}
@@ -389,7 +397,7 @@ export const Sidebar = ({
 					<VDivider blur={1.5} transform="translateY(-8px)" />
 					<VDivider
 						blur={1}
-						transform="translateY(-16px) scaleY(0.5)"
+						transform="translateY(-15px) scaleY(0.6)"
 					/>
 
 					<motion.button
@@ -402,8 +410,11 @@ export const Sidebar = ({
 				</div>
 
 				<Sessions
+					sessions={sessions}
 					activeSession={activeSession}
 					onSessionChange={onSessionChange}
+					onAddSession={onAddSession}
+					onCloseSession={onCloseSession}
 				/>
 			</motion.nav>
 		</div>

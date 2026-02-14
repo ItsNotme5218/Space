@@ -1,51 +1,70 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { GamesPage } from './pages/GamesPage';
 import { AppsPage } from './pages/AppsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import './App.css';
 
-const sessionUrls = [
-	'https://example.com',
-	'https://www.wikipedia.org',
-	'about:blank'
-];
+export interface Session {
+	id: number;
+	url: string;
+}
 
 const App = () => {
 	const [activeItem, setActiveItem] = useState('home');
 	const [topBarHovered, setTopBarHovered] = useState(false);
 	const [sidebarHovered, setSidebarHovered] = useState(false);
+	const nextIdRef = useRef(2);
+	const rawSessions = useRef<Session[]>([
+		{ id: 1, url: 'https://example.com' }
+	]);
+	const [sessions, setSessions] = useState<Session[]>(() => [
+		...rawSessions.current
+	]);
 	const [activeSession, setActiveSession] = useState(1);
-	const [direction, setDirection] = useState(0);
 
-	const handleSessionChange = (session: number) => {
-		setDirection(session > activeSession ? 1 : -1);
-		setActiveSession(session);
+	const handleSessionChange = (id: number) => {
+		setActiveSession(id);
 	};
 
-	const isSpecialPage = activeItem === 'games' || activeItem === 'apps';
-
-	const slideVariants = {
-		enter: (dir: number) => ({
-			x: dir > 0 ? '100%' : '-100%',
-			scale: 0.92,
-			opacity: 0,
-			rotateY: dir > 0 ? 15 : -15
-		}),
-		center: {
-			x: 0,
-			scale: 1,
-			opacity: 1,
-			rotateY: 0
-		},
-		exit: (dir: number) => ({
-			x: dir < 0 ? '100%' : '-100%',
-			scale: 0.92,
-			opacity: 0,
-			rotateY: dir < 0 ? 15 : -15
-		})
+	const handleAddSession = () => {
+		const newId = nextIdRef.current++;
+		const entry: Session = { id: newId, url: 'https://example.com' };
+		rawSessions.current.push(entry);
+		setSessions([...rawSessions.current]);
+		setActiveSession(newId);
 	};
+
+	const handleCloseSession = (id: number) => {
+		const idx = rawSessions.current.findIndex(s => s.id === id);
+		if (idx === -1) return;
+		rawSessions.current.splice(idx, 1);
+
+		if (rawSessions.current.length === 0) {
+			const fallbackId = nextIdRef.current++;
+			const fallback: Session = {
+				id: fallbackId,
+				url: 'https://example.com'
+			};
+			rawSessions.current.push(fallback);
+			setActiveSession(fallbackId);
+		} else if (activeSession === id) {
+			const newActive =
+				rawSessions.current[
+					Math.min(idx, rawSessions.current.length - 1)
+				];
+			setActiveSession(newActive.id);
+		}
+
+		setSessions([...rawSessions.current]);
+	};
+
+	const isSpecialPage =
+		activeItem === 'games' ||
+		activeItem === 'apps' ||
+		activeItem === 'settings';
 
 	const renderMainContent = () => {
 		if (activeItem === 'games') {
@@ -54,43 +73,61 @@ const App = () => {
 		if (activeItem === 'apps') {
 			return <AppsPage />;
 		}
+		if (activeItem === 'settings') {
+			return <SettingsPage />;
+		}
 		return (
-			<AnimatePresence
-				initial={false}
-				custom={direction}
-				mode="popLayout"
+			<div
+				className="absolute inset-2"
+				style={{ transformStyle: 'preserve-3d' }}
 			>
-				<motion.div
-					key={activeSession}
-					custom={direction}
-					variants={slideVariants}
-					initial="enter"
-					animate="center"
-					exit="exit"
-					transition={{
-						x: {
-							type: 'spring',
-							stiffness: 300,
-							damping: 30
-						},
-						opacity: { duration: 0.25 },
-						scale: { duration: 0.35 },
-						rotateY: { duration: 0.35 }
-					}}
-					className="absolute inset-2"
-					style={{ transformStyle: 'preserve-3d' }}
-				>
-					<iframe
-						src={sessionUrls[activeSession - 1]}
-						className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
-						style={{
-							filter: 'brightness(1) backdrop-blur(4px)'
-							/* add a brightness slider in settings or quick menu maybe idk.
-              Or even audio volume, kinda like the volume booster chrome extension */
-						}}
-					/>
-				</motion.div>
-			</AnimatePresence>
+				{sessions.map((s, index) => {
+					const activeIndex = sessions.findIndex(
+						x => x.id === activeSession
+					);
+					const thisIndex = sessions.findIndex(x => x.id === s.id);
+					const offset = thisIndex - activeIndex;
+					const isActive = offset === 0;
+					return (
+						<motion.div
+							key={s.id - 1}
+							animate={{
+								x: isActive
+									? '0%'
+									: offset < 0
+										? '-60%'
+										: '60%',
+								scale: isActive ? 1 : 0.85,
+								opacity: isActive ? 1 : 0,
+								rotateY: isActive ? 0 : offset < 0 ? 25 : -25,
+								zIndex: isActive ? 10 : 10 - Math.abs(offset)
+							}}
+							transition={{
+								type: 'spring',
+								stiffness: 300,
+								damping: 28,
+								mass: 0.9
+							}}
+							className="absolute inset-0 iframeContainer"
+							style={{
+								pointerEvents: isActive ? 'auto' : 'none',
+								transformOrigin:
+									offset <= 0 ? 'right center' : 'left center'
+							}}
+						>
+							<iframe
+								src={s.url}
+								true-frame-id={s.id - 1}
+								frame-id={index}
+								className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
+								style={{
+									filter: 'brightness(1) backdrop-blur(4px)' // add brightness slider at some point
+								}}
+							/>
+						</motion.div>
+					);
+				})}
+			</div>
 		);
 	};
 
@@ -125,8 +162,11 @@ const App = () => {
 				activeItem={activeItem}
 				onItemClick={setActiveItem}
 				onHoverChange={setSidebarHovered}
+				sessions={sessions}
 				activeSession={activeSession}
 				onSessionChange={handleSessionChange}
+				onAddSession={handleAddSession}
+				onCloseSession={handleCloseSession}
 				alwaysVisible={isSpecialPage}
 			/>
 			{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} />}

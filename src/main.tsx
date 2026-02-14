@@ -93,6 +93,7 @@ const initShadowApp = () => {
 	shadowDocument = document.implementation.createHTMLDocument('');
 
 	patchDocument();
+	window.doc = shadowRoot;
 
 	createRoot(root).render(
 		<StrictMode>
