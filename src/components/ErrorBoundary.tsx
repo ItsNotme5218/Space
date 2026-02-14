@@ -1,7 +1,6 @@
-// temporary ai-generated erorr boundary, change later
-// I cant believe dust would vibe codee.
-.. also error* - Leo
-// this happens 
+// temporary ai-generated erorr boundary, change later -dust
+// i can't believe dust owuld vibe code
+// can't believe it either but this happens when i'm too retarded
 import React, { type ReactNode } from 'react';
 import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
 

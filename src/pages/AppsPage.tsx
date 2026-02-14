@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { ItemGrid, type GridItem } from '../components/grid';
+import { PageAnimation } from '@/components/PageTransition';
 
 const generateMockApps = (count: number): GridItem[] =>
 	Array.from({ length: count }, (_, i) => ({
@@ -10,5 +11,7 @@ const generateMockApps = (count: number): GridItem[] =>
 export const AppsPage = () => {
 	const apps = useMemo(() => generateMockApps(60), []);
 
-	return <ItemGrid items={apps} />;
+	return <PageAnimation>
+		<ItemGrid items={apps} />
+		</PageAnimation>;
 };
