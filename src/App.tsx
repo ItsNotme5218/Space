@@ -1,10 +1,9 @@
 import { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { GamesPage } from './pages/GamesPage';
-import { AppsPage } from './pages/AppsPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+
 import './App.css';
 
 export interface Session {
@@ -13,7 +12,9 @@ export interface Session {
 }
 
 const App = () => {
-	const [activeItem, setActiveItem] = useState('home');
+	const location = useLocation();
+	const navigate = useNavigate();
+	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [topBarHovered, setTopBarHovered] = useState(false);
 	const [sidebarHovered, setSidebarHovered] = useState(false);
 	const nextIdRef = useRef(2);
@@ -24,6 +25,10 @@ const App = () => {
 		...rawSessions.current
 	]);
 	const [activeSession, setActiveSession] = useState(1);
+
+	const handleNavClick = (id: string) => {
+		navigate(id === 'home' ? '/' : `/${id}`);
+	};
 
 	const handleSessionChange = (id: number) => {
 		setActiveSession(id);
@@ -67,67 +72,80 @@ const App = () => {
 		activeItem === 'settings';
 
 	const renderMainContent = () => {
-		if (activeItem === 'games') {
-			return <GamesPage />;
-		}
-		if (activeItem === 'apps') {
-			return <AppsPage />;
-		}
-		if (activeItem === 'settings') {
-			return <SettingsPage />;
-		}
+		const isPage = isSpecialPage;
+
 		return (
-			<div
-				className="absolute inset-2"
-				style={{ transformStyle: 'preserve-3d' }}
-			>
-				{sessions.map((s, index) => {
-					const activeIndex = sessions.findIndex(
-						x => x.id === activeSession
-					);
-					const thisIndex = sessions.findIndex(x => x.id === s.id);
-					const offset = thisIndex - activeIndex;
-					const isActive = offset === 0;
-					return (
-						<motion.div
-							key={s.id - 1}
-							animate={{
-								x: isActive
-									? '0%'
-									: offset < 0
-										? '-60%'
-										: '60%',
-								scale: isActive ? 1 : 0.85,
-								opacity: isActive ? 1 : 0,
-								rotateY: isActive ? 0 : offset < 0 ? 25 : -25,
-								zIndex: isActive ? 10 : 10 - Math.abs(offset)
-							}}
-							transition={{
-								type: 'spring',
-								stiffness: 300,
-								damping: 28,
-								mass: 0.9
-							}}
-							className="absolute inset-0 iframeContainer"
-							style={{
-								pointerEvents: isActive ? 'auto' : 'none',
-								transformOrigin:
-									offset <= 0 ? 'right center' : 'left center'
-							}}
-						>
-							<iframe
-								src={s.url}
-								true-frame-id={s.id - 1}
-								frame-id={index}
-								className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
-								style={{
-									filter: 'brightness(1) backdrop-blur(4px)' // add brightness slider at some point
+			<>
+				<div
+					className="absolute inset-2"
+					style={{
+						transformStyle: 'preserve-3d',
+						display: isPage ? 'none' : 'block'
+					}}
+				>
+					{sessions.map((s, index) => {
+						const activeIndex = sessions.findIndex(
+							x => x.id === activeSession
+						);
+						const thisIndex = sessions.findIndex(x => x.id === s.id);
+						const offset = thisIndex - activeIndex;
+						const isActive = offset === 0;
+						return (
+							<motion.div
+								key={s.id - 1}
+								animate={{
+									x: isActive
+										? '0%'
+										: offset < 0
+											? '-60%'
+											: '60%',
+									scale: isActive ? 1 : 0.85,
+									opacity: isActive ? 1 : 0,
+									rotateY: isActive ? 0 : offset < 0 ? 25 : -25,
+									zIndex: isActive ? 10 : 10 - Math.abs(offset)
 								}}
-							/>
+								transition={{
+									type: 'spring',
+									stiffness: 300,
+									damping: 28,
+									mass: 0.9
+								}}
+								className="absolute inset-0 iframeContainer"
+								style={{
+									pointerEvents: isActive ? 'auto' : 'none',
+									transformOrigin:
+										offset <= 0 ? 'right center' : 'left center'
+								}}
+							>
+								<iframe
+									src={s.url}
+									true-frame-id={s.id - 1}
+									frame-id={index}
+									className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
+									style={{
+										filter: 'brightness(1) backdrop-blur(4px)' // add brightness slider at some point
+									}}
+								/>
+							</motion.div>
+						);
+					})}
+				</div>
+
+				<AnimatePresence mode="wait">
+					{isPage && (
+						<motion.div
+							key={location.pathname}
+							initial={{ opacity: 0, scale: 0.96 }}
+							animate={{ opacity: 1, scale: 1 }}
+							exit={{ opacity: 0, scale: 0.96 }}
+							transition={{ duration: 0.2 }}
+							className="absolute inset-0"
+						>
+							<Outlet />
 						</motion.div>
-					);
-				})}
-			</div>
+					)}
+				</AnimatePresence>
+			</>
 		);
 	};
 
@@ -160,7 +178,7 @@ const App = () => {
 			</div>
 			<Sidebar
 				activeItem={activeItem}
-				onItemClick={setActiveItem}
+				onItemClick={handleNavClick}
 				onHoverChange={setSidebarHovered}
 				sessions={sessions}
 				activeSession={activeSession}

@@ -26,6 +26,10 @@ async function router(fastify: FastifyInstance) {
 
 	await APIRouter(fastify);
 	// removed atm because gotta learn react router
+	// oh my lod this was NOT me NO IT FUCKING EWASNT 
+	// PULL IT
+	// I DIDNT EVEN KNOW THIS EXISTED
+	
 	/*fastify.setNotFoundHandler(
     async (_request: FastifyRequest, reply: FastifyReply) => {
       return reply

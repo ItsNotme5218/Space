@@ -2,6 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import indexStyles from './index.css?inline';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { AppsPage } from './pages/AppsPage.tsx';
+import { GamesPage } from './pages/GamesPage.tsx';
+import { SettingsPage } from './pages/SettingsPage.tsx';
 
 const originalDocumentOpen = document.open.bind(document);
 const originalDocumentWrite = document.write.bind(document);
@@ -97,7 +101,16 @@ const initShadowApp = () => {
 
 	createRoot(root).render(
 		<StrictMode>
-			<App />
+			<MemoryRouter>
+				<Routes>
+					<Route element={<App />}>
+						<Route index element={null} />
+						<Route path="games" element={<GamesPage />} />
+						<Route path="apps" element={<AppsPage />} />
+						<Route path="settings" element={<SettingsPage />} />
+					</Route>
+				</Routes>
+			</MemoryRouter>
 		</StrictMode>
 	);
 };

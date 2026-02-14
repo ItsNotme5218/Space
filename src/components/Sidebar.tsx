@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sessions } from './Sessions';
 import {
 	Gamepad2,
@@ -236,6 +236,23 @@ export const Sidebar = ({
 	alwaysVisible = false
 }: SidebarProps) => {
 	const [hovered, setHovered] = useState(false);
+	const navContainerRef = useRef<HTMLDivElement>(null);
+	const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+	const [indicatorY, setIndicatorY] = useState<number>(0);
+	const isHome = !navItems.some(item => item.id === activeItem);
+
+	const measurePosition = useCallback(() => {
+		const container = navContainerRef.current;
+		const btn = buttonRefs.current[activeItem] || buttonRefs.current[navItems[0].id];
+		if (!container || !btn) return;
+		const containerRect = container.getBoundingClientRect();
+		const btnRect = btn.getBoundingClientRect();
+		setIndicatorY(btnRect.top - containerRect.top - btnRect.height / 2 + 18);
+	}, [activeItem]);
+
+	useEffect(() => {
+		measurePosition();
+	}, [measurePosition]);
 
 	const handleHover = (isHovered: boolean) => {
 		setHovered(isHovered);
@@ -276,7 +293,8 @@ export const Sidebar = ({
 				className="fixed left-0 top-1/2 w-16"
 			>
 				<div
-					className="rounded-full border border-[#1B1B1B] flex flex-col items-center"
+					ref={navContainerRef}
+					className="relative rounded-full border border-[#1B1B1B] flex flex-col items-center"
 					style={{
 						background: 'rgba(14, 14, 16, 0.65)',
 						boxShadow:
@@ -285,10 +303,39 @@ export const Sidebar = ({
 						padding: '1.15rem 0.5rem'
 					}}
 				>
+					<motion.div
+						className="absolute top-0 left-1/2 w-10 h-10 rounded-full pointer-events-none z-20"
+							style={{
+								background: 'rgba(255, 255, 255, 0.04)',
+								boxShadow:
+									'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
+								x: '-50%'
+							}}
+							initial={false}
+							animate={{
+								y: isHome ? 10 : indicatorY,
+								scaleX: 1,
+								scaleY: 1,
+								opacity: isHome ? 0 : 1
+							}}
+							transition={{
+								y: {
+									type: isHome ? 'tween' : 'spring',
+									stiffness: 550,
+									damping: 25,
+									mass: 1
+								},
+								scaleX: { type: 'spring', stiffness: 600, damping: 20 },
+								scaleY: { type: 'spring', stiffness: 600, damping: 20 },
+								opacity: { duration: 0.15 }
+							}}
+						/>
+
+
 					<motion.button
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
-						onClick={() => onItemClick('home')}
+						onClick={() => onItemClick('')}
 						className="flex items-center justify-center mb-6"
 					>
 						<LogoImage />
@@ -318,21 +365,14 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
+								ref={el => { buttonRefs.current[item.id] = el; }}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className={`w-10 h-10 rounded-full flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
-								style={
-									isActive
-										? {
-												boxShadow:
-													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)'
-											}
-										: {}
-								}
+								className="relative w-10 h-10 rounded-full flex items-center justify-center my-1"
 							>
 								<Icon
-									className={`w-5 h-5 ${isActive ? 'text-white' : 'text-zinc-500'}`}
+									className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-zinc-500'}`}
 								/>
 							</motion.button>
 						);
@@ -362,21 +402,14 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
+								ref={el => { buttonRefs.current[item.id] = el; }}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
-								className={`w-10 h-10 rounded-full flex items-center justify-center my-1 transition-all ${isActive ? 'bg-white/5' : ''}`}
-								style={
-									isActive
-										? {
-												boxShadow:
-													'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)'
-											}
-										: {}
-								}
+								className="relative w-10 h-10 rounded-full flex items-center justify-center my-1"
 							>
 								<Icon
-									className={`w-5 h-5 ${isActive ? 'text-white' : 'text-zinc-500'}`}
+									className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-zinc-500'}`}
 								/>
 							</motion.button>
 						);
