@@ -2,11 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import indexStyles from './index.css?inline';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppsPage } from './pages/AppsPage.tsx';
 import { GamesPage } from './pages/GamesPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
-import { AnimatePresence } from 'framer-motion';
 
 const originalDocumentOpen = document.open.bind(document);
 const originalDocumentWrite = document.write.bind(document);
@@ -71,20 +70,7 @@ const patchDocument = () => {
 		configurable: true
 	});
 };
-const AnimatedRoutes = () => {
-  const location = useLocation();
 
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<App />} />
-        <Route path="/apps" element={<AppsPage />} />
-        <Route path="/games" element={<GamesPage />} />
-		<Route path='/settings' element={<SettingsPage />} />
-      </Routes>
-    </AnimatePresence>
-  );
-};
 const initShadowApp = () => {
 	const staticShell = document.getElementById('static-shell');
 	if (staticShell) {
@@ -112,11 +98,17 @@ const initShadowApp = () => {
 
 	patchDocument();
 	window.doc = shadowRoot;
-	
+
 	createRoot(root).render(
 		<StrictMode>
 			<MemoryRouter initialEntries={['/']}>
-				<AnimatedRoutes />
+				<Routes>
+					<Route path="/" element={<App />}>
+						<Route path="apps" element={<AppsPage />} />
+						<Route path="games" element={<GamesPage />} />
+						<Route path="settings" element={<SettingsPage />} />
+					</Route>
+				</Routes>
 			</MemoryRouter>
 		</StrictMode>
 	);
