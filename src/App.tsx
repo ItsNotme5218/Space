@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -6,6 +6,7 @@ import { NewTab } from './components/NewTab';
 import { SpaceStars } from './components/SpaceStars';
 import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 import './App.css';
 
@@ -21,6 +22,8 @@ const App = () => {
 	const [topBarHovered, setTopBarHovered] = useState(false);
 	const [sidebarHovered, setSidebarHovered] = useState(false);
 	const [showIntro, setShowIntro] = useState(true);
+	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [autoHideTopBar] = useLocalStorage('autoHideTopBar', true);
 	const nextIdRef = useRef(2);
 	const rawSessions = useRef<Session[]>([
 		{ id: 1, url: '' }
@@ -29,8 +32,6 @@ const App = () => {
 		{ id: 1, url: '' }
 	]);
 	const [activeSession, setActiveSession] = useState(1);
-	const prevActiveRef = useRef(1);
-	const switchDirection = useRef<'left' | 'right'>('right');
 
 	useEffect(() => {
 		rawSessions.current = sessions;
@@ -40,13 +41,6 @@ const App = () => {
 		navigate(id === 'home' ? '/' : `/${id}`);
 	};
 
-	const handleSessionChange = (id: number) => {
-		const prevIdx = sessions.findIndex(s => s.id === activeSession);
-		const nextIdx = sessions.findIndex(s => s.id === id);
-		switchDirection.current = nextIdx >= prevIdx ? 'right' : 'left';
-		prevActiveRef.current = activeSession;
-		setActiveSession(id);
-	};
 
 	const handleAddSession = () => {
 		const newId = nextIdRef.current++;
@@ -85,121 +79,95 @@ const App = () => {
 		activeItem === 'apps' ||
 		activeItem === 'settings';
 
-	const getCardAnimation = useMemo(() => {
-		const dir = switchDirection.current === 'right' ? 1 : -1;
+	const [switching, setSwitching] = useState(false);
+	const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-		return (offset: number, _total: number) => {
-			const isActive = offset === 0;
-			const absOffset = Math.abs(offset);
-			const sign = offset < 0 ? -1 : 1;
-
-			if (isActive) {
-				return {
-					animate: {
-						x: [dir * 120, dir * 60, 0],
-						y: [-40, -20, 0],
-						scale: [0.72, 0.88, 1],
-						rotateY: [dir * -35, dir * -12, 0],
-						rotateX: [8, 3, 0],
-						rotateZ: [dir * -6, dir * -2, 0],
-						opacity: [0.85, 1, 1],
-						z: [0, 60, 0],
-					},
-					transition: {
-						duration: 0.55,
-						ease: [0.22, 1.0, 0.36, 1.0] as [number, number, number, number],
-						times: [0, 0.5, 1],
-					},
-					zIndex: 20,
-				};
-			}
-
-			const deckX = sign * (35 + absOffset * 12);
-			const deckY = 30 + absOffset * 6;
-			const deckScale = 0.62 - absOffset * 0.04;
-			const deckRotateY = sign * 40;
-			const deckRotateX = -12 - absOffset * 2;
-			const deckRotateZ = sign * (8 + absOffset * 2);
-			const deckZ = -(absOffset * 80 + 120);
-
-			return {
-				animate: {
-					x: deckX,
-					y: deckY,
-					scale: Math.max(deckScale, 0.4),
-					rotateY: deckRotateY,
-					rotateX: deckRotateX,
-					rotateZ: deckRotateZ,
-					opacity: absOffset <= 1 ? 0.35 : 0,
-					z: deckZ,
-				},
-				transition: {
-					type: 'spring' as const,
-					stiffness: 180,
-					damping: 26,
-					mass: 1.2,
-					opacity: { duration: 0.4, delay: 0.15 },
-				},
-				zIndex: 10 - absOffset,
-			};
-		};
-	}, [activeSession]); // eslint-disable-line react-hooks/exhaustive-deps
+	const handleSessionSwitch = (id: number) => {
+		if (id === activeSession) return;
+		setSwitching(true);
+		setActiveSession(id);
+		if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+		switchTimerRef.current = setTimeout(() => setSwitching(false), 500);
+	};
 
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
+		const activeIndex = sessions.findIndex(x => x.id === activeSession);
 
 		return (
 			<>
-				<div
+				<motion.div
+					animate={{
+						scale: switching ? 0.85 : 1,
+						opacity: switching ? 0.7 : 1,
+					}}
+					transition={{
+						type: 'spring',
+						stiffness: 170,
+						damping: 15,
+						mass: 0.4,
+					}}
 					className="absolute inset-2"
 					style={{
-						transformStyle: 'preserve-3d',
-						perspective: '1200px',
-						display: isPage ? 'none' : 'block'
+						display: isPage ? 'none' : 'block',
+						borderRadius: 12,
+						transformOrigin: 'center center',
+						perspective: 1200
 					}}
 				>
-					{sessions.map((s, index) => {
-						const activeIndex = sessions.findIndex(
-							x => x.id === activeSession
-						);
-						const thisIndex = sessions.findIndex(x => x.id === s.id);
-						const offset = thisIndex - activeIndex;
-						const isActive = offset === 0;
-						const card = getCardAnimation(offset, sessions.length);
-
-						return (
-							<motion.div
-								key={s.id - 1}
-								animate={{
-									...card.animate,
-									zIndex: card.zIndex,
-								}}
-								transition={card.transition}
-								className="absolute inset-0 iframeContainer"
-								style={{
-									pointerEvents: isActive ? 'auto' : 'none',
-									transformOrigin: 'center center',
-									transformStyle: 'preserve-3d',
-									backfaceVisibility: 'hidden',
-								}}
-							>
-								{s.url ? (
-									<iframe
-										src={s.url}
-										true-frame-id={s.id - 1}
-										frame-id={index}
-										className="w-full h-full rounded-2xl border border-[#2d2d3a]/50"
-										style={{
-											filter: 'brightness(1) backdrop-blur(4px)'
-										}}
-									/>
-								) : (
-									<NewTab />
-								)}
-							</motion.div>
-						);
-					})}
-				</div>
+					<motion.div
+						animate={{ x: `${-activeIndex * (100 / sessions.length)}%` }}
+						transition={{
+							type: 'spring',
+							stiffness: 650,
+							damping: 75,
+						}}
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							height: '100%',
+							display: 'flex',
+							width: `${sessions.length * 100}%`,
+						}}
+					>
+						{sessions.map((s, index) => {
+							const isActive = index === activeIndex;
+							return (
+								<div
+									key={s.id}
+									className="iframeContainer"
+									style={{
+										width: `${100 / sessions.length}%`,
+										height: '100%',
+										flexShrink: 0,
+										pointerEvents: isActive ? 'auto' : 'none',
+										visibility: (isActive || switching) ? 'visible' : 'hidden',
+										paddingLeft: '8px'
+									}}
+								>
+									{s.url ? (
+										<iframe
+											src={s.url}
+											data-true-frame-id={s.id - 1}
+											data-frame-id={index}
+											className="w-full h-full"
+											style={{
+												borderRadius: 12,
+												border: '1px solid rgba(255,255,255,0.06)',
+												background: 'rgba(24,20,28,0.2)',
+												backdropFilter: 'blur(4px)',
+												WebkitBackdropFilter: 'blur(4px)',
+											}}
+										/>
+									) : (
+										<NewTab />
+									)}
+								</div>
+							);
+						})}
+					</motion.div>
+				</motion.div>
 
 				<AnimatePresence mode="wait">
 					{isPage && (
@@ -222,7 +190,7 @@ const App = () => {
 	return (
 		<div
 			className="h-screen flex flex-col overflow-hidden"
-			style={{ perspective: '1200px', background: '#050312' }}
+			style={{ background: '#050312' }}
 		>
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
 				<SpaceStars mode="background" />
@@ -235,7 +203,7 @@ const App = () => {
 			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
 				{!isSpecialPage && (
 					<motion.div
-						animate={{ height: topBarHovered ? 40 : 0 }}
+						animate={{ height: (!autoHideTopBar || !autoHideSidebar || topBarHovered) ? '2.5rem' : 0 }}
 						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 						className="shrink-0"
 					/>
@@ -243,15 +211,12 @@ const App = () => {
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
 						animate={{
-							width: isSpecialPage ? 72 : sidebarHovered ? 72 : 0
+							width: isSpecialPage ? '4rem' : (!autoHideSidebar || sidebarHovered) ? '4rem' : 0
 						}}
 						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 						className="shrink-0"
 					/>
-					<main
-						className={`flex-1 relative ${isSpecialPage ? '' : 'p-2'}`}
-						style={{ transformStyle: 'preserve-3d' }}
-					>
+					<main className="flex-1 relative">
 						{renderMainContent()}
 					</main>
 				</div>
@@ -261,12 +226,12 @@ const App = () => {
 					onHoverChange={setSidebarHovered}
 					sessions={sessions}
 					activeSession={activeSession}
-					onSessionChange={handleSessionChange}
+					onSessionChange={handleSessionSwitch}
 					onAddSession={handleAddSession}
 					onCloseSession={handleCloseSession}
-					alwaysVisible={isSpecialPage}
+					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-				{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} />}
+				{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} alwaysVisible={!autoHideTopBar || !autoHideSidebar} />}
 			</div>
 		</div>
 	);

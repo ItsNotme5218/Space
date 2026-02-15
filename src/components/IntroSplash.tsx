@@ -20,52 +20,86 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 
 	return (
 		<AnimatePresence onExitComplete={onComplete}>
-			<motion.div
-				key="intro-splash"
-				initial={{ opacity: 1 }}
-				animate={{ opacity: fading ? 0 : 1 }}
-				transition={{ duration: 1.2, ease: 'easeInOut' }}
-				onAnimationComplete={() => {
-					if (fading) onComplete();
-				}}
-				style={{
-					position: 'fixed',
-					inset: 0,
-					zIndex: 9999,
-					pointerEvents: fading ? 'none' : 'auto',
-				}}
-			>
-				<SpaceStars
-					mode="intro"
-					onIntroComplete={handleIntroComplete}
-					onProgress={handleProgress}
-				/>
-
-			<div
+			{!fading && (
+				<motion.div
+					key="intro-splash"
+					initial={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
+					transition={{ duration: 1.2, ease: 'easeInOut' }}
 					style={{
-						position: 'absolute',
-						bottom: 0,
-						left: 0,
-						right: 0,
-						height: 3,
-						background: 'rgba(255,255,255,0.06)',
-						overflow: 'hidden',
+						position: 'fixed',
+						inset: 0,
+						zIndex: 9999,
 					}}
 				>
-					<motion.div
-						initial={{ scaleX: 0 }}
-						animate={{ scaleX: progress }}
-						transition={{ duration: 0.15, ease: 'linear' }}
-						style={{
-							height: '100%',
-							width: '100%',
-							transformOrigin: 'left center',
-							background: 'linear-gradient(90deg, rgba(139,92,246,0.6), rgba(167,139,250,0.8))',
-							boxShadow: '0 0 12px rgba(139,92,246,0.4)',
-						}}
+					<SpaceStars
+						mode="intro"
+						onIntroComplete={handleIntroComplete}
+						onProgress={handleProgress}
 					/>
-				</div>
-			</motion.div>
+
+					<div
+						style={{
+							position: 'absolute',
+							right: 20,
+							bottom: '25px',
+							overflow: 'hidden',
+							zIndex: 9999,
+						}}
+					>
+						<motion.button
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 0.5 }}
+							whileHover={{ opacity: 1, scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							transition={{ duration: 0.3 }}
+							onClick={() => setFading(true)}
+							style={{
+								background: 'rgba(255, 255, 255, 0.08)',
+								border: '1px solid rgba(255, 255, 255, 0.12)',
+								borderRadius: 8,
+								padding: '6px 16px',
+								color: 'rgba(255, 255, 255, 0.7)',
+								fontSize: 13,
+								fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
+								cursor: 'pointer',
+								backdropFilter: 'blur(8px)',
+								letterSpacing: '0.02em',
+							}}
+						>
+							not jackin ts ode
+						</motion.button>
+					</div>
+
+					<div
+						style={{
+							position: 'absolute',
+							bottom: 0,
+							left: 0,
+							right: 0,
+							height: 5,
+							background: 'rgba(255,255,255,0.06)',
+							overflow: 'hidden',
+							zIndex: 9999,
+							filter: 'blur(2px)',
+						}}
+					>
+						<motion.div
+							initial={{ scaleX: 0 }}
+							animate={{ scaleX: progress }}
+							transition={{ duration: 0.15, ease: 'linear' }}
+							className="z-9999"
+							style={{
+								height: '100%',
+								width: '100%',
+								transformOrigin: 'left center',
+								background: 'linear-gradient(90deg, rgba(139,92,246,0.6), rgba(167,139,250,0.8))',
+								boxShadow: '0 0 12px rgba(139,92,246,0.4)',
+							}}
+						/>
+					</div>
+				</motion.div>
+			)}
 		</AnimatePresence>
 	);
 };

@@ -21,14 +21,14 @@ export const NewTab = () => {
 
 	return (
 		<div
-			className="w-full h-full flex flex-col items-center justify-center rounded-4xl"
+			className="w-full h-full flex flex-col items-center justify-center rounded-xl"
 			style={{
 				background: 'rgba(24, 20, 28, 0.2)',
-				backdropFilter: 'blur(12px)',
-				WebkitBackdropFilter: 'blur(12px)',
+				backdropFilter: 'blur(4px)',
+				WebkitBackdropFilter: 'blur(4px)',
+				border: '1px solid rgba(255, 255, 255, 0.06)',
 			}}
 		>
-			{/* search bar */}
 			<motion.div
 				initial={{ opacity: 0, y: 24, scale: 0.96 }}
 				animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -78,7 +78,6 @@ export const NewTab = () => {
 				</motion.div>
 			</motion.div>
 
-			{/* shortcuts grid */}
 			<motion.div
 				initial={{ opacity: 0, y: 16 }}
 				animate={{ opacity: 1, y: 0 }}

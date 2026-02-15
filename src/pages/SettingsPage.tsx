@@ -67,7 +67,7 @@ const Select = ({ value, options, onChange }: { value: string; options: string[]
 							background: 'rgba(14,14,18,0.96)',
 							border: '1px solid rgba(255,255,255,0.06)',
 							boxShadow: '0 20px 60px -12px rgba(0,0,0,0.8)',
-							backdropFilter: 'blur(24px)',
+							backdropFilter: 'blur(4px)',
 						}}
 					>
 						{options.map(o => (
@@ -120,7 +120,7 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 		animate={{ opacity: 1, y: 0 }}
 		transition={{ ...soft, delay }}
 	>
-		<h3 className="text-xs font-semibold uppercase tracking-widest text-white/20 mb-4 pl-1">{title}</h3>
+		<h3 className="text-xs font-semibold uppercase tracking-widest text-white/20 mb-5 pl-1">{title}</h3>
 		<div
 			className="rounded-2xl divide-y divide-white/[0.04]"
 			style={{
@@ -128,7 +128,7 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 				border: '1px solid rgba(255,255,255,0.06)',
 				backdropFilter: 'blur(48px)',
 				WebkitBackdropFilter: 'blur(48px)',
-				boxShadow: '0 4px 32px -6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)',
+				boxShadow: '0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
 			}}
 		>
 			{children}
@@ -137,7 +137,7 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 );
 
 const Row = ({ label, desc, children }: { label: string; desc?: string; children: ReactNode }) => (
-	<div className="flex items-center justify-between px-7 py-5 group transition-colors duration-150 hover:bg-white/[0.02]">
+	<div className="flex items-center justify-between px-8 py-6 group transition-colors duration-150 hover:bg-white/[0.02]">
 		<div className="flex flex-col gap-1 mr-8 min-w-0">
 			<span className="text-[15px] text-white/75 font-medium group-hover:text-white/90 transition-colors duration-150">{label}</span>
 			{desc && <span className="text-sm text-white/25 leading-relaxed">{desc}</span>}
@@ -152,7 +152,7 @@ const CloakPanel = () => {
 	const [autoBlob, setAutoBlob]   = useLocalStorage('autoBlob', false);
 	const [tabCloak, setTabCloak]   = useLocalStorage('tabCloak', 'None');
 	return (
-		<div className="flex flex-col gap-10">
+		<div className="flex flex-col gap-12">
 			<Section title="Quick Actions" delay={0.0}>
 				<Row label="About:Blank" desc="Open site inside a hidden blank tab">
 					<Btn>Launch</Btn>
@@ -186,15 +186,26 @@ const CloakPanel = () => {
 
 const AppearPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
+	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [autoHideTopBar, setAutoHideTopBar] = useLocalStorage('autoHideTopBar', true);
 	return (
-		<div className="flex flex-col gap-10">
-			<Section title="Visual Effects" delay={0.0}>
+		<div className="flex flex-col gap-12">
+			<Section title="Layout" delay={0.0}>
+				<Row label="Auto-hide Sidebar" desc="Sidebar slides away when not hovered">
+					<Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
+				</Row>
+				<Row label="Auto-hide Top Bar" desc="Browser bar hides when not hovered">
+					<Toggle on={autoHideTopBar} set={setAutoHideTopBar} />
+				</Row>
+			</Section>
+
+			<Section title="Visual Effects" delay={0.06}>
 				<Row label="Starfield Particles" desc="Animated star background on the home page">
 					<Toggle on={particles} set={setParticles} />
 				</Row>
 			</Section>
 
-			<Section title="Theme" delay={0.06}>
+			<Section title="Theme" delay={0.12}>
 				<Row label="Accent Color" desc="Primary color used across the UI">
 					<div className="flex gap-2.5">
 						{['#8b5cf6', '#ec4899', '#06b6d4', '#22c55e', '#f59e0b'].map(c => (
@@ -217,10 +228,10 @@ const AppearPanel = () => {
 const PerfPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
 	return (
-		<div className="flex flex-col gap-10">
+		<div className="flex flex-col gap-12">
 			<Section title="Rendering" delay={0.0}>
-				<Row label="Starfield Particles" desc="Disable on low-end devices for better performance">
-					<Toggle on={particles} set={setParticles} />
+				<Row label="Reduce Animations" desc="Disable starfield and other effects on low-end devices">
+					<Toggle on={!particles} set={v => setParticles(!v)} />
 				</Row>
 			</Section>
 		</div>
@@ -232,7 +243,7 @@ const ProxyPanel = () => {
 	const [transport, setTransport] = useLocalStorage('transport', 'Libcurl');
 	const [engine, setEngine]       = useLocalStorage('searchEngine', 'DuckDuckGo');
 	return (
-		<div className="flex flex-col gap-10">
+		<div className="flex flex-col gap-12">
 			<Section title="Backend" delay={0.0}>
 				<Row label="Proxy Backend" desc="The core proxy engine powering your sessions">
 					<Select value={proxy} options={['Scramjet', 'Ultraviolet']} onChange={setProxy} />
@@ -252,7 +263,7 @@ const ProxyPanel = () => {
 };
 
 const AboutPanel = () => (
-	<div className="flex flex-col gap-10">
+	<div className="flex flex-col gap-12">
 		<Section title="Application" delay={0.0}>
 			<Row label="Version" desc="Current build version">
 				<span className="text-sm text-white/30 font-mono">1.0.0</span>
@@ -313,14 +324,14 @@ export const SettingsPage = () => {
 						initial={{ opacity: 0, y: -10 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ ...soft, delay: 0.06 }}
-						className="flex gap-1.5 p-2 rounded-2xl"
-						style={{
-							background: 'rgba(255,255,255,0.06)',
-							border: '1px solid rgba(255,255,255,0.07)',
-							backdropFilter: 'blur(40px)',
-							WebkitBackdropFilter: 'blur(40px)',
-							boxShadow: '0 4px 32px -8px rgba(0,0,0,0.5)',
-						}}
+					className="flex gap-2 p-2.5 rounded-2xl"
+					style={{
+						background: 'rgba(12,10,18,0.5)',
+						border: '1px solid rgba(255,255,255,0.05)',
+						backdropFilter: 'blur(40px)',
+						WebkitBackdropFilter: 'blur(40px)',
+						boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)',
+					}}
 					>
 						{tabs.map(t => {
 							const Icon = t.icon;
@@ -330,7 +341,7 @@ export const SettingsPage = () => {
 									key={t.id}
 									onClick={() => setActive(t.id)}
 									whileTap={{ scale: 0.96 }}
-									className="relative flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm cursor-pointer z-10"
+									className="relative flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm cursor-pointer z-10"
 									animate={{ color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)' }}
 									transition={{ duration: 0.15 }}
 								>
@@ -339,9 +350,9 @@ export const SettingsPage = () => {
 											layoutId="settings-tab"
 											className="absolute inset-0 rounded-xl"
 											style={{
-												background: 'rgba(139,92,246,0.1)',
-												border: '1px solid rgba(139,92,246,0.16)',
-												boxShadow: '0 0 20px rgba(139,92,246,0.1)',
+												background: 'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
+												border: '1px solid rgba(139,92,246,0.18)',
+												boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)',
 											}}
 											transition={spring}
 										/>
@@ -358,13 +369,13 @@ export const SettingsPage = () => {
 					initial={{ opacity: 0, scaleX: 0 }}
 					animate={{ opacity: 1, scaleX: 1 }}
 					transition={{ ...soft, delay: 0.1 }}
-					className="w-full max-w-2xl h-px mt-12 mb-14"
+					className="w-full max-w-3xl h-px mt-12 mb-14"
 					style={{
 						background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)',
 					}}
 				/>
 
-				<div className="w-full max-w-2xl">
+				<div className="w-full max-w-3xl">
 					<AnimatePresence mode="wait">
 						<motion.div
 							key={active}

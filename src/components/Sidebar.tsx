@@ -299,7 +299,8 @@ export const Sidebar = ({
 						background: 'rgba(14, 14, 16, 0.65)',
 						boxShadow:
 							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
-						backdropFilter: 'blur(3px)',
+						backdropFilter: 'blur(4px)',
+						WebkitBackdropFilter: 'blur(4px)',
 						padding: '1.15rem 0.5rem'
 					}}
 				>
