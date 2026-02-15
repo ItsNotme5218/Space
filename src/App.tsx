@@ -19,11 +19,9 @@ const App = () => {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
-	const [topBarHovered, setTopBarHovered] = useState(false);
 	const [sidebarHovered, setSidebarHovered] = useState(false);
 	const [showIntro, setShowIntro] = useState(true);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
-	const [autoHideTopBar] = useLocalStorage('autoHideTopBar', true);
 	const nextIdRef = useRef(2);
 	const rawSessions = useRef<Session[]>([
 		{ id: 1, url: '' }
@@ -201,13 +199,9 @@ const App = () => {
 			)}
 
 			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
-				{!isSpecialPage && (
-					<motion.div
-						animate={{ height: (!autoHideTopBar || !autoHideSidebar || topBarHovered) ? '2.5rem' : 0 }}
-						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-						className="shrink-0"
-					/>
-				)}
+			{!isSpecialPage && (
+				<div className="shrink-0" style={{ height: '3rem' }} />
+			)}
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
 						animate={{
@@ -231,7 +225,7 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-				{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} alwaysVisible={!autoHideTopBar || !autoHideSidebar} />}
+				{!isSpecialPage && <TopBar />}
 			</div>
 		</div>
 	);

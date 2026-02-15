@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
 	ArrowLeft,
 	RotateCw,
@@ -9,59 +7,62 @@ import {
 	MoreVertical
 } from 'lucide-react';
 
-interface TopBarProps {
-	onHoverChange?: (hovered: boolean) => void;
-	alwaysVisible?: boolean;
-}
-
-export const TopBar = ({ onHoverChange, alwaysVisible = false }: TopBarProps) => {
-	const [hovered, setHovered] = useState(false);
-
-	const handleHover = (isHovered: boolean) => {
-		setHovered(isHovered);
-		onHoverChange?.(isHovered);
-	};
-
-	const isVisible = alwaysVisible || hovered;
-
+export const TopBar = () => {
 	return (
-		<div
-			className="fixed top-0 left-0 right-0 h-12 z-40"
-			onMouseEnter={() => handleHover(true)}
-			onMouseLeave={() => handleHover(false)}
-		>
-			<motion.header
-				initial={{ y: -60, opacity: 0 }}
-				animate={{ y: isVisible ? 8 : -60, opacity: isVisible ? 1 : 0 }}
-				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed top-0 left-2 right-2 h-8 flex items-center"
+		<header className="fixed top-0 left-2 right-2 h-10 flex items-center z-40 mt-2 gap-2">
+			<div
+				className="flex items-center gap-0.5 h-10 rounded-full p-2!"
+				style={{
+					background: 'rgba(14, 14, 16, 0.65)',
+					border: '1px solid rgba(45, 45, 58, 0.5)',
+					boxShadow:
+						'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset',
+					backdropFilter: 'blur(4px)',
+					WebkitBackdropFilter: 'blur(4px)',
+				}}
 			>
-				<div className="flex items-center gap-0.5 mx-auto h-8 bg-[#1a1a1a] rounded-full border border-[#2d2d3a]/50 p-2!">
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<ArrowLeft className="w-4 h-4" />
-					</button>
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<RotateCw className="w-4 h-4" />
-					</button>
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<ArrowRight className="w-4 h-4" />
-					</button>
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<Home className="w-4 h-4" />
-					</button>
-				</div>
-				<div className="flex-1 mx-2!">
-					<div className="mx-auto h-8 bg-[#1a1a1a] rounded-full border border-[#2d2d3a]/50" />
-				</div>
-				<div className="flex items-center gap-0.5 mx-auto h-8 bg-[#1a1a1a] rounded-full border border-[#2d2d3a]/50 p-2!">
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<Maximize2 className="w-4 h-4" />
-					</button>
-					<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors">
-						<MoreVertical className="w-4 h-4" />
-					</button>
-				</div>
-			</motion.header>
-		</div>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<ArrowLeft className="w-4 h-4" />
+				</button>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<RotateCw className="w-4 h-4" />
+				</button>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<ArrowRight className="w-4 h-4" />
+				</button>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<Home className="w-4 h-4" />
+				</button>
+			</div>
+			<div
+				className="flex-1 h-10 rounded-full"
+				style={{
+					background: 'rgba(14, 14, 16, 0.65)',
+					border: '1px solid rgba(45, 45, 58, 0.5)',
+					boxShadow:
+						'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset',
+					backdropFilter: 'blur(4px)',
+					WebkitBackdropFilter: 'blur(4px)',
+				}}
+			/>
+			<div
+				className="flex items-center gap-0.5 h-10 rounded-full p-2!"
+				style={{
+					background: 'rgba(14, 14, 16, 0.65)',
+					border: '1px solid rgba(45, 45, 58, 0.5)',
+					boxShadow:
+						'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset',
+					backdropFilter: 'blur(4px)',
+					WebkitBackdropFilter: 'blur(4px)',
+				}}
+			>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<Maximize2 className="w-4 h-4" />
+				</button>
+				<button className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">
+					<MoreVertical className="w-4 h-4" />
+				</button>
+			</div>
+		</header>
 	);
 };

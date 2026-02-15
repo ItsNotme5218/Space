@@ -187,15 +187,11 @@ const CloakPanel = () => {
 const AppearPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
 	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage('autoHideSidebar', true);
-	const [autoHideTopBar, setAutoHideTopBar] = useLocalStorage('autoHideTopBar', true);
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Layout" delay={0.0}>
 				<Row label="Auto-hide Sidebar" desc="Sidebar slides away when not hovered">
 					<Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
-				</Row>
-				<Row label="Auto-hide Top Bar" desc="Browser bar hides when not hovered">
-					<Toggle on={autoHideTopBar} set={setAutoHideTopBar} />
 				</Row>
 			</Section>
 
@@ -266,7 +262,7 @@ const AboutPanel = () => (
 	<div className="flex flex-col gap-12">
 		<Section title="Application" delay={0.0}>
 			<Row label="Version" desc="Current build version">
-				<span className="text-sm text-white/30 font-mono">1.0.0</span>
+				<span className="text-sm text-white/30 font-mono">2.0.0</span>
 			</Row>
 			<Row label="Framework" desc="Technologies used">
 				<span className="text-sm text-white/30">React + Vite</span>

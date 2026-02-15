@@ -79,9 +79,8 @@ export const ExpandedMosaic = () => {
 						backdropFilter: 'blur(2px)'
 					}}
 				>
-					<p >
-						Lorem ipsum dolor sit amet consectetur adipisicing elit.
-						Vitae maxime nihil
+				<p className="text-white/40 text-sm leading-relaxed">
+						No description available.
 					</p>
 				</motion.div>
 				<div className="flex gap-2">
