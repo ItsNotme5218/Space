@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { SpaceStars } from '../components/SpaceStars';
 import { Search } from 'lucide-react';
 
-const SPRING = { type: 'spring' as const, stiffness: 380, damping: 32, mass: 0.85 };
+const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
+const SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 };
 
 const shortcuts = [
 	{ name: 'YouTube', url: 'https://youtube.com', color: '#FF0000' },
@@ -13,149 +13,124 @@ const shortcuts = [
 	{ name: 'Twitch', url: 'https://twitch.tv', color: '#9146FF' },
 	{ name: 'Twitter', url: 'https://x.com', color: '#1DA1F2' },
 	{ name: 'Netflix', url: 'https://netflix.com', color: '#E50914' },
-	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' }
+	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' },
 ];
 
-interface NewTabPageProps {
-	onIntroComplete?: () => void;
-}
-
-export const NewTab = ({ onIntroComplete }: NewTabPageProps) => {
-	const [revealed, setRevealed] = useState(false);
-
-	const handleTextFormed = useCallback(() => {
-		setRevealed(true);
-		onIntroComplete?.();
-	}, [onIntroComplete]);
+export const NewTab = () => {
+	const [searchFocused, setSearchFocused] = useState(false);
 
 	return (
-		<div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-			<SpaceStars onTextFormed={handleTextFormed} />
-
+		<div
+			className="w-full h-full flex flex-col items-center justify-center rounded-4xl"
+			style={{
+				background: 'rgba(24, 20, 28, 0.2)',
+				backdropFilter: 'blur(12px)',
+				WebkitBackdropFilter: 'blur(12px)',
+			}}
+		>
+			{/* search bar */}
 			<motion.div
-				initial={{ opacity: 0 }}
-				animate={{ opacity: revealed ? 1 : 0 }}
-				transition={{ duration: 0.8, ease: 'easeOut' }}
-				style={{
-					position: 'absolute',
-					inset: 0,
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'center',
-					pointerEvents: revealed ? 'auto' : 'none',
-					zIndex: 10
-				}}
+				initial={{ opacity: 0, y: 24, scale: 0.96 }}
+				animate={{ opacity: 1, y: 0, scale: 1 }}
+				transition={{ ...soft, delay: 0.05 }}
+				className="w-full px-6"
+				style={{ maxWidth: 520 }}
 			>
 				<motion.div
-					initial={{ opacity: 0, y: 30, scale: 0.95 }}
-					animate={revealed ? { opacity: 1, y: 0, scale: 1 } : {}}
-					transition={{ ...SPRING, delay: 0.2 }}
+					animate={{
+						boxShadow: searchFocused
+							? '0 0 32px rgba(139, 92, 246, 0.2), 0 4px 32px rgba(0, 0, 0, 0.5)'
+							: '0 0 20px rgba(139, 92, 246, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4)',
+						borderColor: searchFocused
+							? 'rgba(139, 92, 246, 0.35)'
+							: 'rgba(255, 255, 255, 0.08)',
+					}}
+					transition={{ duration: 0.2 }}
+					className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
 					style={{
-						width: '100%',
-						maxWidth: 560,
-						padding: '0 24px',
-						marginBottom: 48
+						background: 'rgba(255, 255, 255, 0.07)',
+						backdropFilter: 'blur(12px)',
+						WebkitBackdropFilter: 'blur(12px)',
+						border: '1px solid rgba(255, 255, 255, 0.08)',
 					}}
 				>
-					<div
+					<Search
+						className="shrink-0"
 						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: 12,
-							padding: '14px 20px',
-							borderRadius: 9999,
-							background: 'rgba(20, 10, 30, 0.6)',
-							border: '1px solid rgba(139, 92, 246, 0.25)',
-							backdropFilter: 'blur(12px)',
-							boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), 0 4px 24px rgba(0, 0, 0, 0.4)'
+							width: 18,
+							height: 18,
+							color: searchFocused ? 'rgba(167, 139, 250, 0.7)' : 'rgba(255, 255, 255, 0.3)',
+							transition: 'color 0.2s',
 						}}
-					>
-						<Search style={{ width: 18, height: 18, color: 'rgba(255, 255, 255, 0.4)', flexShrink: 0 }} />
-						<input
-							type="text"
-							placeholder="Search or enter URL"
-							style={{
-								flex: 1,
-								background: 'transparent',
-								border: 'none',
-								outline: 'none',
-								color: '#fff',
-								fontSize: 15,
-								fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
-								letterSpacing: '0.01em'
-							}}
-						/>
-					</div>
+					/>
+					<input
+						type="text"
+						placeholder="Search or enter URL"
+						onFocus={() => setSearchFocused(true)}
+						onBlur={() => setSearchFocused(false)}
+						className="flex-1 bg-transparent border-none outline-none text-white/80 placeholder-white/25"
+						style={{
+							fontSize: 15,
+							fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
+							letterSpacing: '0.01em',
+						}}
+					/>
 				</motion.div>
+			</motion.div>
 
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={revealed ? { opacity: 1, y: 0 } : {}}
-					transition={{ ...SPRING, delay: 0.4 }}
-					style={{
-						display: 'grid',
-						gridTemplateColumns: 'repeat(4, 1fr)',
-						gap: 20,
-						padding: '0 24px'
-					}}
+			{/* shortcuts grid */}
+			<motion.div
+				initial={{ opacity: 0, y: 16 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ ...soft, delay: 0.15 }}
+				className="mt-10 px-6"
+			>
+				<div
+					className="grid gap-3"
+					style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
 				>
 					{shortcuts.map((shortcut, i) => (
 						<motion.a
 							key={shortcut.name}
 							href={shortcut.url}
-							initial={{ opacity: 0, scale: 0.8, y: 16 }}
-							animate={revealed ? { opacity: 1, scale: 1, y: 0 } : {}}
-							transition={{ ...SPRING, delay: 0.5 + i * 0.05 }}
-							whileHover={{ scale: 1.08, y: -4 }}
+							initial={{ opacity: 0, scale: 0.85, y: 10 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							transition={{ ...SPRING, delay: 0.2 + i * 0.04 }}
+							whileHover={{ scale: 1.06, y: -3 }}
 							whileTap={{ scale: 0.95 }}
-							style={{
-								display: 'flex',
-								flexDirection: 'column',
-								alignItems: 'center',
-								gap: 8,
-								textDecoration: 'none',
-								cursor: 'pointer'
-							}}
+							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer transition-colors duration-150 hover:bg-white/[0.04]"
+							style={{ textDecoration: 'none' }}
 						>
 							<div
+								className="w-11 h-11 rounded-xl flex items-center justify-center"
 								style={{
-									width: 52,
-									height: 52,
-									borderRadius: 16,
-									background: 'rgba(20, 10, 30, 0.7)',
-									border: '1px solid rgba(139, 92, 246, 0.2)',
-									backdropFilter: 'blur(8px)',
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									boxShadow: `0 0 12px ${shortcut.color}20, 0 2px 8px rgba(0, 0, 0, 0.3)`
+									background: 'rgba(255, 255, 255, 0.06)',
+									border: '1px solid rgba(255, 255, 255, 0.07)',
+									boxShadow: `0 0 10px ${shortcut.color}15, 0 2px 6px rgba(0, 0, 0, 0.25)`,
 								}}
 							>
 								<span
+									className="text-base font-bold"
 									style={{
-										fontSize: 18,
-										fontWeight: 700,
 										color: shortcut.color,
-										fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif"
+										fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
 									}}
 								>
 									{shortcut.name[0]}
 								</span>
 							</div>
 							<span
+								className="text-[11px] text-white/40 leading-none"
 								style={{
-									fontSize: 11,
-									color: 'rgba(255, 255, 255, 0.5)',
 									fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
-									letterSpacing: '0.02em'
+									letterSpacing: '0.02em',
 								}}
 							>
 								{shortcut.name}
 							</span>
 						</motion.a>
 					))}
-				</motion.div>
+				</div>
 			</motion.div>
 		</div>
 	);

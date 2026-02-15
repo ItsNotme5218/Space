@@ -124,10 +124,11 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 		<div
 			className="rounded-2xl overflow-hidden divide-y divide-white/[0.04]"
 			style={{
-				background: 'rgba(255,255,255,0.025)',
-				border: '1px solid rgba(255,255,255,0.05)',
-				backdropFilter: 'blur(16px)',
-				boxShadow: '0 4px 24px -6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+				background: 'rgba(255,255,255,0.08)',
+				border: '1px solid rgba(255,255,255,0.08)',
+				backdropFilter: 'blur(48px)',
+				WebkitBackdropFilter: 'blur(48px)',
+				boxShadow: '0 4px 32px -6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
 			}}
 		>
 			{children}
@@ -314,9 +315,10 @@ export const SettingsPage = () => {
 						transition={{ ...soft, delay: 0.06 }}
 						className="flex gap-1.5 p-2 rounded-2xl"
 						style={{
-							background: 'rgba(255,255,255,0.03)',
-							border: '1px solid rgba(255,255,255,0.05)',
-							backdropFilter: 'blur(12px)',
+							background: 'rgba(255,255,255,0.06)',
+							border: '1px solid rgba(255,255,255,0.07)',
+							backdropFilter: 'blur(40px)',
+							WebkitBackdropFilter: 'blur(40px)',
 							boxShadow: '0 4px 32px -8px rgba(0,0,0,0.5)',
 						}}
 					>

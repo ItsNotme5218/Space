@@ -1,8 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { NewTab } from './components/NewTab';
+import { SpaceStars } from './components/SpaceStars';
+import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import './App.css';
@@ -18,6 +20,7 @@ const App = () => {
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [topBarHovered, setTopBarHovered] = useState(false);
 	const [sidebarHovered, setSidebarHovered] = useState(false);
+	const [showIntro, setShowIntro] = useState(true);
 	const nextIdRef = useRef(2);
 	const rawSessions = useRef<Session[]>([
 		{ id: 1, url: '' }
@@ -111,9 +114,9 @@ const App = () => {
 								}}
 								transition={{
 									type: 'spring',
-									stiffness: 300,
-									damping: 28,
-									mass: 0.9
+									stiffness: 150,
+									damping: 22,
+									mass: 1.6
 								}}
 								className="absolute inset-0 iframeContainer"
 								style={{
@@ -133,9 +136,7 @@ const App = () => {
 										}}
 									/>
 								) : (
-									<div className="w-full h-full rounded-2xl border border-[#2d2d3a]/50 overflow-hidden">
-										<NewTab />
-									</div>
+									<NewTab />
 								)}
 							</motion.div>
 						);
@@ -162,43 +163,56 @@ const App = () => {
 
 	return (
 		<div
-			className="h-screen bg-[#000000] flex flex-col overflow-hidden"
-			style={{ perspective: '1200px' }}
+			className="h-screen flex flex-col overflow-hidden"
+			style={{ perspective: '1200px', background: '#050312' }}
 		>
-			{!isSpecialPage && (
-				<motion.div
-					animate={{ height: topBarHovered ? 40 : 0 }}
-					transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-					className="shrink-0"
-				/>
-			)}
-			<div className="flex-1 flex overflow-hidden">
-				<motion.div
-					animate={{
-						width: isSpecialPage ? 72 : sidebarHovered ? 72 : 0
-					}}
-					transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-					className="shrink-0"
-				/>
-				<main
-					className={`flex-1 relative ${isSpecialPage ? '' : 'p-2'}`}
-					style={{ transformStyle: 'preserve-3d' }}
-				>
-					{renderMainContent()}
-				</main>
+			{/* Persistent starfield background with dark nebulas */}
+			<div className="fixed inset-0" style={{ zIndex: 0 }}>
+				<SpaceStars mode="background" />
 			</div>
-			<Sidebar
-				activeItem={activeItem}
-				onItemClick={handleNavClick}
-				onHoverChange={setSidebarHovered}
-				sessions={sessions}
-				activeSession={activeSession}
-				onSessionChange={handleSessionChange}
-				onAddSession={handleAddSession}
-				onCloseSession={handleCloseSession}
-				alwaysVisible={isSpecialPage}
-			/>
-			{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} />}
+
+			{/* Intro splash overlay */}
+			{showIntro && (
+				<IntroSplash onComplete={() => setShowIntro(false)} />
+			)}
+
+			{/* App content on top of starfield */}
+			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
+				{!isSpecialPage && (
+					<motion.div
+						animate={{ height: topBarHovered ? 40 : 0 }}
+						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+						className="shrink-0"
+					/>
+				)}
+				<div className="flex-1 flex overflow-hidden">
+					<motion.div
+						animate={{
+							width: isSpecialPage ? 72 : sidebarHovered ? 72 : 0
+						}}
+						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+						className="shrink-0"
+					/>
+					<main
+						className={`flex-1 relative ${isSpecialPage ? '' : 'p-2'}`}
+						style={{ transformStyle: 'preserve-3d' }}
+					>
+						{renderMainContent()}
+					</main>
+				</div>
+				<Sidebar
+					activeItem={activeItem}
+					onItemClick={handleNavClick}
+					onHoverChange={setSidebarHovered}
+					sessions={sessions}
+					activeSession={activeSession}
+					onSessionChange={handleSessionChange}
+					onAddSession={handleAddSession}
+					onCloseSession={handleCloseSession}
+					alwaysVisible={isSpecialPage}
+				/>
+				{!isSpecialPage && <TopBar onHoverChange={setTopBarHovered} />}
+			</div>
 		</div>
 	);
 };
