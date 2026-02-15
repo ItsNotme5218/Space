@@ -247,7 +247,7 @@ export const Sidebar = ({
 		if (!container || !btn) return;
 		const containerRect = container.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
-		setIndicatorY(btnRect.top - containerRect.top);
+		setIndicatorY(btnRect.top - containerRect.top + btnRect.height / 2 - 20);
 	}, [activeItem]);
 
 	useEffect(() => {

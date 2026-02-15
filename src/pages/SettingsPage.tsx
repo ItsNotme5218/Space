@@ -122,13 +122,13 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 	>
 		<h3 className="text-xs font-semibold uppercase tracking-widest text-white/20 mb-4 pl-1">{title}</h3>
 		<div
-			className="rounded-2xl overflow-hidden divide-y divide-white/[0.04]"
+			className="rounded-2xl divide-y divide-white/[0.04]"
 			style={{
-				background: 'rgba(255,255,255,0.08)',
-				border: '1px solid rgba(255,255,255,0.08)',
+				background: 'rgba(12,10,18,0.55)',
+				border: '1px solid rgba(255,255,255,0.06)',
 				backdropFilter: 'blur(48px)',
 				WebkitBackdropFilter: 'blur(48px)',
-				boxShadow: '0 4px 32px -6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+				boxShadow: '0 4px 32px -6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)',
 			}}
 		>
 			{children}

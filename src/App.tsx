@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -29,6 +29,8 @@ const App = () => {
 		{ id: 1, url: '' }
 	]);
 	const [activeSession, setActiveSession] = useState(1);
+	const prevActiveRef = useRef(1);
+	const switchDirection = useRef<'left' | 'right'>('right');
 
 	useEffect(() => {
 		rawSessions.current = sessions;
@@ -39,6 +41,10 @@ const App = () => {
 	};
 
 	const handleSessionChange = (id: number) => {
+		const prevIdx = sessions.findIndex(s => s.id === activeSession);
+		const nextIdx = sessions.findIndex(s => s.id === id);
+		switchDirection.current = nextIdx >= prevIdx ? 'right' : 'left';
+		prevActiveRef.current = activeSession;
 		setActiveSession(id);
 	};
 
@@ -79,6 +85,66 @@ const App = () => {
 		activeItem === 'apps' ||
 		activeItem === 'settings';
 
+	const getCardAnimation = useMemo(() => {
+		const dir = switchDirection.current === 'right' ? 1 : -1;
+
+		return (offset: number, _total: number) => {
+			const isActive = offset === 0;
+			const absOffset = Math.abs(offset);
+			const sign = offset < 0 ? -1 : 1;
+
+			if (isActive) {
+				return {
+					animate: {
+						x: [dir * 120, dir * 60, 0],
+						y: [-40, -20, 0],
+						scale: [0.72, 0.88, 1],
+						rotateY: [dir * -35, dir * -12, 0],
+						rotateX: [8, 3, 0],
+						rotateZ: [dir * -6, dir * -2, 0],
+						opacity: [0.85, 1, 1],
+						z: [0, 60, 0],
+					},
+					transition: {
+						duration: 0.55,
+						ease: [0.22, 1.0, 0.36, 1.0] as [number, number, number, number],
+						times: [0, 0.5, 1],
+					},
+					zIndex: 20,
+				};
+			}
+
+			const deckX = sign * (35 + absOffset * 12);
+			const deckY = 30 + absOffset * 6;
+			const deckScale = 0.62 - absOffset * 0.04;
+			const deckRotateY = sign * 40;
+			const deckRotateX = -12 - absOffset * 2;
+			const deckRotateZ = sign * (8 + absOffset * 2);
+			const deckZ = -(absOffset * 80 + 120);
+
+			return {
+				animate: {
+					x: deckX,
+					y: deckY,
+					scale: Math.max(deckScale, 0.4),
+					rotateY: deckRotateY,
+					rotateX: deckRotateX,
+					rotateZ: deckRotateZ,
+					opacity: absOffset <= 1 ? 0.35 : 0,
+					z: deckZ,
+				},
+				transition: {
+					type: 'spring' as const,
+					stiffness: 180,
+					damping: 26,
+					mass: 1.2,
+					opacity: { duration: 0.4, delay: 0.15 },
+				},
+				zIndex: 10 - absOffset,
+			};
+		};
+	}, [activeSession]); // eslint-disable-line react-hooks/exhaustive-deps
+
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
 
@@ -88,6 +154,7 @@ const App = () => {
 					className="absolute inset-2"
 					style={{
 						transformStyle: 'preserve-3d',
+						perspective: '1200px',
 						display: isPage ? 'none' : 'block'
 					}}
 				>
@@ -98,31 +165,22 @@ const App = () => {
 						const thisIndex = sessions.findIndex(x => x.id === s.id);
 						const offset = thisIndex - activeIndex;
 						const isActive = offset === 0;
+						const card = getCardAnimation(offset, sessions.length);
+
 						return (
 							<motion.div
 								key={s.id - 1}
 								animate={{
-									x: isActive
-										? '0%'
-										: offset < 0
-											? '-60%'
-											: '60%',
-									scale: isActive ? 1 : 0.85,
-									opacity: isActive ? 1 : 0,
-									rotateY: isActive ? 0 : offset < 0 ? 25 : -25,
-									zIndex: isActive ? 10 : 10 - Math.abs(offset)
+									...card.animate,
+									zIndex: card.zIndex,
 								}}
-								transition={{
-									type: 'spring',
-									stiffness: 150,
-									damping: 22,
-									mass: 1.6
-								}}
+								transition={card.transition}
 								className="absolute inset-0 iframeContainer"
 								style={{
 									pointerEvents: isActive ? 'auto' : 'none',
-									transformOrigin:
-										offset <= 0 ? 'right center' : 'left center'
+									transformOrigin: 'center center',
+									transformStyle: 'preserve-3d',
+									backfaceVisibility: 'hidden',
 								}}
 							>
 								{s.url ? (
@@ -166,17 +224,14 @@ const App = () => {
 			className="h-screen flex flex-col overflow-hidden"
 			style={{ perspective: '1200px', background: '#050312' }}
 		>
-			{/* Persistent starfield background with dark nebulas */}
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
 				<SpaceStars mode="background" />
 			</div>
 
-			{/* Intro splash overlay */}
 			{showIntro && (
 				<IntroSplash onComplete={() => setShowIntro(false)} />
 			)}
 
-			{/* App content on top of starfield */}
 			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
 				{!isSpecialPage && (
 					<motion.div

@@ -143,16 +143,16 @@ const CONFIG = {
 		vignette: true,
 		vignetteStrength: 0.03,
 		distantStars: 675,
-		distantSizeMin: 0.55,
-		distantSizeMax: 1.35,
-		distantAlpha: 0.23,
+		distantSizeMin: 0.7,
+		distantSizeMax: 1.7,
+		distantAlpha: 0.35,
 		distantTwinkle: 0.0012,
 		distantTwinkleAmp: 0.35,
 		distantDriftSpeed: 0.007,
 		farStars: 275,
-		farSizeMin: 0.9,
-		farSizeMax: 2.2,
-		farAlpha: 0.12,
+		farSizeMin: 1.1,
+		farSizeMax: 2.6,
+		farAlpha: 0.2,
 		farTwinkle: 0.001,
 		farTwinkleAmp: 0.35,
 		farDriftSpeed: 0.012,
@@ -211,7 +211,20 @@ interface StarData {
 	sprite: HTMLCanvasElement | null;
 }
 
-function getStarSprite(size: number, cache: Map<number, HTMLCanvasElement>): HTMLCanvasElement {
+interface NebulaConfig {
+	enabled: boolean;
+	count: number;
+	baseAlpha: number; alphaPulse: number;
+	driftSpeed: number;
+	blurMin: number; blurMax: number; blurPulse: number;
+	wobbleAmp: number;
+	radiusMin: number; radiusMax: number;
+	fearOfCenter: number;
+	confidenceFromSize: number; confidenceFromBlur: number;
+	colors: string[];
+}
+
+const getStarSprite = (size: number, cache: Map<number, HTMLCanvasElement>): HTMLCanvasElement => {
 	const key = Math.round(Math.max(0.1, size) * 10);
 	const cached = cache.get(key);
 	if (cached) return cached;
@@ -241,15 +254,27 @@ function getStarSprite(size: number, cache: Map<number, HTMLCanvasElement>): HTM
 	g.fill();
 	cache.set(key, c);
 	return c;
-}
+};
 
-function createStar(
+const updateStarPosition = (star: StarData, centerX: number, centerY: number, rotation: number, time: number) => {
+	const a = star.initialAngle + rotation * star.orbitSpeedFactor;
+	const rr = star.radius * (1 + star.eccentricity * Math.cos(a - star.eccentricityAngle));
+	const chaosX = Math.sin(time * 3 + star.chaosPhase) * 0.035 * star.radius;
+	const chaosY = Math.cos(time * 4 + star.chaosPhase) * CONFIG.chaosAmount * star.radius;
+	const x = Math.cos(a) * rr + chaosX;
+	const y = Math.sin(a) * rr + chaosY;
+	star.x = centerX + x * CONFIG.galaxyTiltX;
+	star.y = centerY + y * CONFIG.galaxyTiltY;
+	star.z = star.zOffset + y * 0.25;
+};
+
+const createStar = (
 	isBackground: boolean,
 	width: number, height: number,
 	centerX: number, centerY: number,
 	globalRotation: number,
 	spriteCache: Map<number, HTMLCanvasElement>,
-): StarData {
+): StarData => {
 	const D = CONFIG.starStyle.drift;
 	const star: StarData = {
 		isBackground,
@@ -320,24 +345,12 @@ function createStar(
 	star.targetX = star.x; star.targetY = star.y; star.targetZ = star.z;
 	star.sprite = getStarSprite(star.size, spriteCache);
 	return star;
-}
+};
 
-function updateStarPosition(star: StarData, centerX: number, centerY: number, rotation: number, time: number) {
-	const a = star.initialAngle + rotation * star.orbitSpeedFactor;
-	const rr = star.radius * (1 + star.eccentricity * Math.cos(a - star.eccentricityAngle));
-	const chaosX = Math.sin(time * 3 + star.chaosPhase) * 0.035 * star.radius;
-	const chaosY = Math.cos(time * 4 + star.chaosPhase) * CONFIG.chaosAmount * star.radius;
-	const x = Math.cos(a) * rr + chaosX;
-	const y = Math.sin(a) * rr + chaosY;
-	star.x = centerX + x * CONFIG.galaxyTiltX;
-	star.y = centerY + y * CONFIG.galaxyTiltY;
-	star.z = star.zOffset + y * 0.25;
-}
-
-function drawStar(
+const drawStar = (
 	star: StarData, ctx: CanvasRenderingContext2D, now: number,
 	currentState: StateValue, breathePhase: number,
-) {
+) => {
 	const time = now * 0.001;
 	const TW = CONFIG.starStyle.twinkle;
 	const tw = TW.enabled
@@ -371,9 +384,9 @@ function drawStar(
 	const w = star.sprite.width * scale;
 	const h = star.sprite.height * scale;
 	ctx.drawImage(star.sprite, star.x + dx - w / 2, star.y + dy - h / 2, w, h);
-}
+};
 
-function generateTextPoints(width: number, height: number): { x: number; y: number }[] {
+const generateTextPoints = (width: number, height: number): { x: number; y: number }[] => {
 	const tmp = document.createElement('canvas');
 	tmp.width = Math.floor(width);
 	tmp.height = Math.floor(height);
@@ -400,9 +413,9 @@ function generateTextPoints(width: number, height: number): { x: number; y: numb
 		[points[i], points[j]] = [points[j], points[i]];
 	}
 	return points;
-}
+};
 
-function assignStarsToText(stars: StarData[], textPoints: { x: number; y: number }[]) {
+const assignStarsToText = (stars: StarData[], textPoints: { x: number; y: number }[]) => {
 	const fg = stars.filter(s => !s.isBackground);
 	const bg = stars.filter(s => s.isBackground);
 	let k = 0;
@@ -419,21 +432,9 @@ function assignStarsToText(stars: StarData[], textPoints: { x: number; y: number
 		bg[b].targetY = textPoints[i].y;
 		b++;
 	}
-}
-interface NebulaConfig {
-	enabled: boolean;
-	count: number;
-	baseAlpha: number; alphaPulse: number;
-	driftSpeed: number;
-	blurMin: number; blurMax: number; blurPulse: number;
-	wobbleAmp: number;
-	radiusMin: number; radiusMax: number;
-	fearOfCenter: number;
-	confidenceFromSize: number; confidenceFromBlur: number;
-	colors: string[];
-}
+};
 
-function initNebula(width: number, height: number, cfg: NebulaConfig): NebulaBlob[] {
+const initNebula = (width: number, height: number, cfg: NebulaConfig): NebulaBlob[] => {
 	const blobs: NebulaBlob[] = [];
 	if (!cfg.enabled || (cfg.count | 0) <= 0) return blobs;
 	for (let i = 0; i < (cfg.count | 0); i++) {
@@ -458,13 +459,13 @@ function initNebula(width: number, height: number, cfg: NebulaConfig): NebulaBlo
 		});
 	}
 	return blobs;
-}
+};
 
-function initBgLayer(
+const initBgLayer = (
 	n: number, sizeMin: number, sizeMax: number,
 	driftSpeed: number, twinkle: number,
 	width: number, height: number,
-): BgStar[] {
+): BgStar[] => {
 	const arr: BgStar[] = [];
 	for (let i = 0; i < n; i++) {
 		const a = rand(0, Math.PI * 2);
@@ -481,7 +482,7 @@ function initBgLayer(
 		});
 	}
 	return arr;
-}
+};
 
 export const SpaceStars = ({
 	mode = 'intro',
@@ -528,7 +529,7 @@ export const SpaceStars = ({
 		let lastFpsTime = 0;
 		let introCompleted = false;
 
-		function checkPerformance(now: number) {
+		const checkPerformance = (now: number) => {
 			frameCount++;
 			const elapsed = now - lastFpsTime;
 			if (elapsed >= 500) {
@@ -540,9 +541,9 @@ export const SpaceStars = ({
 				frameCount = 0;
 				lastFpsTime = now;
 			}
-		}
+		};
 
-		function setCanvasSize() {
+		const setCanvasSize = () => {
 			dpr = Math.min(window.devicePixelRatio || 1, CONFIG.render.dprCap);
 			width = canvas!.clientWidth;
 			height = canvas!.clientHeight;
@@ -551,12 +552,12 @@ export const SpaceStars = ({
 			ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 			centerX = width / 2;
 			centerY = height / 2;
-		}
+		};
 
-		function drawBgLayer(
+		const drawBgLayer = (
 			layer: BgStar[], baseAlpha: number, now: number, dt: number,
 			parallaxMul: number, twinkleAmp: number,
-		) {
+		) => {
 			ctx!.save();
 			ctx!.globalCompositeOperation = 'source-over';
 			ctx!.fillStyle = '#fff';
@@ -574,9 +575,9 @@ export const SpaceStars = ({
 				ctx!.fillRect(s.x, s.y, s.s, s.s);
 			}
 			ctx!.restore();
-		}
+		};
 
-		function drawNebula(now: number, dt: number) {
+		const drawNebula = (now: number, dt: number) => {
 			if (!nebulaCfg.enabled || !nebulaBlobs.length) return;
 			const time = now * 0.001;
 			ctx!.save();
@@ -622,9 +623,9 @@ export const SpaceStars = ({
 			ctx!.filter = 'none';
 			ctx!.globalAlpha = 1;
 			ctx!.globalCompositeOperation = 'source-over';
-		}
+		};
 
-		function drawVignette() {
+		const drawVignette = () => {
 			if (!CONFIG.background.vignette) return;
 			ctx!.save();
 			const r = Math.max(width, height) * 0.85;
@@ -634,9 +635,9 @@ export const SpaceStars = ({
 			ctx!.fillStyle = g;
 			ctx!.fillRect(0, 0, width, height);
 			ctx!.restore();
-		}
+		};
 
-		function updateStateIntro(dt: number) {
+		const updateStateIntro = (dt: number) => {
 			stateTimer += dt;
 			const time = performance.now() * 0.001;
 			const T = CONFIG.timing;
@@ -807,7 +808,6 @@ export const SpaceStars = ({
 					s.z = lerp(s.startZ, s.targetZ, e);
 				}
 				if (stateTimer >= T.explodeDuration) {
-					/* after explode, signal intro is done */
 					if (!introCompleted) {
 						introCompleted = true;
 						onIntroCompleteRef.current?.();
@@ -869,10 +869,9 @@ export const SpaceStars = ({
 					stateTimer = 0;
 				}
 			}
-		}
+		};
 
-		/* init */
-		function initAll() {
+		const initAll = () => {
 			setCanvasSize();
 			if (isIntro) {
 				textPoints = generateTextPoints(width, height);
@@ -896,8 +895,6 @@ export const SpaceStars = ({
 			lastFpsTime = performance.now();
 			frameCount = 0;
 
-			/* In background mode, only bgDistant + bgFar + nebula are rendered.
-			   Skip creating galaxy stars entirely for performance & visual clarity. */
 			if (isIntro) {
 				const bgCount = Math.min(CONFIG.backgroundStars | 0, CONFIG.totalStars | 0);
 				const fgCount = Math.max(0, (CONFIG.totalStars | 0) - bgCount);
@@ -905,15 +902,13 @@ export const SpaceStars = ({
 				for (let i = 0; i < fgCount; i++) stars.push(createStar(false, width, height, centerX, centerY, globalRotation, spriteCache));
 				assignStarsToText(stars, textPoints);
 			}
-		}
+		};
 
-		/* main loop */
-		function animate(now: number) {
+		const animate = (now: number) => {
 			if (stopped) return;
 			const dt = Math.min(now - lastTime, CONFIG.render.maxDt);
 			lastTime = now;
 
-			/* Performance auto-tuning only needed when galaxy stars exist */
 			if (isIntro) checkPerformance(now);
 
 			ctx!.globalAlpha = 1;
@@ -956,12 +951,11 @@ export const SpaceStars = ({
 
 				for (const s of stars) drawStar(s, ctx!, now, currentState, breathePhase);
 			}
-			/* background mode: no galaxy stars to update/draw — only bgDistant, bgFar, nebula above */
 
 			drawVignette();
 
 			animId = requestAnimationFrame(animate);
-		}
+		};
 
 		const handleResize = () => initAll();
 		window.addEventListener('resize', handleResize);

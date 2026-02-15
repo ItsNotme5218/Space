@@ -6,17 +6,11 @@ interface IntroSplashProps {
 	onComplete: () => void;
 }
 
-/**
- * Full-screen intro overlay.
- * Plays the starfield text animation (swirl → form "Space v2" → wait → explode),
- * then fades itself out and calls onComplete so the parent can unmount it.
- */
 export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 	const [fading, setFading] = useState(false);
 	const [progress, setProgress] = useState(0);
 
 	const handleIntroComplete = useCallback(() => {
-		/* the explode just finished – start fading out */
 		setFading(true);
 	}, []);
 
@@ -26,7 +20,6 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 
 	return (
 		<AnimatePresence onExitComplete={onComplete}>
-			{!fading ? null : null /* AnimatePresence needs children to track */}
 			<motion.div
 				key="intro-splash"
 				initial={{ opacity: 1 }}
@@ -48,8 +41,7 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 					onProgress={handleProgress}
 				/>
 
-				{/* Progress bar at bottom */}
-				<div
+			<div
 					style={{
 						position: 'absolute',
 						bottom: 0,
