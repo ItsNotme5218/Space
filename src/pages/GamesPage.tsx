@@ -5,7 +5,6 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 interface GameItem {
 	id: number;
 	title: string;
-	accent: string;
 }
 
 interface GameCategory {
@@ -26,14 +25,6 @@ interface CategoryRowProps {
 	onSelect: (categoryIndex: number, itemIndex: number) => void;
 }
 
-const accents = [
-	'rgba(139, 92, 246, 0.28)',
-	'rgba(217, 119, 6, 0.28)',
-	'rgba(8, 145, 178, 0.28)',
-	'rgba(22, 163, 74, 0.28)',
-	'rgba(244, 63, 94, 0.26)'
-];
-
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(max, Math.max(min, value));
 
@@ -48,8 +39,7 @@ const createCategories = (
 			const id = categoryIndex * itemsPerCategory + itemIndex + 1;
 			return {
 				id,
-				title: `Example ${id}`,
-				accent: accents[(id - 1) % accents.length]
+				title: `Example ${id}`
 			};
 		})
 	}));
@@ -72,7 +62,7 @@ const CategoryRow = ({
 		}
 
 		const scrollerRect = scroller.getBoundingClientRect();
-		const halfWidth = scrollerRect.width / 2 || 1;
+		const halfWidth = scrollerRect.width / 4 || 1;
 		const nextWeights: Record<number, number> = {};
 
 		Array.from(track.children).forEach((node, index) => {
@@ -133,7 +123,12 @@ const CategoryRow = ({
 						{category.items.map((item, itemIndex) => {
 							const weight = edgeWeights[itemIndex] ?? 1;
 							const baseScale = 0.88 + weight * 0.12;
-							const baseOpacity = 0.32 + weight * 0.68;
+							const firstItemOpacityBoost = itemIndex === 0 ? 0.2 : 0;
+							const baseOpacity = clamp(
+								0.1 + weight * 0.8 + firstItemOpacityBoost,
+								0,
+								1
+							);
 
 							return (
 								<motion.button
@@ -143,9 +138,9 @@ const CategoryRow = ({
 									whileHover={{ y: -4, scale: Math.min(baseScale + 0.04, 1.06), opacity: 1 }}
 									whileTap={{ scale: Math.max(baseScale - 0.03, 0.84) }}
 									transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-									className="shrink-0 w-[170px] md:w-[210px] rounded-2xl p-3 md:p-4 text-left"
+									className="shrink-0 w-40 md:w-50 rounded-2xl p-3 md:p-4 text-left"
 									style={{
-										background: `linear-gradient(175deg, ${item.accent} 0%, rgba(13, 10, 20, 0.97) 84%)`,
+										background: `rgba(45, 35, 60, 1)`,
 										border: '1px solid rgba(139, 92, 246, 0.28)',
 										boxShadow: '0 10px 26px rgba(0,0,0,0.3)'
 									}}
@@ -357,7 +352,7 @@ export const GamesPage = () => {
 												transition={{ duration: 0.22 }}
 												className="h-full rounded-3xl p-6 md:p-10 flex flex-col justify-between"
 												style={{
-													background: `linear-gradient(165deg, ${item.accent} 0%, rgba(11, 8, 16, 0.97) 80%)`,
+													background: `rgba(11, 8, 16, 0.97)`,
 													border: '1px solid rgba(203,166,247,0.36)',
 													boxShadow:
 														'0 16px 60px rgba(0,0,0,0.35), inset 0 0 20px rgba(139,92,246,0.18)'

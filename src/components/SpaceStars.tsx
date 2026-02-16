@@ -22,9 +22,9 @@ const STATE = {
 type StateValue = (typeof STATE)[keyof typeof STATE];
 
 const CONFIG = {
-	totalStars: 1855,
-	minStars: 1855,
-	maxStars: 1855,
+	totalStars: 120,
+	minStars: 0,
+	maxStars: 3500,
 	backgroundStars: 989,
 	galaxyRadius: 750,
 	galaxyTiltX: 0.84,
@@ -158,6 +158,11 @@ const CONFIG = {
 		farDriftSpeed: 0.012,
 		grade: { enabled: true, alpha: 0.06, radiusMul: 0.95 },
 	},
+	starReveal: {
+		startFraction: 0,
+		formingFraction: 0.05,
+		fadeInDuration: 150,
+	},
 	render: {
 		dprCap: 4,
 		sortByDepth: true,
@@ -174,6 +179,23 @@ const easeOutExpo = (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const easeInExpo = (t: number) => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 const easeInOutQuad = (t: number) =>
 	t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+const getRevealFraction = (progress: number): number => {
+	const T = CONFIG.timing;
+	const totalDuration = T.swirlDuration + T.swirlDecelerateDuration
+		+ T.preImplodeDuration + T.formDuration + T.preExplodeDuration
+		+ T.waitDuration + T.implodeDuration + T.explodeDuration;
+	const formingStart = (T.swirlDuration + T.swirlDecelerateDuration + T.preImplodeDuration) / totalDuration;
+	const R = CONFIG.starReveal;
+	if (progress <= 0) return R.startFraction;
+	if (progress >= 1) return 1;
+	if (progress <= formingStart) {
+		const t = progress / formingStart;
+		return lerp(R.startFraction, R.formingFraction, easeOutExpo(t));
+	}
+	const t = (progress - formingStart) / (1 - formingStart);
+	return lerp(R.formingFraction, 1, t);
+};
 
 interface NebulaBlob {
 	x: number; y: number;
@@ -209,6 +231,8 @@ interface StarData {
 	textPointIndex: number;
 	driftPhase: number; driftSpeed: number; driftAmp: number;
 	sprite: HTMLCanvasElement | null;
+	fadeAlpha: number;
+	revealOrder: number;
 }
 
 interface NebulaConfig {
@@ -295,6 +319,8 @@ const createStar = (
 		driftSpeed: isBackground ? rand(D.galaxyBgSpeedMin, D.galaxyBgSpeedMax) : rand(D.galaxySpeedMin, D.galaxySpeedMax),
 		driftAmp: isBackground ? rand(D.galaxyBgAmpMin, D.galaxyBgAmpMax) : rand(D.galaxyAmpMin, D.galaxyAmpMax),
 		sprite: null,
+		fadeAlpha: 0,
+		revealOrder: Math.random(),
 	};
 
 	if (isBackground) {
@@ -375,6 +401,8 @@ const drawStar = (
 	if (currentState === STATE.WAITING) {
 		alpha *= 0.9 + Math.sin(breathePhase) * 0.1;
 	}
+
+	alpha *= star.fadeAlpha;
 
 	const dx = Math.sin(time * star.driftSpeed + star.driftPhase) * star.driftAmp;
 	const dy = Math.cos(time * star.driftSpeed + star.driftPhase) * star.driftAmp;
@@ -520,6 +548,7 @@ export const SpaceStars = ({
 		let currentState: StateValue = STATE.SWIRLING;
 		let stateTimer = 0;
 		let breathePhase = 0;
+		let introProgress = 0;
 		let globalRotation = 0;
 		let lastTime = 0;
 		let animId = 0;
@@ -668,6 +697,7 @@ export const SpaceStars = ({
 			const offset = stateOffsets[currentState] ?? 0;
 			const dur = stateDurations[currentState] ?? 1;
 			const progress = clamp((offset + Math.min(stateTimer, dur)) / totalDuration, 0, 1);
+			introProgress = progress;
 			onProgressRef.current?.(progress);
 
 			if (currentState === STATE.SWIRLING) {
@@ -897,7 +927,8 @@ export const SpaceStars = ({
 
 			if (isIntro) {
 				const bgCount = Math.min(CONFIG.backgroundStars | 0, CONFIG.totalStars | 0);
-				const fgCount = Math.max(0, (CONFIG.totalStars | 0) - bgCount);
+				// const fgCount = Math.max(0, (CONFIG.totalStars | 0) - bgCount);
+				const fgCount = CONFIG.maxStars | 0;
 				for (let i = 0; i < bgCount; i++) stars.push(createStar(true, width, height, centerX, centerY, globalRotation, spriteCache));
 				for (let i = 0; i < fgCount; i++) stars.push(createStar(false, width, height, centerX, centerY, globalRotation, spriteCache));
 				assignStarsToText(stars, textPoints);
@@ -944,6 +975,14 @@ export const SpaceStars = ({
 
 			if (isIntro) {
 				updateStateIntro(dt);
+
+				const targetFraction = getRevealFraction(introProgress);
+				const fadeRate = 1 / Math.max(1, CONFIG.starReveal.fadeInDuration);
+				for (const s of stars) {
+					if (s.revealOrder <= targetFraction && s.fadeAlpha < 1) {
+						s.fadeAlpha = Math.min(1, s.fadeAlpha + dt * fadeRate);
+					}
+				}
 
 				if (CONFIG.render.sortByDepth && frameIndex++ % (CONFIG.render.sortEveryNFrames | 0 || 1) === 0) {
 					stars.sort((a, b) => (a.z || 0) - (b.z || 0));
