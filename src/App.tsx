@@ -23,6 +23,7 @@ const App = () => {
 	const [showIntro, setShowIntro] = useState(true);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const nextIdRef = useRef(2);
+	const carouselRef = useRef<HTMLDivElement>(null);
 	const rawSessions = useRef<Session[]>([
 		{ id: 1, url: '' }
 	]);
@@ -78,14 +79,24 @@ const App = () => {
 		activeItem === 'settings';
 
 	const [switching, setSwitching] = useState(false);
+	const [siblingsOpaque, setSiblingsOpaque] = useState(false);
+	const [siblingsVisible, setSiblingsVisible] = useState(false);
 	const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const handleSessionSwitch = (id: number) => {
 		if (id === activeSession) return;
 		setSwitching(true);
+		setSiblingsOpaque(true);
+		setSiblingsVisible(true);
 		setActiveSession(id);
 		if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+		if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+		if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
 		switchTimerRef.current = setTimeout(() => setSwitching(false), 500);
+		fadeTimerRef.current = setTimeout(() => setSiblingsOpaque(false), 500);
+		hideTimerRef.current = setTimeout(() => setSiblingsVisible(false), 900);
 	};
 
 	const renderMainContent = () => {
@@ -95,16 +106,17 @@ const App = () => {
 		return (
 			<>
 				<motion.div
+					ref={carouselRef}
 					animate={{
 						scale: switching ? 0.85 : 1,
 						opacity: switching ? 0.7 : 1,
 					}}
-					transition={{
-						type: 'spring',
-						stiffness: 170,
-						damping: 15,
-						mass: 0.4,
-					}}
+				transition={{
+					type: 'spring',
+					stiffness: 170,
+					damping: 15,
+					mass: 0.4,
+				}}
 					className="absolute inset-2"
 					style={{
 						display: isPage ? 'none' : 'block',
@@ -140,8 +152,10 @@ const App = () => {
 										height: '100%',
 										flexShrink: 0,
 										pointerEvents: isActive ? 'auto' : 'none',
-										visibility: (isActive || switching) ? 'visible' : 'hidden',
-										paddingLeft: '8px'
+										opacity: isActive ? 1 : siblingsOpaque ? 0.7 : 0,
+										transition: 'opacity 0.4s ease',
+										visibility: (isActive || siblingsVisible) ? 'visible' : 'hidden',
+										paddingLeft: '8px',
 									}}
 								>
 									{s.url ? (
@@ -225,7 +239,20 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-				{!isSpecialPage && <TopBar />}
+				{!isSpecialPage && (
+					<TopBar
+						sessions={sessions}
+						activeSession={activeSession}
+						carouselRef={carouselRef}
+						onSetSessionUrl={(id, url) => {
+							const idx = rawSessions.current.findIndex(s => s.id === id);
+							if (idx !== -1) {
+								rawSessions.current[idx].url = url;
+								setSessions([...rawSessions.current]);
+							}
+						}}
+					/>
+				)}
 			</div>
 		</div>
 	);
