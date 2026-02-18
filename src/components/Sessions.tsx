@@ -29,11 +29,15 @@ export const Sessions = ({
 	};
 
 	return (
-		<div className={
-			"flex flex-col items-center justify-end " + `${sessions.length >= 5 ? "grow" : "-mt-1"}`}>
-			<div className="flex flex-col items-center p-2">
+		<div
+			className={
+				'flex flex-col items-center justify-end ' +
+				`${sessions.length >= 5 ? 'grow' : '-mt-1'}`
+			}
+		>
+			<div className="flex flex-col items-center p-2 mb-2">
 				{sessions.map((session, index) => {
-					console.log(sessions.length)
+					console.log(sessions.length);
 					const isActive = activeSession === session.id;
 					const isHovered = hoveredSession === session.id;
 					const showClose = isActive && isHovered;
@@ -135,7 +139,10 @@ export const Sessions = ({
 				whileHover={{ scale: 1.1, rotate: 90 }}
 				whileTap={{ scale: 0.9 }}
 				transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-				className={"w-7 h-7 rounded-full flex items-center justify-center " + `${sessions.length >= 5 ? "hidden" : ""}`}
+				className={
+					'w-7 h-7 rounded-full flex items-center -mt-2 justify-center ' +
+					`${sessions.length >= 5 ? 'hidden' : ''}`
+				}
 				style={{
 					background: 'rgba(26, 26, 26, 0.9)',
 					border: '1px solid rgba(45, 45, 58, 0.6)',

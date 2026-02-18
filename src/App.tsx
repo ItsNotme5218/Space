@@ -235,9 +235,9 @@ const App = () => {
 					<motion.div
 						animate={{
 							width: isSpecialPage
-								? 'calc(4rem + 8px)'
+								? '4rem'
 								: !autoHideSidebar || sidebarHovered
-									? 'calc(4rem + 8px)'
+									? '4rem'
 									: 0
 						}}
 						transition={{

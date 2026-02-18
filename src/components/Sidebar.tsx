@@ -8,7 +8,7 @@ import {
 	Settings
 } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
-import logoImg from '@assets/logo.png';
+import logoImg from '@assets/logo.webp';
 
 const navItems = [
 	{ id: 'games', icon: Gamepad2 },
@@ -287,24 +287,24 @@ export const Sidebar = ({
 			/>
 
 			<motion.nav
-				initial={{ x: -80, opacity: 0}}
+				initial={{ x: -80, opacity: 0 }}
 				animate={{
 					x: isVisible ? 8 : -80,
 					opacity: isVisible ? 1 : 0
 				}}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed left-0 bottom-0 w-16 flex flex-col items-center justify-center-safe h-[calc(100vh-4rem+8px)]"
+				className="fixed left-0 bottom-0 w-14 flex flex-col items-center justify-center-safe h-[calc(100vh-4rem+8px)]"
 			>
 				<div
 					ref={navContainerRef}
-					className="relative rounded-full border border-[#1B1B1B] flex flex-col items-center"
+					className="relative rounded-full border w-14 border-[#1B1B1B] flex flex-col items-center"
 					style={{
 						background: 'rgba(14, 14, 16, 0.65)',
 						boxShadow:
 							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
 						backdropFilter: 'blur(4px)',
 						WebkitBackdropFilter: 'blur(4px)',
-						padding: '1.15rem 0.5rem'
+						padding: '0.875rem 0.5rem'
 					}}
 				>
 					<motion.div
