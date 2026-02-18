@@ -11,20 +11,6 @@ export interface Game {
 	tags?: string[];
 }
 
-export interface Movie {
-	id: string;
-	title: string;
-	description: string;
-	image: string;
-	backdrop?: string;
-	rating?: number;
-	year?: number;
-	duration?: string;
-	genre?: string[];
-	director?: string;
-	tagline?: string;
-}
-
 export interface NavItem {
 	id: string;
 	label: string;

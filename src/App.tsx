@@ -22,6 +22,7 @@ const App = () => {
 	const [sidebarHovered, setSidebarHovered] = useState(false);
 	const [showIntro, setShowIntro] = useState(true);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [particles] = useLocalStorage('particles', true);
 	const nextIdRef = useRef(2);
 	const carouselRef = useRef<HTMLDivElement>(null);
 	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
@@ -124,7 +125,7 @@ const App = () => {
 				>
 					<motion.div
 						animate={{
-							x: `${-activeIndex * (100 / sessions.length)}%`
+							x: `calc(${-activeIndex * (100 / sessions.length)}% - ((${activeIndex}) * 8px))`
 						}}
 						transition={{
 							type: 'spring',
@@ -147,7 +148,7 @@ const App = () => {
 									key={s.id}
 									className="iframeContainer"
 									style={{
-										width: `${100 / sessions.length}%`,
+										width: `calc(${100 / sessions.length}%`,
 										height: '100%',
 										flexShrink: 0,
 										pointerEvents: isActive
@@ -163,7 +164,8 @@ const App = () => {
 											isActive || siblingsVisible
 												? 'visible'
 												: 'hidden',
-										paddingLeft: '0px'
+										paddingLeft: '0px',
+										marginRight: '8px'
 									}}
 								>
 									{s.url ? (
@@ -215,7 +217,7 @@ const App = () => {
 			style={{ background: '#050312' }}
 		>
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
-				<SpaceStars mode="background" />
+				{particles && <SpaceStars mode="background" />}
 			</div>
 
 			{showIntro && (

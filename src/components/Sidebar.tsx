@@ -4,7 +4,7 @@ import { Sessions } from './Sessions';
 import {
 	Gamepad2,
 	LayoutGrid,
-	MonitorPlay,
+	MonitorPlay, // lucide has no discord so remove this when we add discord logo
 	History,
 	Settings
 } from 'lucide-react';
@@ -13,7 +13,7 @@ import logoImg from '@assets/logo.png';
 const navItems = [
 	{ id: 'games', icon: Gamepad2 },
 	{ id: 'apps', icon: LayoutGrid },
-	{ id: 'movies', icon: MonitorPlay },
+	{ id: 'discord', icon: MonitorPlay }, // find discord logo onlne or sm idk im on a plane rn
 	{ id: 'playback', icon: History },
 	{ id: 'settings', icon: Settings }
 ];
@@ -287,14 +287,13 @@ export const Sidebar = ({
 			/>
 
 			<motion.nav
-				initial={{ x: -80, opacity: 0, y: '-50%' }}
+				initial={{ x: -80, opacity: 0}}
 				animate={{
 					x: isVisible ? 8 : -80,
-					opacity: isVisible ? 1 : 0,
-					y: '-50%'
+					opacity: isVisible ? 1 : 0
 				}}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed left-0 top-1/2 w-16"
+				className="fixed left-0 bottom-0 w-16 flex flex-col items-center justify-center-safe h-[calc(100vh-4rem+8px)]"
 			>
 				<div
 					ref={navContainerRef}
@@ -421,7 +420,14 @@ export const Sidebar = ({
 								}}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
-								onClick={() => onItemClick(item.id)}
+								onClick={() => {
+									if (item.id === 'discord') {
+										window.location.href =
+											'https://discord.night-x.com';
+									} else {
+										onItemClick(item.id);
+									}
+								}}
 								className="relative w-10 h-10 rounded-full flex items-center justify-center"
 							>
 								<Icon

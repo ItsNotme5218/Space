@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 const ROUTE_ORDER: Record<string, number> = {
 	games: 0,
 	apps: 1,
-	movies: 2,
+	discord: 2,
 	history: 3,
 	settings: 4
 };
