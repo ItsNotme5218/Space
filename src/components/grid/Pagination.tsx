@@ -17,7 +17,7 @@ export const Pagination = ({
 	onPageSelect
 }: PaginationProps) => {
 	return (
-		<div className="flex items-center justify-center gap-4 py-6 mb-4! -mt-4!">
+		<div className="flex items-center justify-center gap-4 py-4 mb-2">
 			<motion.button
 				whileHover={{ scale: 1.1 }}
 				whileTap={{ scale: 0.9 }}

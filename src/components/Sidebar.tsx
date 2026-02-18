@@ -437,7 +437,7 @@ export const Sidebar = ({
 					<motion.button
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
-						className="flex items-center justify-center mt-2!"
+						className="flex items-center justify-center mt-2"
 					>
 						<NightPlusIcon />
 					</motion.button>

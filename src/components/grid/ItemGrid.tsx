@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 import { GridCard } from './GridCard';
 import { Pagination } from './Pagination';
@@ -8,9 +8,11 @@ import { DEFAULT_GRID_CONFIG } from './types';
 interface ItemGridProps {
 	items: GridItem[];
 	config?: Partial<GridConfig>;
+	header?: ReactNode;
+	onItemClick?: (item: GridItem) => void;
 }
 
-export const ItemGrid = ({ items, config }: ItemGridProps) => {
+export const ItemGrid = ({ items, config, header, onItemClick }: ItemGridProps) => {
 	const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
 	const itemsPerPage = cols * rows;
 
@@ -83,8 +85,13 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 	};
 
 	const handleCardClick = useCallback((id: number) => {
+		if (onItemClick) {
+			const item = items.find(i => i.id === id);
+			if (item) onItemClick(item);
+			return;
+		}
 		setExpandedId(prev => (prev === id ? null : id));
-	}, []);
+	}, [onItemClick, items]);
 
 	const handleHoverStart = useCallback((id: number) => {
 		setHoveredId(id);
@@ -113,9 +120,14 @@ export const ItemGrid = ({ items, config }: ItemGridProps) => {
 	}, []);
 
 	return (
-		<div className="h-full w-full flex flex-col p-4 overflow-hidden">
-			<div className="flex-1 flex justify-center items-center">
-				<div className="w-[75%] h-[90%] ml-[5%] relative">
+		<div className="h-full w-full flex flex-col overflow-hidden">
+			{header && (
+				<div className="shrink-0 px-5 pt-5 pb-2 md:px-10 md:pt-7 md:pb-3">
+					{header}
+				</div>
+			)}
+			<div className="flex-1 flex justify-center items-center px-4 md:px-8">
+				<div className="w-[80%] h-[88%] relative">
 					<LayoutGroup>
 						<div
 							className="grid gap-3 h-full"
