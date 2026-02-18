@@ -323,12 +323,12 @@ const SearchPanel = () => {
 						{day}
 					</h3>
 					<div
-						className="rounded-2xl divide-y divide-white/[0.04] overflow-hidden"
+						className="rounded-2xl divide-y divide-white/4 overflow-hidden"
 						style={{
 							background: 'rgba(12,10,18,0.55)',
 							border: '1px solid rgba(255,255,255,0.06)',
-							backdropFilter: 'blur(48px)',
-							WebkitBackdropFilter: 'blur(48px)',
+							backdropFilter: 'blur(8px)',
+							WebkitBackdropFilter: 'blur(8px)',
 							boxShadow:
 								'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
 						}}

@@ -181,11 +181,14 @@ const App = () => {
 													'rgba(24,20,28,0.2)',
 												backdropFilter: 'blur(4px)',
 												WebkitBackdropFilter:
-													'blur(4px)'
+													'blur(4px)' //todo for normal tabs make the opacity go down, but for newtabs just fuck with background blur because opacity + backgroundblur dont like eachother
 											}}
 										/>
 									) : (
-										<NewTab />
+										<NewTab
+											data-true-frame-id={s.id - 1}
+											data-frame-id={index}
+									/>
 									)}
 								</div>
 							);
