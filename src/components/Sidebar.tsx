@@ -4,16 +4,16 @@ import { Sessions } from './Sessions';
 import {
 	Gamepad2,
 	LayoutGrid,
-	MonitorPlay, // lucide has no discord so remove this when we add discord logo
 	History,
 	Settings
 } from 'lucide-react';
+import { SiDiscord } from '@icons-pack/react-simple-icons';
 import logoImg from '@assets/logo.png';
 
 const navItems = [
 	{ id: 'games', icon: Gamepad2 },
 	{ id: 'apps', icon: LayoutGrid },
-	{ id: 'discord', icon: MonitorPlay }, // find discord logo onlne or sm idk im on a plane rn
+	{ id: 'discord', icon: SiDiscord },
 	{ id: 'playback', icon: History },
 	{ id: 'settings', icon: Settings }
 ];
