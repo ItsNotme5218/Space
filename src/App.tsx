@@ -47,6 +47,7 @@ const App = () => {
 		rawSessions.current.push(entry);
 		setSessions([...rawSessions.current]);
 		setActiveSession(newId);
+		navigate('/');
 	};
 
 	const handleCloseSession = (id: number) => {
@@ -76,7 +77,8 @@ const App = () => {
 	const isSpecialPage =
 		activeItem === 'games' ||
 		activeItem === 'apps' ||
-		activeItem === 'settings';
+		activeItem === 'settings' ||
+		activeItem === 'playback';
 
 	const [switching, setSwitching] = useState(false);
 	const [siblingsOpaque, setSiblingsOpaque] = useState(false);
@@ -155,7 +157,7 @@ const App = () => {
 										opacity: isActive ? 1 : siblingsOpaque ? 0.7 : 0,
 										transition: 'opacity 0.4s ease',
 										visibility: (isActive || siblingsVisible) ? 'visible' : 'hidden',
-										paddingLeft: '8px',
+										paddingLeft: '0px',
 									}}
 								>
 									{s.url ? (
@@ -219,7 +221,7 @@ const App = () => {
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
 						animate={{
-							width: isSpecialPage ? '4rem' : (!autoHideSidebar || sidebarHovered) ? '4rem' : 0
+							width: isSpecialPage ? 'calc(4rem + 8px)' : (!autoHideSidebar || sidebarHovered) ? 'calc(4rem + 8px)' : 0
 						}}
 						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 						className="shrink-0"

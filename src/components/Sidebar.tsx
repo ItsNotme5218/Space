@@ -14,7 +14,7 @@ const navItems = [
 	{ id: 'games', icon: Gamepad2 },
 	{ id: 'apps', icon: LayoutGrid },
 	{ id: 'movies', icon: MonitorPlay },
-	{ id: 'history', icon: History },
+	{ id: 'playback', icon: History },
 	{ id: 'settings', icon: Settings }
 ];
 
@@ -263,7 +263,7 @@ export const Sidebar = ({
 
 	return (
 		<div
-			className="fixed left-0 bottom-0 h-[calc(100vh-3.5rem)] w-6 z-50 flex flex-col items-center"
+			className="fixed left-0 bottom-0 h-[calc(100vh-3.5rem)] w-4 z-50 flex flex-col items-center"
 			onMouseEnter={() => handleHover(true)}
 			onMouseLeave={() => handleHover(false)}
 		>

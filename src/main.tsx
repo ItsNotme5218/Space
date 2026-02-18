@@ -6,6 +6,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppsPage } from './pages/AppsPage.tsx';
 import { GamesPage } from './pages/GamesPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
+import { PlaybackPage } from './pages/PlaybackPage.tsx';
 
 const originalDocumentOpen = document.open.bind(document);
 const originalDocumentWrite = document.write.bind(document);
@@ -107,6 +108,7 @@ const initShadowApp = () => {
 						<Route path="apps" element={<AppsPage />} />
 						<Route path="games" element={<GamesPage />} />
 						<Route path="settings" element={<SettingsPage />} />
+						<Route path="playback" element={<PlaybackPage />} />
 					</Route>
 				</Routes>
 			</MemoryRouter>
