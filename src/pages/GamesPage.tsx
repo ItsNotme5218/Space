@@ -65,7 +65,8 @@ const CategoryRow = ({
 		if (!scroller) return;
 		setCanScrollLeft(scroller.scrollLeft > 4);
 		setCanScrollRight(
-			scroller.scrollLeft < scroller.scrollWidth - scroller.clientWidth - 4
+			scroller.scrollLeft <
+				scroller.scrollWidth - scroller.clientWidth - 4
 		);
 	}, []);
 
@@ -95,10 +96,10 @@ const CategoryRow = ({
 	}, [updateScrollState]);
 
 	useEffect(() => {
-		updateEdgeWeights();
+		const rafId = requestAnimationFrame(updateEdgeWeights);
 		const scroller = scrollerRef.current;
 		if (!scroller) {
-			return;
+			return () => cancelAnimationFrame(rafId);
 		}
 
 		const handleScroll = () => {
@@ -109,6 +110,7 @@ const CategoryRow = ({
 		window.addEventListener('resize', updateEdgeWeights);
 
 		return () => {
+			cancelAnimationFrame(rafId);
 			scroller.removeEventListener('scroll', handleScroll);
 			window.removeEventListener('resize', updateEdgeWeights);
 		};
@@ -189,7 +191,8 @@ const CategoryRow = ({
 						{category.items.map((item, itemIndex) => {
 							const weight = edgeWeights[itemIndex] ?? 1;
 							const baseScale = 0.88 + weight * 0.12;
-							const firstItemOpacityBoost = itemIndex === 0 ? 0.2 : 0;
+							const firstItemOpacityBoost =
+								itemIndex === 0 ? 0.2 : 0;
 							const baseOpacity = clamp(
 								0.1 + weight * 0.8 + firstItemOpacityBoost,
 								0,
@@ -199,11 +202,26 @@ const CategoryRow = ({
 							return (
 								<motion.button
 									key={`${category.id}-${item.id}`}
-									onClick={() => onSelect(categoryIndex, itemIndex)}
-									animate={{ scale: baseScale, opacity: baseOpacity }}
-									whileHover={{ y: -4, scale: Math.min(baseScale + 0.04, 1.06), opacity: 1 }}
-									whileTap={{ scale: Math.max(baseScale - 0.03, 0.84) }}
-									transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+									onClick={() =>
+										onSelect(categoryIndex, itemIndex)
+									}
+									animate={{
+										scale: baseScale,
+										opacity: baseOpacity
+									}}
+									whileHover={{
+										y: -4,
+										scale: Math.min(baseScale + 0.04, 1.06),
+										opacity: 1
+									}}
+									whileTap={{
+										scale: Math.max(baseScale - 0.03, 0.84)
+									}}
+									transition={{
+										type: 'spring',
+										stiffness: 280,
+										damping: 22
+									}}
 									className="shrink-0 w-40 md:w-50 rounded-2xl p-3 md:p-4 text-left"
 									style={{
 										background: 'rgba(20, 10, 30, 1)',
@@ -237,9 +255,12 @@ export const GamesPage = () => {
 	const [viewer, setViewer] = useState<ViewerState | null>(null);
 	const [viewAllCategory, setViewAllCategory] = useState<number | null>(null);
 
-	const openViewer = useCallback((categoryIndex: number, itemIndex: number) => {
-		setViewer({ categoryIndex, itemIndex });
-	}, []);
+	const openViewer = useCallback(
+		(categoryIndex: number, itemIndex: number) => {
+			setViewer({ categoryIndex, itemIndex });
+		},
+		[]
+	);
 
 	const closeViewer = useCallback(() => {
 		setViewer(null);
@@ -318,15 +339,18 @@ export const GamesPage = () => {
 	const viewAllLabel =
 		viewAllCategory !== null ? categories[viewAllCategory].label : '';
 
-	const handleGridItemClick = useCallback((item: GridItem) => {
-		if (viewAllCategory === null) return;
-		const itemIndex = categories[viewAllCategory].items.findIndex(
-			i => i.id === item.id
-		);
-		if (itemIndex !== -1) {
-			setViewer({ categoryIndex: viewAllCategory, itemIndex });
-		}
-	}, [viewAllCategory, categories]);
+	const handleGridItemClick = useCallback(
+		(item: GridItem) => {
+			if (viewAllCategory === null) return;
+			const itemIndex = categories[viewAllCategory].items.findIndex(
+				i => i.id === item.id
+			);
+			if (itemIndex !== -1) {
+				setViewer({ categoryIndex: viewAllCategory, itemIndex });
+			}
+		},
+		[viewAllCategory, categories]
+	);
 
 	if (viewAllCategory !== null) {
 		return (
@@ -365,7 +389,7 @@ export const GamesPage = () => {
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							className="fixed inset-0 z-[80]"
+							className="fixed inset-0 z-80"
 						>
 							<div
 								className="absolute inset-0"
@@ -390,7 +414,8 @@ export const GamesPage = () => {
 										whileTap={{ scale: 0.97 }}
 										className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/85"
 										style={{
-											background: 'rgba(255,255,255,0.06)',
+											background:
+												'rgba(255,255,255,0.06)',
 											border: '1px solid rgba(255,255,255,0.16)'
 										}}
 									>
@@ -409,7 +434,8 @@ export const GamesPage = () => {
 											whileTap={{ scale: 0.93 }}
 											className="h-10 w-10 rounded-full flex items-center justify-center"
 											style={{
-												background: 'rgba(255,255,255,0.06)',
+												background:
+													'rgba(255,255,255,0.06)',
 												border: '1px solid rgba(255,255,255,0.16)'
 											}}
 										>
@@ -421,7 +447,8 @@ export const GamesPage = () => {
 											whileTap={{ scale: 0.93 }}
 											className="h-10 w-10 rounded-full flex items-center justify-center"
 											style={{
-												background: 'rgba(255,255,255,0.06)',
+												background:
+													'rgba(255,255,255,0.06)',
 												border: '1px solid rgba(255,255,255,0.16)'
 											}}
 										>
@@ -432,21 +459,40 @@ export const GamesPage = () => {
 
 								<div className="relative flex-1 mt-5 overflow-hidden">
 									<motion.div
-										animate={{ x: `-${viewer.itemIndex * (100 / viewerItems.length)}%` }}
-										transition={{ type: 'spring', stiffness: 520, damping: 58, mass: 0.8 }}
+										animate={{
+											x: `-${viewer.itemIndex * (100 / viewerItems.length)}%`
+										}}
+										transition={{
+											type: 'spring',
+											stiffness: 520,
+											damping: 58,
+											mass: 0.8
+										}}
 										className="absolute inset-0 flex"
-										style={{ width: `${viewerItems.length * 100}%` }}
+										style={{
+											width: `${viewerItems.length * 100}%`
+										}}
 									>
 										{viewerItems.map((item, index) => (
 											<div
 												key={`${item.id}-${index}`}
 												className="h-full shrink-0 px-1 md:px-3"
-												style={{ width: `${100 / viewerItems.length}%` }}
+												style={{
+													width: `${100 / viewerItems.length}%`
+												}}
 											>
 												<motion.article
-													initial={{ opacity: 0.7, scale: 0.98 }}
-													animate={{ opacity: 1, scale: 1 }}
-													transition={{ duration: 0.22 }}
+													initial={{
+														opacity: 0.7,
+														scale: 0.98
+													}}
+													animate={{
+														opacity: 1,
+														scale: 1
+													}}
+													transition={{
+														duration: 0.22
+													}}
 													className="h-full rounded-3xl p-6 md:p-10 flex flex-col justify-between"
 													style={{
 														background: `rgba(11, 8, 16, 0.97)`,
@@ -463,13 +509,33 @@ export const GamesPage = () => {
 															{item.title}
 														</h3>
 														<p className="mt-3 max-w-xl text-sm md:text-base text-white/56">
-															Placeholder fullscreen carousel panel.
+															Placeholder
+															fullscreen carousel
+															panel.
 														</p>
 													</div>
 													<div className="grid grid-cols-3 gap-3 max-w-sm">
-														<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
-														<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
-														<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
+														<div
+															className="h-14 rounded-xl"
+															style={{
+																background:
+																	'rgba(255,255,255,0.08)'
+															}}
+														/>
+														<div
+															className="h-14 rounded-xl"
+															style={{
+																background:
+																	'rgba(255,255,255,0.08)'
+															}}
+														/>
+														<div
+															className="h-14 rounded-xl"
+															style={{
+																background:
+																	'rgba(255,255,255,0.08)'
+															}}
+														/>
 													</div>
 												</motion.article>
 											</div>
@@ -479,21 +545,28 @@ export const GamesPage = () => {
 
 								<div className="mt-4 flex items-center justify-center gap-2 overflow-x-auto px-2">
 									{viewerItems.map((item, index) => {
-										const isActive = viewer.itemIndex === index;
+										const isActive =
+											viewer.itemIndex === index;
 										return (
 											<motion.button
 												key={`viewer-dot-${item.id}`}
 												onClick={() =>
 													setViewer(prev =>
 														prev
-															? { ...prev, itemIndex: index }
+															? {
+																	...prev,
+																	itemIndex:
+																		index
+																}
 															: prev
 													)
 												}
 												whileHover={{ scale: 1.15 }}
 												whileTap={{ scale: 0.9 }}
 												className="h-2.5 rounded-full shrink-0"
-												animate={{ width: isActive ? 24 : 10 }}
+												animate={{
+													width: isActive ? 24 : 10
+												}}
 												style={{
 													background: isActive
 														? 'rgba(203,166,247,0.95)'
@@ -516,7 +589,7 @@ export const GamesPage = () => {
 
 	return (
 		<div className="relative h-full w-full overflow-y-auto px-5 py-6 md:px-10 md:py-8">
-			<div className="mx-auto max-w-[1400px] pb-10">
+			<div className="mx-auto max-w-350 pb-10">
 				<motion.header
 					initial={{ opacity: 0, y: 12 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -551,7 +624,7 @@ export const GamesPage = () => {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						className="fixed inset-0 z-[80]"
+						className="fixed inset-0 z-80"
 					>
 						<div
 							className="absolute inset-0"
@@ -595,7 +668,8 @@ export const GamesPage = () => {
 										whileTap={{ scale: 0.93 }}
 										className="h-10 w-10 rounded-full flex items-center justify-center"
 										style={{
-											background: 'rgba(255,255,255,0.06)',
+											background:
+												'rgba(255,255,255,0.06)',
 											border: '1px solid rgba(255,255,255,0.16)'
 										}}
 									>
@@ -607,7 +681,8 @@ export const GamesPage = () => {
 										whileTap={{ scale: 0.93 }}
 										className="h-10 w-10 rounded-full flex items-center justify-center"
 										style={{
-											background: 'rgba(255,255,255,0.06)',
+											background:
+												'rgba(255,255,255,0.06)',
 											border: '1px solid rgba(255,255,255,0.16)'
 										}}
 									>
@@ -618,20 +693,37 @@ export const GamesPage = () => {
 
 							<div className="relative flex-1 mt-5 overflow-hidden">
 								<motion.div
-									animate={{ x: `-${viewer.itemIndex * (100 / viewerItems.length)}%` }}
-									transition={{ type: 'spring', stiffness: 520, damping: 58, mass: 0.8 }}
+									animate={{
+										x: `-${viewer.itemIndex * (100 / viewerItems.length)}%`
+									}}
+									transition={{
+										type: 'spring',
+										stiffness: 520,
+										damping: 58,
+										mass: 0.8
+									}}
 									className="absolute inset-0 flex"
-									style={{ width: `${viewerItems.length * 100}%` }}
+									style={{
+										width: `${viewerItems.length * 100}%`
+									}}
 								>
 									{viewerItems.map((item, index) => (
 										<div
 											key={`${item.id}-${index}`}
 											className="h-full shrink-0 px-1 md:px-3"
-											style={{ width: `${100 / viewerItems.length}%` }}
+											style={{
+												width: `${100 / viewerItems.length}%`
+											}}
 										>
 											<motion.article
-												initial={{ opacity: 0.7, scale: 0.98 }}
-												animate={{ opacity: 1, scale: 1 }}
+												initial={{
+													opacity: 0.7,
+													scale: 0.98
+												}}
+												animate={{
+													opacity: 1,
+													scale: 1
+												}}
 												transition={{ duration: 0.22 }}
 												className="h-full rounded-3xl p-6 md:p-10 flex flex-col justify-between"
 												style={{
@@ -649,13 +741,32 @@ export const GamesPage = () => {
 														{item.title}
 													</h3>
 													<p className="mt-3 max-w-xl text-sm md:text-base text-white/56">
-														Placeholder fullscreen carousel panel.
+														Placeholder fullscreen
+														carousel panel.
 													</p>
 												</div>
 												<div className="grid grid-cols-3 gap-3 max-w-sm">
-													<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
-													<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
-													<div className="h-14 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
+													<div
+														className="h-14 rounded-xl"
+														style={{
+															background:
+																'rgba(255,255,255,0.08)'
+														}}
+													/>
+													<div
+														className="h-14 rounded-xl"
+														style={{
+															background:
+																'rgba(255,255,255,0.08)'
+														}}
+													/>
+													<div
+														className="h-14 rounded-xl"
+														style={{
+															background:
+																'rgba(255,255,255,0.08)'
+														}}
+													/>
 												</div>
 											</motion.article>
 										</div>
@@ -672,14 +783,19 @@ export const GamesPage = () => {
 											onClick={() =>
 												setViewer(prev =>
 													prev
-														? { ...prev, itemIndex: index }
+														? {
+																...prev,
+																itemIndex: index
+															}
 														: prev
 												)
 											}
 											whileHover={{ scale: 1.15 }}
 											whileTap={{ scale: 0.9 }}
 											className="h-2.5 rounded-full shrink-0"
-											animate={{ width: isActive ? 24 : 10 }}
+											animate={{
+												width: isActive ? 24 : 10
+											}}
 											style={{
 												background: isActive
 													? 'rgba(203,166,247,0.95)'

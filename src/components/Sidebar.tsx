@@ -46,7 +46,7 @@ const VDivider = ({
 				filter: blur > 0 ? `blur(${blur}px)` : undefined,
 				transform,
 				pointerEvents: 'none',
-				margin: '-2px 0 0 0',
+				margin: '-2px 0 0 0'
 			}}
 		>
 			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
@@ -243,11 +243,15 @@ export const Sidebar = ({
 
 	const measurePosition = useCallback(() => {
 		const container = navContainerRef.current;
-		const btn = buttonRefs.current[activeItem] || buttonRefs.current[navItems[0].id];
+		const btn =
+			buttonRefs.current[activeItem] ||
+			buttonRefs.current[navItems[0].id];
 		if (!container || !btn) return;
 		const containerRect = container.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
-		setIndicatorY(btnRect.top - containerRect.top + btnRect.height / 2 - 20);
+		setIndicatorY(
+			btnRect.top - containerRect.top + btnRect.height / 2 - 20
+		);
 	}, [activeItem]);
 
 	useEffect(() => {
@@ -306,32 +310,39 @@ export const Sidebar = ({
 				>
 					<motion.div
 						className="absolute top-0 left-1/2 w-10 h-10 rounded-full pointer-events-none z-20"
-							style={{
-								background: 'rgba(255, 255, 255, 0.04)',
-								boxShadow:
-									'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
-								x: '-50%'
-							}}
-							initial={false}
-							animate={{
-								y: isHome ? 10 : indicatorY,
-								scaleX: 1,
-								scaleY: 1,
-								opacity: isHome ? 0 : 1
-							}}
-							transition={{
-								y: {
-									type: isHome ? 'tween' : 'spring',
-									stiffness: 550,
-									damping: 25,
-									mass: 1
-								},
-								scaleX: { type: 'spring', stiffness: 600, damping: 20 },
-								scaleY: { type: 'spring', stiffness: 600, damping: 20 },
-								opacity: { duration: 0.15 }
-							}}
-						/>
-
+						style={{
+							background: 'rgba(255, 255, 255, 0.04)',
+							boxShadow:
+								'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
+							x: '-50%'
+						}}
+						initial={false}
+						animate={{
+							y: isHome ? 10 : indicatorY,
+							scaleX: 1,
+							scaleY: 1,
+							opacity: isHome ? 0 : 1
+						}}
+						transition={{
+							y: {
+								type: isHome ? 'tween' : 'spring',
+								stiffness: 550,
+								damping: 25,
+								mass: 1
+							},
+							scaleX: {
+								type: 'spring',
+								stiffness: 600,
+								damping: 20
+							},
+							scaleY: {
+								type: 'spring',
+								stiffness: 600,
+								damping: 20
+							},
+							opacity: { duration: 0.15 }
+						}}
+					/>
 
 					<motion.button
 						whileHover={{ scale: 1.1 }}
@@ -366,7 +377,9 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
-								ref={el => { buttonRefs.current[item.id] = el; }}
+								ref={el => {
+									buttonRefs.current[item.id] = el;
+								}}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
@@ -403,7 +416,9 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
-								ref={el => { buttonRefs.current[item.id] = el; }}
+								ref={el => {
+									buttonRefs.current[item.id] = el;
+								}}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}

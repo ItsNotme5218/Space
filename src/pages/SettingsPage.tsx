@@ -4,16 +4,15 @@ import { EyeOff, Gauge, Globe, ChevronDown, Palette, Info } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
-const soft   = { type: 'spring' as const, stiffness: 200, damping: 22 };
+const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
 
 const tabs = [
-	{ id: 'cloak',  label: 'Cloaking',   icon: EyeOff  },
-	{ id: 'appear', label: 'Appearance',  icon: Palette },
-	{ id: 'perf',   label: 'Performance', icon: Gauge   },
-	{ id: 'proxy',  label: 'Proxy',       icon: Globe   },
-	{ id: 'about',  label: 'About',       icon: Info    },
+	{ id: 'cloak', label: 'Cloaking', icon: EyeOff },
+	{ id: 'appear', label: 'Appearance', icon: Palette },
+	{ id: 'perf', label: 'Performance', icon: Gauge },
+	{ id: 'proxy', label: 'Proxy', icon: Globe },
+	{ id: 'about', label: 'About', icon: Info }
 ];
-
 
 const Toggle = ({ on, set }: { on: boolean; set: (v: boolean) => void }) => (
 	<motion.button
@@ -21,10 +20,12 @@ const Toggle = ({ on, set }: { on: boolean; set: (v: boolean) => void }) => (
 		onClick={() => set(!on)}
 		className="relative w-12 h-7 rounded-full cursor-pointer shrink-0"
 		animate={{
-			backgroundColor: on ? 'rgba(139,92,246,0.55)' : 'rgba(255,255,255,0.06)',
+			backgroundColor: on
+				? 'rgba(139,92,246,0.55)'
+				: 'rgba(255,255,255,0.06)',
 			boxShadow: on
 				? '0 0 14px rgba(139,92,246,0.35), inset 0 0 6px rgba(139,92,246,0.2)'
-				: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+				: 'inset 0 1px 3px rgba(0,0,0,0.3)'
 		}}
 		transition={spring}
 	>
@@ -37,7 +38,15 @@ const Toggle = ({ on, set }: { on: boolean; set: (v: boolean) => void }) => (
 	</motion.button>
 );
 
-const Select = ({ value, options, onChange }: { value: string; options: string[]; onChange: (v: string) => void }) => {
+const Select = ({
+	value,
+	options,
+	onChange
+}: {
+	value: string;
+	options: string[];
+	onChange: (v: string) => void;
+}) => {
 	const [open, setOpen] = useState(false);
 	return (
 		<div className="relative shrink-0 exception">
@@ -47,11 +56,14 @@ const Select = ({ value, options, onChange }: { value: string; options: string[]
 				className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm text-white/50 cursor-pointer"
 				style={{
 					background: 'rgba(255,255,255,0.04)',
-					border: '1px solid rgba(255,255,255,0.07)',
+					border: '1px solid rgba(255,255,255,0.07)'
 				}}
 			>
 				{value}
-				<motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }}>
+				<motion.span
+					animate={{ rotate: open ? 180 : 0 }}
+					transition={{ duration: 0.15 }}
+				>
 					<ChevronDown className="w-4 h-4 text-white/25" />
 				</motion.span>
 			</motion.button>
@@ -67,20 +79,40 @@ const Select = ({ value, options, onChange }: { value: string; options: string[]
 							background: 'rgba(14,14,18,0.96)',
 							border: '1px solid rgba(255,255,255,0.06)',
 							boxShadow: '0 20px 60px -12px rgba(0,0,0,0.8)',
-							backdropFilter: 'blur(4px)',
+							backdropFilter: 'blur(4px)'
 						}}
 					>
 						{options.map(o => (
 							<button
 								key={o}
-								onClick={() => { onChange(o); setOpen(false); }}
+								onClick={() => {
+									onChange(o);
+									setOpen(false);
+								}}
 								className="block w-full text-left px-5 py-3 text-sm cursor-pointer transition-colors"
 								style={{
-									color: o === value ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-									backgroundColor: o === value ? 'rgba(139,92,246,0.08)' : 'transparent',
+									color:
+										o === value
+											? '#a78bfa'
+											: 'rgba(255,255,255,0.4)',
+									backgroundColor:
+										o === value
+											? 'rgba(139,92,246,0.08)'
+											: 'transparent'
 								}}
-								onMouseEnter={e => { if (o !== value) (e.target as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
-								onMouseLeave={e => { if (o !== value) (e.target as HTMLElement).style.backgroundColor = 'transparent'; }}
+								onMouseEnter={e => {
+									if (o !== value)
+										(
+											e.target as HTMLElement
+										).style.backgroundColor =
+											'rgba(255,255,255,0.03)';
+								}}
+								onMouseLeave={e => {
+									if (o !== value)
+										(
+											e.target as HTMLElement
+										).style.backgroundColor = 'transparent';
+								}}
 							>
 								{o}
 							</button>
@@ -92,35 +124,57 @@ const Select = ({ value, options, onChange }: { value: string; options: string[]
 	);
 };
 
-const Btn = ({ children, onClick, variant = 'primary' }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'ghost' }) => (
+const Btn = ({
+	children,
+	onClick,
+	variant = 'primary'
+}: {
+	children: ReactNode;
+	onClick?: () => void;
+	variant?: 'primary' | 'ghost';
+}) => (
 	<motion.button
 		whileHover={{ scale: 1.04 }}
 		whileTap={{ scale: 0.96 }}
 		onClick={onClick}
 		className="px-6 py-2.5 rounded-xl text-sm font-semibold cursor-pointer shrink-0"
-		style={variant === 'ghost' ? {
-			background: 'rgba(255,255,255,0.04)',
-			border: '1px solid rgba(255,255,255,0.07)',
-			color: 'rgba(255,255,255,0.45)',
-		} : {
-			background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
-			border: '1px solid rgba(139,92,246,0.22)',
-			color: '#c4b5fd',
-			boxShadow: '0 0 16px rgba(139,92,246,0.15)',
-		}}
+		style={
+			variant === 'ghost'
+				? {
+						background: 'rgba(255,255,255,0.04)',
+						border: '1px solid rgba(255,255,255,0.07)',
+						color: 'rgba(255,255,255,0.45)'
+					}
+				: {
+						background:
+							'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
+						border: '1px solid rgba(139,92,246,0.22)',
+						color: '#c4b5fd',
+						boxShadow: '0 0 16px rgba(139,92,246,0.15)'
+					}
+		}
 	>
 		{children}
 	</motion.button>
 );
 
-
-const Section = ({ title, children, delay = 0 }: { title: string; children: ReactNode; delay?: number }) => (
+const Section = ({
+	title,
+	children,
+	delay = 0
+}: {
+	title: string;
+	children: ReactNode;
+	delay?: number;
+}) => (
 	<motion.section
 		initial={{ opacity: 0, y: 20 }}
 		animate={{ opacity: 1, y: 0 }}
 		transition={{ ...soft, delay }}
 	>
-		<h3 className="text-xs font-semibold uppercase tracking-widest text-white/20 mb-5 pl-1">{title}</h3>
+		<h3 className="text-xs font-semibold uppercase tracking-widest text-white/20 mb-5 pl-1">
+			{title}
+		</h3>
 		<div
 			className="rounded-2xl divide-y divide-white/[0.04]"
 			style={{
@@ -128,7 +182,8 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 				border: '1px solid rgba(255,255,255,0.06)',
 				backdropFilter: 'blur(48px)',
 				WebkitBackdropFilter: 'blur(48px)',
-				boxShadow: '0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
+				boxShadow:
+					'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
 			}}
 		>
 			{children}
@@ -136,25 +191,41 @@ const Section = ({ title, children, delay = 0 }: { title: string; children: Reac
 	</motion.section>
 );
 
-const Row = ({ label, desc, children }: { label: string; desc?: string; children: ReactNode }) => (
+const Row = ({
+	label,
+	desc,
+	children
+}: {
+	label: string;
+	desc?: string;
+	children: ReactNode;
+}) => (
 	<div className="flex items-center justify-between px-8 py-6 group transition-colors duration-150 hover:bg-white/[0.02]">
 		<div className="flex flex-col gap-1 mr-8 min-w-0">
-			<span className="text-[15px] text-white/75 font-medium group-hover:text-white/90 transition-colors duration-150">{label}</span>
-			{desc && <span className="text-sm text-white/25 leading-relaxed">{desc}</span>}
+			<span className="text-[15px] text-white/75 font-medium group-hover:text-white/90 transition-colors duration-150">
+				{label}
+			</span>
+			{desc && (
+				<span className="text-sm text-white/25 leading-relaxed">
+					{desc}
+				</span>
+			)}
 		</div>
 		{children}
 	</div>
 );
 
-
 const CloakPanel = () => {
 	const [autoBlank, setAutoBlank] = useLocalStorage('autoAboutBlank', false);
-	const [autoBlob, setAutoBlob]   = useLocalStorage('autoBlob', false);
-	const [tabCloak, setTabCloak]   = useLocalStorage('tabCloak', 'None');
+	const [autoBlob, setAutoBlob] = useLocalStorage('autoBlob', false);
+	const [tabCloak, setTabCloak] = useLocalStorage('tabCloak', 'None');
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Quick Actions" delay={0.0}>
-				<Row label="About:Blank" desc="Open site inside a hidden blank tab">
+				<Row
+					label="About:Blank"
+					desc="Open site inside a hidden blank tab"
+				>
 					<Btn>Launch</Btn>
 				</Row>
 				<Row label="Blob Cloak" desc="Use a temporary blob URL to hide">
@@ -163,19 +234,46 @@ const CloakPanel = () => {
 			</Section>
 
 			<Section title="Automatic Cloaking" delay={0.06}>
-				<Row label="Auto About:Blank" desc="Cloak automatically when the page loads">
-					<Toggle on={autoBlank} set={v => { setAutoBlank(v); if (v) setAutoBlob(false); }} />
+				<Row
+					label="Auto About:Blank"
+					desc="Cloak automatically when the page loads"
+				>
+					<Toggle
+						on={autoBlank}
+						set={v => {
+							setAutoBlank(v);
+							if (v) setAutoBlob(false);
+						}}
+					/>
 				</Row>
-				<Row label="Auto Blob" desc="Use blob cloaking automatically on load">
-					<Toggle on={autoBlob} set={v => { setAutoBlob(v); if (v) setAutoBlank(false); }} />
+				<Row
+					label="Auto Blob"
+					desc="Use blob cloaking automatically on load"
+				>
+					<Toggle
+						on={autoBlob}
+						set={v => {
+							setAutoBlob(v);
+							if (v) setAutoBlank(false);
+						}}
+					/>
 				</Row>
 			</Section>
 
 			<Section title="Tab Disguise" delay={0.12}>
-				<Row label="Disguise Preset" desc="Change tab title and favicon to look like another site">
+				<Row
+					label="Disguise Preset"
+					desc="Change tab title and favicon to look like another site"
+				>
 					<Select
 						value={tabCloak}
-						options={['None', 'Desmos', 'Google Classroom', 'Google Drive', 'Khan Academy']}
+						options={[
+							'None',
+							'Desmos',
+							'Google Classroom',
+							'Google Drive',
+							'Khan Academy'
+						]}
 						onChange={setTabCloak}
 					/>
 				</Row>
@@ -186,31 +284,52 @@ const CloakPanel = () => {
 
 const AppearPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
-	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage(
+		'autoHideSidebar',
+		true
+	);
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Layout" delay={0.0}>
-				<Row label="Auto-hide Sidebar" desc="Sidebar slides away when not hovered">
+				<Row
+					label="Auto-hide Sidebar"
+					desc="Sidebar slides away when not hovered"
+				>
 					<Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
 				</Row>
 			</Section>
 
 			<Section title="Visual Effects" delay={0.06}>
-				<Row label="Starfield Particles" desc="Animated star background on the home page">
+				<Row
+					label="Starfield Particles"
+					desc="Animated star background on the home page"
+				>
 					<Toggle on={particles} set={setParticles} />
 				</Row>
 			</Section>
 
 			<Section title="Theme" delay={0.12}>
-				<Row label="Accent Color" desc="Primary color used across the UI">
+				<Row
+					label="Accent Color"
+					desc="Primary color used across the UI"
+				>
 					<div className="flex gap-2.5">
-						{['#8b5cf6', '#ec4899', '#06b6d4', '#22c55e', '#f59e0b'].map(c => (
+						{[
+							'#8b5cf6',
+							'#ec4899',
+							'#06b6d4',
+							'#22c55e',
+							'#f59e0b'
+						].map(c => (
 							<button
 								key={c}
 								className="w-7 h-7 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/20 transition-all duration-150"
 								style={{
 									background: c,
-									boxShadow: c === '#8b5cf6' ? `0 0 10px ${c}50` : 'none',
+									boxShadow:
+										c === '#8b5cf6'
+											? `0 0 10px ${c}50`
+											: 'none'
 								}}
 							/>
 						))}
@@ -226,7 +345,10 @@ const PerfPanel = () => {
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Rendering" delay={0.0}>
-				<Row label="Reduce Animations" desc="Disable starfield and other effects on low-end devices">
+				<Row
+					label="Reduce Animations"
+					desc="Disable starfield and other effects on low-end devices"
+				>
 					<Toggle on={!particles} set={v => setParticles(!v)} />
 				</Row>
 			</Section>
@@ -235,23 +357,44 @@ const PerfPanel = () => {
 };
 
 const ProxyPanel = () => {
-	const [proxy, setProxy]         = useLocalStorage('proxy', 'Scramjet');
+	const [proxy, setProxy] = useLocalStorage('proxy', 'Scramjet');
 	const [transport, setTransport] = useLocalStorage('transport', 'Libcurl');
-	const [engine, setEngine]       = useLocalStorage('searchEngine', 'DuckDuckGo');
+	const [engine, setEngine] = useLocalStorage('searchEngine', 'DuckDuckGo');
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Backend" delay={0.0}>
-				<Row label="Proxy Backend" desc="The core proxy engine powering your sessions">
-					<Select value={proxy} options={['Scramjet', 'Ultraviolet']} onChange={setProxy} />
+				<Row
+					label="Proxy Backend"
+					desc="The core proxy engine powering your sessions"
+				>
+					<Select
+						value={proxy}
+						options={['Scramjet', 'Ultraviolet']}
+						onChange={setProxy}
+					/>
 				</Row>
-				<Row label="Transport" desc="Network transport layer for data transfer">
-					<Select value={transport} options={['Libcurl', 'Epoxy']} onChange={setTransport} />
+				<Row
+					label="Transport"
+					desc="Network transport layer for data transfer"
+				>
+					<Select
+						value={transport}
+						options={['Libcurl', 'Epoxy']}
+						onChange={setTransport}
+					/>
 				</Row>
 			</Section>
 
 			<Section title="Search" delay={0.06}>
-				<Row label="Search Engine" desc="Default search provider for the address bar">
-					<Select value={engine} options={['DuckDuckGo', 'Google', 'Bing', 'Yahoo!']} onChange={setEngine} />
+				<Row
+					label="Search Engine"
+					desc="Default search provider for the address bar"
+				>
+					<Select
+						value={engine}
+						options={['DuckDuckGo', 'Google', 'Bing', 'Yahoo!']}
+						onChange={setEngine}
+					/>
 				</Row>
 			</Section>
 		</div>
@@ -281,13 +424,12 @@ const AboutPanel = () => (
 );
 
 const panels: Record<string, () => ReactNode> = {
-	cloak:  CloakPanel,
+	cloak: CloakPanel,
 	appear: AppearPanel,
-	perf:   PerfPanel,
-	proxy:  ProxyPanel,
-	about:  AboutPanel,
+	perf: PerfPanel,
+	proxy: ProxyPanel,
+	about: AboutPanel
 };
-
 
 export const SettingsPage = () => {
 	const [active, setActive] = useState('cloak');
@@ -296,7 +438,6 @@ export const SettingsPage = () => {
 	return (
 		<div className="h-full w-full overflow-y-auto">
 			<div className="min-h-full flex flex-col items-center px-10 pt-20 pb-24">
-
 				<motion.h1
 					initial={{ opacity: 0, y: -16 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -320,14 +461,14 @@ export const SettingsPage = () => {
 						initial={{ opacity: 0, y: -10 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ ...soft, delay: 0.06 }}
-					className="flex gap-2 p-2.5 rounded-2xl"
-					style={{
-						background: 'rgba(12,10,18,0.5)',
-						border: '1px solid rgba(255,255,255,0.05)',
-						backdropFilter: 'blur(40px)',
-						WebkitBackdropFilter: 'blur(40px)',
-						boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)',
-					}}
+						className="flex gap-2 p-2.5 rounded-2xl"
+						style={{
+							background: 'rgba(12,10,18,0.5)',
+							border: '1px solid rgba(255,255,255,0.05)',
+							backdropFilter: 'blur(40px)',
+							WebkitBackdropFilter: 'blur(40px)',
+							boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)'
+						}}
 					>
 						{tabs.map(t => {
 							const Icon = t.icon;
@@ -338,7 +479,11 @@ export const SettingsPage = () => {
 									onClick={() => setActive(t.id)}
 									whileTap={{ scale: 0.96 }}
 									className="relative flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm cursor-pointer z-10"
-									animate={{ color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)' }}
+									animate={{
+										color: isActive
+											? 'rgba(255,255,255,0.95)'
+											: 'rgba(255,255,255,0.35)'
+									}}
 									transition={{ duration: 0.15 }}
 								>
 									{isActive && (
@@ -346,15 +491,19 @@ export const SettingsPage = () => {
 											layoutId="settings-tab"
 											className="absolute inset-0 rounded-xl"
 											style={{
-												background: 'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
+												background:
+													'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
 												border: '1px solid rgba(139,92,246,0.18)',
-												boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)',
+												boxShadow:
+													'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)'
 											}}
 											transition={spring}
 										/>
 									)}
 									<Icon className="w-4 h-4 relative z-10" />
-									<span className="relative z-10 font-medium">{t.label}</span>
+									<span className="relative z-10 font-medium">
+										{t.label}
+									</span>
 								</motion.button>
 							);
 						})}
@@ -367,7 +516,8 @@ export const SettingsPage = () => {
 					transition={{ ...soft, delay: 0.1 }}
 					className="w-full max-w-3xl h-px mt-12 mb-14"
 					style={{
-						background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)',
+						background:
+							'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)'
 					}}
 				/>
 

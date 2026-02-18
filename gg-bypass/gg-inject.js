@@ -35,27 +35,27 @@
 				const o = `${e}-response`;
 				return new Promise((i, s) => {
 					const d = setTimeout(() => {
-							(window.removeEventListener(o, a),
+							window.removeEventListener(o, a),
 								s(
 									new Error(
 										`Timeout waiting for response of type ${o}`
 									)
-								));
+								);
 						}, n),
 						a = e => {
 							const t = e;
-							(t?.type === o && i(t?.detail.payload),
+							t?.type === o && i(t?.detail.payload),
 								window.removeEventListener(o, a),
-								clearTimeout(d));
+								clearTimeout(d);
 						};
-					(window.addEventListener(o, a),
+					window.addEventListener(o, a),
 						window.dispatchEvent(
 							new CustomEvent(e, {
 								detail: {
 									payload: t
 								}
 							})
-						));
+						);
 				});
 			},
 			addInjectionScriptListenerWithResponse: t => {
@@ -168,15 +168,15 @@
 					onCheckHealth: o.addInjectionScriptListenerWithResponse
 				}
 			});
-	(n.postMessageToTopFrameContentScript,
+	n.postMessageToTopFrameContentScript,
 		n.addPostMessageListener,
 		(() => {
 			let e = !1;
-			(l.beforeUnload.onOverrideBeforeUnload(() => {
-				((window.onbeforeunload = null), (e = !0));
+			l.beforeUnload.onOverrideBeforeUnload(() => {
+				(window.onbeforeunload = null), (e = !0);
 			}),
 				window.addEventListener('beforeunload', t => {
 					e && t.stopImmediatePropagation();
-				}));
-		})());
+				});
+		})();
 })();

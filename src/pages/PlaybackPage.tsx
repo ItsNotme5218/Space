@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { Gamepad2, LayoutGrid, Search as SearchIcon, Clock, Trash2, ExternalLink } from 'lucide-react';
+import {
+	Gamepad2,
+	LayoutGrid,
+	Search as SearchIcon,
+	Clock,
+	Trash2,
+	ExternalLink
+} from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
@@ -8,10 +15,10 @@ const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
 const tabs = [
 	{ id: 'games', label: 'Games', icon: Gamepad2 },
 	{ id: 'apps', label: 'Apps', icon: LayoutGrid },
-	{ id: 'searches', label: 'Searches', icon: SearchIcon },
+	{ id: 'searches', label: 'Searches', icon: SearchIcon }
 ] as const;
 
-type TabId = typeof tabs[number]['id'];
+type TabId = (typeof tabs)[number]['id'];
 
 interface HistoryEntry {
 	id: number;
@@ -34,7 +41,7 @@ const mockGameHistory: MediaEntry[] = Array.from({ length: 12 }, (_, i) => ({
 	title: `Game ${i + 1}`,
 	image: '',
 	timestamp: Date.now() - i * 3600000 * (1 + Math.random() * 5),
-	url: `https://example.com/game/${i + 1}`,
+	url: `https://example.com/game/${i + 1}`
 }));
 
 const mockAppHistory: MediaEntry[] = Array.from({ length: 10 }, (_, i) => ({
@@ -42,16 +49,19 @@ const mockAppHistory: MediaEntry[] = Array.from({ length: 10 }, (_, i) => ({
 	title: `App ${i + 1}`,
 	image: '',
 	timestamp: Date.now() - i * 3600000 * (2 + Math.random() * 8),
-	url: `https://example.com/app/${i + 1}`,
+	url: `https://example.com/app/${i + 1}`
 }));
 
-const mockSearchHistory: HistoryEntry[] = Array.from({ length: 20 }, (_, i) => ({
-	id: i + 200,
-	title: `Search result ${i + 1}`,
-	url: `https://example.com/search?q=query+${i + 1}`,
-	timestamp: Date.now() - i * 1800000 * (1 + Math.random() * 3),
-	favicon: undefined,
-}));
+const mockSearchHistory: HistoryEntry[] = Array.from(
+	{ length: 20 },
+	(_, i) => ({
+		id: i + 200,
+		title: `Search result ${i + 1}`,
+		url: `https://example.com/search?q=query+${i + 1}`,
+		timestamp: Date.now() - i * 1800000 * (1 + Math.random() * 3),
+		favicon: undefined
+	})
+);
 
 const formatTimestamp = (ts: number): string => {
 	const diff = Date.now() - ts;
@@ -66,7 +76,9 @@ const formatTimestamp = (ts: number): string => {
 	return new Date(ts).toLocaleDateString();
 };
 
-const groupByDay = <T extends { timestamp: number }>(items: T[]): Map<string, T[]> => {
+const groupByDay = <T extends { timestamp: number }>(
+	items: T[]
+): Map<string, T[]> => {
 	const groups = new Map<string, T[]>();
 	const now = new Date();
 	const today = new Date(now);
@@ -100,15 +112,17 @@ const MediaCard = ({ entry, delay }: { entry: MediaEntry; delay: number }) => (
 		style={{
 			background: 'rgba(12,10,18,0.55)',
 			border: '1px solid rgba(255,255,255,0.06)',
-			boxShadow: '0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
+			boxShadow:
+				'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
 		}}
 		onClick={e => e.preventDefault()}
 	>
 		<div
 			className="w-full aspect-video"
 			style={{
-				background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(255,255,255,0.03))',
-				borderBottom: '1px solid rgba(255,255,255,0.04)',
+				background:
+					'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(255,255,255,0.03))',
+				borderBottom: '1px solid rgba(255,255,255,0.04)'
 			}}
 		/>
 		<div className="px-4 py-3 flex items-start justify-between gap-2">
@@ -116,7 +130,9 @@ const MediaCard = ({ entry, delay }: { entry: MediaEntry; delay: number }) => (
 				<p className="text-[14px] text-white/80 font-medium truncate group-hover:text-white/95 transition-colors duration-150">
 					{entry.title}
 				</p>
-				<p className="text-[12px] text-white/25 mt-0.5">{formatTimestamp(entry.timestamp)}</p>
+				<p className="text-[12px] text-white/25 mt-0.5">
+					{formatTimestamp(entry.timestamp)}
+				</p>
 			</div>
 			<motion.div
 				className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -131,7 +147,7 @@ const MediaCard = ({ entry, delay }: { entry: MediaEntry; delay: number }) => (
 const SearchEntry = ({
 	entry,
 	delay,
-	onDelete,
+	onDelete
 }: {
 	entry: HistoryEntry;
 	delay: number;
@@ -148,7 +164,14 @@ const SearchEntry = ({
 		<motion.div
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+			exit={{
+				opacity: 0,
+				x: -20,
+				height: 0,
+				marginBottom: 0,
+				paddingTop: 0,
+				paddingBottom: 0
+			}}
 			transition={{ ...soft, delay }}
 			className="group flex items-center gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/[0.02] rounded-xl"
 		>
@@ -156,11 +179,15 @@ const SearchEntry = ({
 				className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
 				style={{
 					background: 'rgba(139,92,246,0.1)',
-					border: '1px solid rgba(139,92,246,0.15)',
+					border: '1px solid rgba(139,92,246,0.15)'
 				}}
 			>
 				{entry.favicon ? (
-					<img src={entry.favicon} alt="" className="w-4 h-4 rounded-sm" />
+					<img
+						src={entry.favicon}
+						alt=""
+						className="w-4 h-4 rounded-sm"
+					/>
 				) : (
 					<Clock className="w-3.5 h-3.5 text-violet-300/60" />
 				)}
@@ -170,7 +197,9 @@ const SearchEntry = ({
 				<p className="text-[14px] text-white/75 font-medium truncate group-hover:text-white/90 transition-colors duration-150">
 					{entry.title}
 				</p>
-				<p className="text-[12px] text-white/20 truncate mt-0.5">{hostname}</p>
+				<p className="text-[12px] text-white/20 truncate mt-0.5">
+					{hostname}
+				</p>
 			</div>
 
 			<span className="text-[11px] text-white/20 shrink-0 font-mono tabular-nums">
@@ -206,7 +235,11 @@ const MediaPanel = ({ items, type }: { items: MediaEntry[]; type: string }) => {
 					</h3>
 					<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
 						{entries.map((entry, i) => (
-							<MediaCard key={`${type}-${entry.id}`} entry={entry} delay={i * 0.03} />
+							<MediaCard
+								key={`${type}-${entry.id}`}
+								entry={entry}
+								delay={i * 0.03}
+							/>
 						))}
 					</div>
 				</motion.section>
@@ -236,7 +269,7 @@ const SearchPanel = () => {
 		? entries.filter(
 				e =>
 					e.title.toLowerCase().includes(query.toLowerCase()) ||
-					e.url.toLowerCase().includes(query.toLowerCase()),
+					e.url.toLowerCase().includes(query.toLowerCase())
 			)
 		: entries;
 
@@ -251,7 +284,7 @@ const SearchPanel = () => {
 				className="flex items-center gap-3 px-5 py-3 rounded-xl"
 				style={{
 					background: 'rgba(12,10,18,0.55)',
-					border: '1px solid rgba(255,255,255,0.06)',
+					border: '1px solid rgba(255,255,255,0.06)'
 				}}
 			>
 				<SearchIcon className="w-4 h-4 text-white/20 shrink-0" />
@@ -262,7 +295,9 @@ const SearchPanel = () => {
 					placeholder="Filter history..."
 					spellCheck={false}
 					className="flex-1 bg-transparent border-none outline-none text-[13px] text-white/70 placeholder:text-white/15"
-					style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif" }}
+					style={{
+						fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif"
+					}}
 				/>
 				{query && (
 					<motion.button
@@ -294,7 +329,8 @@ const SearchPanel = () => {
 							border: '1px solid rgba(255,255,255,0.06)',
 							backdropFilter: 'blur(48px)',
 							WebkitBackdropFilter: 'blur(48px)',
-							boxShadow: '0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
+							boxShadow:
+								'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
 						}}
 					>
 						<AnimatePresence mode="popLayout">
@@ -327,7 +363,7 @@ const SearchPanel = () => {
 const panels: Record<TabId, () => React.ReactNode> = {
 	games: () => <MediaPanel items={mockGameHistory} type="game" />,
 	apps: () => <MediaPanel items={mockAppHistory} type="app" />,
-	searches: () => <SearchPanel />,
+	searches: () => <SearchPanel />
 };
 
 export const PlaybackPage = () => {
@@ -366,7 +402,7 @@ export const PlaybackPage = () => {
 							border: '1px solid rgba(255,255,255,0.05)',
 							backdropFilter: 'blur(40px)',
 							WebkitBackdropFilter: 'blur(40px)',
-							boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)',
+							boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)'
 						}}
 					>
 						{tabs.map(t => {
@@ -378,7 +414,11 @@ export const PlaybackPage = () => {
 									onClick={() => setActive(t.id)}
 									whileTap={{ scale: 0.96 }}
 									className="relative flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm cursor-pointer z-10"
-									animate={{ color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)' }}
+									animate={{
+										color: isActive
+											? 'rgba(255,255,255,0.95)'
+											: 'rgba(255,255,255,0.35)'
+									}}
 									transition={{ duration: 0.15 }}
 								>
 									{isActive && (
@@ -386,15 +426,19 @@ export const PlaybackPage = () => {
 											layoutId="playback-tab"
 											className="absolute inset-0 rounded-xl"
 											style={{
-												background: 'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
+												background:
+													'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
 												border: '1px solid rgba(139,92,246,0.18)',
-												boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)',
+												boxShadow:
+													'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)'
 											}}
 											transition={spring}
 										/>
 									)}
 									<Icon className="w-4 h-4 relative z-10" />
-									<span className="relative z-10 font-medium">{t.label}</span>
+									<span className="relative z-10 font-medium">
+										{t.label}
+									</span>
 								</motion.button>
 							);
 						})}
@@ -407,7 +451,8 @@ export const PlaybackPage = () => {
 					transition={{ ...soft, delay: 0.1 }}
 					className="w-full max-w-4xl h-px mt-12 mb-14"
 					style={{
-						background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)',
+						background:
+							'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)'
 					}}
 				/>
 

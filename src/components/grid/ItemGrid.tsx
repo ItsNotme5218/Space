@@ -12,7 +12,12 @@ interface ItemGridProps {
 	onItemClick?: (item: GridItem) => void;
 }
 
-export const ItemGrid = ({ items, config, header, onItemClick }: ItemGridProps) => {
+export const ItemGrid = ({
+	items,
+	config,
+	header,
+	onItemClick
+}: ItemGridProps) => {
 	const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
 	const itemsPerPage = cols * rows;
 
@@ -84,14 +89,17 @@ export const ItemGrid = ({ items, config, header, onItemClick }: ItemGridProps) 
 		);
 	};
 
-	const handleCardClick = useCallback((id: number) => {
-		if (onItemClick) {
-			const item = items.find(i => i.id === id);
-			if (item) onItemClick(item);
-			return;
-		}
-		setExpandedId(prev => (prev === id ? null : id));
-	}, [onItemClick, items]);
+	const handleCardClick = useCallback(
+		(id: number) => {
+			if (onItemClick) {
+				const item = items.find(i => i.id === id);
+				if (item) onItemClick(item);
+				return;
+			}
+			setExpandedId(prev => (prev === id ? null : id));
+		},
+		[onItemClick, items]
+	);
 
 	const handleHoverStart = useCallback((id: number) => {
 		setHoveredId(id);

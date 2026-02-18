@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
-
 const ROUTE_ORDER: Record<string, number> = {
 	games: 0,
 	apps: 1,
@@ -17,7 +16,6 @@ const resolveDirection = (from: string, to: string): 1 | -1 => {
 	return b >= a ? 1 : -1;
 };
 
-
 const SPRING_ENTER = {
 	type: 'spring' as const,
 	stiffness: 380,
@@ -30,7 +28,6 @@ const SPRING_EXIT = {
 	damping: 34,
 	mass: 0.8
 };
-
 
 const wrapperStyle: React.CSSProperties = {
 	width: '100%',
@@ -87,7 +84,7 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
 				rotateY: SPRING_ENTER,
 				opacity: { duration: 0.22, ease: 'easeOut' },
 				filter: { duration: 0.25, ease: 'easeOut' },
-				
+
 				default: SPRING_EXIT
 			}}
 			style={wrapperStyle}
@@ -96,6 +93,5 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
 		</motion.div>
 	);
 };
-
 
 export const PageAnimation = PageTransition;

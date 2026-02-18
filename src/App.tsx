@@ -24,12 +24,8 @@ const App = () => {
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const nextIdRef = useRef(2);
 	const carouselRef = useRef<HTMLDivElement>(null);
-	const rawSessions = useRef<Session[]>([
-		{ id: 1, url: '' }
-	]);
-	const [sessions, setSessions] = useState<Session[]>([
-		{ id: 1, url: '' }
-	]);
+	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
+	const [sessions, setSessions] = useState<Session[]>([{ id: 1, url: '' }]);
 	const [activeSession, setActiveSession] = useState(1);
 
 	useEffect(() => {
@@ -39,7 +35,6 @@ const App = () => {
 	const handleNavClick = (id: string) => {
 		navigate(id === 'home' ? '/' : `/${id}`);
 	};
-
 
 	const handleAddSession = () => {
 		const newId = nextIdRef.current++;
@@ -111,14 +106,14 @@ const App = () => {
 					ref={carouselRef}
 					animate={{
 						scale: switching ? 0.85 : 1,
-						opacity: switching ? 0.7 : 1,
+						opacity: switching ? 0.7 : 1
 					}}
-				transition={{
-					type: 'spring',
-					stiffness: 170,
-					damping: 15,
-					mass: 0.4,
-				}}
+					transition={{
+						type: 'spring',
+						stiffness: 170,
+						damping: 15,
+						mass: 0.4
+					}}
 					className="absolute inset-2"
 					style={{
 						display: isPage ? 'none' : 'block',
@@ -128,11 +123,13 @@ const App = () => {
 					}}
 				>
 					<motion.div
-						animate={{ x: `${-activeIndex * (100 / sessions.length)}%` }}
+						animate={{
+							x: `${-activeIndex * (100 / sessions.length)}%`
+						}}
 						transition={{
 							type: 'spring',
 							stiffness: 650,
-							damping: 75,
+							damping: 75
 						}}
 						style={{
 							position: 'absolute',
@@ -140,7 +137,7 @@ const App = () => {
 							left: 0,
 							height: '100%',
 							display: 'flex',
-							width: `${sessions.length * 100}%`,
+							width: `${sessions.length * 100}%`
 						}}
 					>
 						{sessions.map((s, index) => {
@@ -153,11 +150,20 @@ const App = () => {
 										width: `${100 / sessions.length}%`,
 										height: '100%',
 										flexShrink: 0,
-										pointerEvents: isActive ? 'auto' : 'none',
-										opacity: isActive ? 1 : siblingsOpaque ? 0.7 : 0,
+										pointerEvents: isActive
+											? 'auto'
+											: 'none',
+										opacity: isActive
+											? 1
+											: siblingsOpaque
+												? 0.7
+												: 0,
 										transition: 'opacity 0.4s ease',
-										visibility: (isActive || siblingsVisible) ? 'visible' : 'hidden',
-										paddingLeft: '0px',
+										visibility:
+											isActive || siblingsVisible
+												? 'visible'
+												: 'hidden',
+										paddingLeft: '0px'
 									}}
 								>
 									{s.url ? (
@@ -169,9 +175,11 @@ const App = () => {
 											style={{
 												borderRadius: 12,
 												border: '1px solid rgba(255,255,255,0.06)',
-												background: 'rgba(24,20,28,0.2)',
+												background:
+													'rgba(24,20,28,0.2)',
 												backdropFilter: 'blur(4px)',
-												WebkitBackdropFilter: 'blur(4px)',
+												WebkitBackdropFilter:
+													'blur(4px)'
 											}}
 										/>
 									) : (
@@ -214,16 +222,27 @@ const App = () => {
 				<IntroSplash onComplete={() => setShowIntro(false)} />
 			)}
 
-			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
-			{!isSpecialPage && (
-				<div className="shrink-0" style={{ height: '3rem' }} />
-			)}
+			<div
+				className="relative flex flex-col h-full"
+				style={{ zIndex: 1 }}
+			>
+				{!isSpecialPage && (
+					<div className="shrink-0" style={{ height: '3rem' }} />
+				)}
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
 						animate={{
-							width: isSpecialPage ? 'calc(4rem + 8px)' : (!autoHideSidebar || sidebarHovered) ? 'calc(4rem + 8px)' : 0
+							width: isSpecialPage
+								? 'calc(4rem + 8px)'
+								: !autoHideSidebar || sidebarHovered
+									? 'calc(4rem + 8px)'
+									: 0
 						}}
-						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+						transition={{
+							type: 'spring',
+							stiffness: 300,
+							damping: 30
+						}}
 						className="shrink-0"
 					/>
 					<main className="flex-1 relative">
@@ -247,7 +266,9 @@ const App = () => {
 						activeSession={activeSession}
 						carouselRef={carouselRef}
 						onSetSessionUrl={(id, url) => {
-							const idx = rawSessions.current.findIndex(s => s.id === id);
+							const idx = rawSessions.current.findIndex(
+								s => s.id === id
+							);
 							if (idx !== -1) {
 								rawSessions.current[idx].url = url;
 								setSessions([...rawSessions.current]);

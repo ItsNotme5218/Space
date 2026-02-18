@@ -13,7 +13,7 @@ const shortcuts = [
 	{ name: 'Twitch', url: 'https://twitch.tv', color: '#9146FF' },
 	{ name: 'Twitter', url: 'https://x.com', color: '#1DA1F2' },
 	{ name: 'Netflix', url: 'https://netflix.com', color: '#E50914' },
-	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' },
+	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' }
 ];
 
 export const NewTab = () => {
@@ -26,7 +26,7 @@ export const NewTab = () => {
 				background: 'rgba(24, 20, 28, 0.2)',
 				backdropFilter: 'blur(4px)',
 				WebkitBackdropFilter: 'blur(4px)',
-				border: '1px solid rgba(255, 255, 255, 0.06)',
+				border: '1px solid rgba(255, 255, 255, 0.06)'
 			}}
 		>
 			<motion.div
@@ -43,7 +43,7 @@ export const NewTab = () => {
 							: '0 0 20px rgba(139, 92, 246, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4)',
 						borderColor: searchFocused
 							? 'rgba(139, 92, 246, 0.35)'
-							: 'rgba(255, 255, 255, 0.08)',
+							: 'rgba(255, 255, 255, 0.08)'
 					}}
 					transition={{ duration: 0.2 }}
 					className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
@@ -51,7 +51,7 @@ export const NewTab = () => {
 						background: 'rgba(255, 255, 255, 0.07)',
 						backdropFilter: 'blur(12px)',
 						WebkitBackdropFilter: 'blur(12px)',
-						border: '1px solid rgba(255, 255, 255, 0.08)',
+						border: '1px solid rgba(255, 255, 255, 0.08)'
 					}}
 				>
 					<Search
@@ -59,8 +59,10 @@ export const NewTab = () => {
 						style={{
 							width: 18,
 							height: 18,
-							color: searchFocused ? 'rgba(167, 139, 250, 0.7)' : 'rgba(255, 255, 255, 0.3)',
-							transition: 'color 0.2s',
+							color: searchFocused
+								? 'rgba(167, 139, 250, 0.7)'
+								: 'rgba(255, 255, 255, 0.3)',
+							transition: 'color 0.2s'
 						}}
 					/>
 					<input
@@ -71,8 +73,9 @@ export const NewTab = () => {
 						className="flex-1 bg-transparent border-none outline-none text-white/80 placeholder-white/25"
 						style={{
 							fontSize: 15,
-							fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
-							letterSpacing: '0.01em',
+							fontFamily:
+								"'DM Sans', 'Inter', system-ui, sans-serif",
+							letterSpacing: '0.01em'
 						}}
 					/>
 				</motion.div>
@@ -97,7 +100,7 @@ export const NewTab = () => {
 							transition={{ ...SPRING, delay: 0.2 + i * 0.04 }}
 							whileHover={{ scale: 1.06, y: -3 }}
 							whileTap={{ scale: 0.95 }}
-							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer transition-colors duration-150 hover:bg-white/[0.04]"
+							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer transition-colors duration-150 hover:bg-white/4"
 							style={{ textDecoration: 'none' }}
 						>
 							<div
@@ -105,14 +108,15 @@ export const NewTab = () => {
 								style={{
 									background: 'rgba(255, 255, 255, 0.06)',
 									border: '1px solid rgba(255, 255, 255, 0.07)',
-									boxShadow: `0 0 10px ${shortcut.color}15, 0 2px 6px rgba(0, 0, 0, 0.25)`,
+									boxShadow: `0 0 10px ${shortcut.color}15, 0 2px 6px rgba(0, 0, 0, 0.25)`
 								}}
 							>
 								<span
 									className="text-base font-bold"
 									style={{
 										color: shortcut.color,
-										fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
+										fontFamily:
+											"'DM Sans', 'Inter', system-ui, sans-serif"
 									}}
 								>
 									{shortcut.name[0]}
@@ -121,8 +125,9 @@ export const NewTab = () => {
 							<span
 								className="text-[11px] text-white/40 leading-none"
 								style={{
-									fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
-									letterSpacing: '0.02em',
+									fontFamily:
+										"'DM Sans', 'Inter', system-ui, sans-serif",
+									letterSpacing: '0.02em'
 								}}
 							>
 								{shortcut.name}
