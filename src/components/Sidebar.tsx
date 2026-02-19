@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sessions } from './Sessions';
-import {
-	Gamepad2,
-	LayoutGrid,
-	History,
-	Settings
-} from 'lucide-react';
+import { Gamepad2, LayoutGrid, History, Settings } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
 import logoImg from '@assets/logo.webp';
 

@@ -188,7 +188,7 @@ const App = () => {
 										<NewTab
 											data-true-frame-id={s.id - 1}
 											data-frame-id={index}
-									/>
+										/>
 									)}
 								</div>
 							);
