@@ -7,6 +7,7 @@ import { SpaceStars } from './components/SpaceStars';
 import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useTabCloak } from './hooks/useTabCloak';
 
 import './App.css';
 
@@ -16,6 +17,7 @@ export interface Session {
 }
 
 const App = () => {
+	useTabCloak();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';

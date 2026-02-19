@@ -23,13 +23,18 @@ const ENGINE_ORDER = [
 
 const SEARCH_ENGINES: Record<
 	string,
-	{ label: string; short: string; color: string }
+	{ label: string; short: string; color: string; letterColors?: string[] }
 > = {
 	DuckDuckGo: { label: 'DuckDuckGo', short: 'ddg', color: '#DE5833' },
-	Google: { label: 'Google', short: 'ggl', color: '#4285F4' },
+	Google: {
+		label: 'Google',
+		short: 'ggl',
+		color: '#4285F4',
+		letterColors: ['#EA4335', '#34A853', '#FBBC05']
+	},
 	Bing: { label: 'Bing', short: 'bng', color: '#00809D' },
 	Brave: { label: 'Brave', short: 'brv', color: '#FB542B' },
-	'Yahoo!': { label: 'Yahoo!', short: 'yho', color: '#720E9E' }
+	'Yahoo!': { label: 'Yahoo!', short: 'yho', color: '#A24EDE' }
 };
 
 const pillStyle = {
@@ -284,7 +289,27 @@ export const TopBar = ({
 										"'DM Sans', 'Inter', system-ui, sans-serif"
 								}}
 							>
-								{engine.short}
+								{engine.letterColors
+									? engine.short.split('').map((ch, i) => (
+											<span
+												key={i}
+												style={{
+													color: inputFocused
+														? engine.letterColors![
+																i %
+																	engine
+																		.letterColors!
+																		.length
+															]
+														: 'rgba(255, 255, 255, 0.25)',
+													transition: 'color 0.2s',
+													fontWeight: 800
+												}}
+											>
+												{ch}
+											</span>
+										))
+									: engine.short}
 							</motion.span>
 						</AnimatePresence>
 					</motion.button>

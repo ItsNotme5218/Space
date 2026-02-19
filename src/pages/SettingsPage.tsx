@@ -1,7 +1,15 @@
-import { useState, type ReactNode } from 'react';
+import {
+	useState,
+	useRef,
+	useCallback,
+	useEffect,
+	type ReactNode
+} from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { EyeOff, Gauge, Globe, ChevronDown, Palette, Info } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useClickOutside } from '../hooks/useClickOutside';
+import { launchAboutBlank, launchBlob, normalizeUrl } from '../lib/cloak';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
@@ -48,9 +56,25 @@ const Select = ({
 	onChange: (v: string) => void;
 }) => {
 	const [open, setOpen] = useState(false);
+	const [dropUp, setDropUp] = useState(false);
+	const triggerRef = useRef<HTMLButtonElement>(null);
+	const wrapperRef = useClickOutside<HTMLDivElement>(
+		useCallback(() => setOpen(false), [])
+	);
+
+	useEffect(() => {
+		if (open && triggerRef.current) {
+			const rect = triggerRef.current.getBoundingClientRect();
+			const spaceBelow = window.innerHeight - rect.bottom;
+			const estimatedHeight = options.length * 44 + 16;
+			setDropUp(spaceBelow < estimatedHeight && rect.top > spaceBelow);
+		}
+	}, [open, options.length]);
+
 	return (
-		<div className="relative shrink-0 exception">
+		<div ref={wrapperRef} className="relative shrink-0 exception">
 			<motion.button
+				ref={triggerRef}
 				whileTap={{ scale: 0.97 }}
 				onClick={() => setOpen(o => !o)}
 				className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm text-white/50 cursor-pointer"
@@ -70,53 +94,77 @@ const Select = ({
 			<AnimatePresence>
 				{open && (
 					<motion.div
-						initial={{ opacity: 0, scale: 0.95, y: -4 }}
-						animate={{ opacity: 1, scale: 1, y: 6 }}
-						exit={{ opacity: 0, scale: 0.95, y: -4 }}
+						initial={{
+							opacity: 0,
+							scale: 0.95,
+							y: dropUp ? 4 : -4
+						}}
+						animate={{
+							opacity: 1,
+							scale: 1,
+							y: dropUp ? -6 : 6
+						}}
+						exit={{
+							opacity: 0,
+							scale: 0.95,
+							y: dropUp ? 4 : -4
+						}}
 						transition={{ duration: 0.15 }}
-						className="absolute z-50 right-0 min-w-50 rounded-2xl overflow-hidden py-2"
+						className="absolute z-50 right-0 min-w-50 rounded-2xl overflow-hidden"
 						style={{
+							...(dropUp ? { bottom: '100%' } : { top: '100%' }),
 							background: 'rgba(14,14,18,0.96)',
 							border: '1px solid rgba(255,255,255,0.06)',
 							boxShadow: '0 20px 60px -12px rgba(0,0,0,0.8)',
 							backdropFilter: 'blur(4px)'
 						}}
 					>
-						{options.map(o => (
-							<button
-								key={o}
-								onClick={() => {
-									onChange(o);
-									setOpen(false);
-								}}
-								className="block w-full text-left px-5 py-3 text-sm cursor-pointer transition-colors"
-								style={{
-									color:
-										o === value
-											? '#a78bfa'
-											: 'rgba(255,255,255,0.4)',
-									backgroundColor:
-										o === value
-											? 'rgba(139,92,246,0.08)'
-											: 'transparent'
-								}}
-								onMouseEnter={e => {
-									if (o !== value)
-										(
-											e.target as HTMLElement
-										).style.backgroundColor =
-											'rgba(255,255,255,0.03)';
-								}}
-								onMouseLeave={e => {
-									if (o !== value)
-										(
-											e.target as HTMLElement
-										).style.backgroundColor = 'transparent';
-								}}
-							>
-								{o}
-							</button>
-						))}
+						{options.map((o, i) => {
+							const isFirst = i === 0;
+							const isLast = i === options.length - 1;
+							return (
+								<button
+									key={o}
+									onClick={() => {
+										onChange(o);
+										setOpen(false);
+									}}
+									className="block w-full text-left px-5 text-sm cursor-pointer transition-colors"
+									style={{
+										paddingTop: isFirst
+											? '1rem'
+											: '0.75rem',
+										paddingBottom: isLast
+											? '1rem'
+											: '0.75rem',
+										color:
+											o === value
+												? '#a78bfa'
+												: 'rgba(255,255,255,0.4)',
+										backgroundColor:
+											o === value
+												? 'rgba(139,92,246,0.08)'
+												: 'transparent'
+									}}
+									onMouseEnter={e => {
+										if (o !== value)
+											(
+												e.target as HTMLElement
+											).style.backgroundColor =
+												'rgba(255,255,255,0.03)';
+									}}
+									onMouseLeave={e => {
+										if (o !== value)
+											(
+												e.target as HTMLElement
+											).style.backgroundColor =
+												'transparent';
+									}}
+								>
+									{o}
+								</button>
+							);
+						})}
 					</motion.div>
 				)}
 			</AnimatePresence>
@@ -215,6 +263,234 @@ const Row = ({
 	</div>
 );
 
+const URL_RE = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
+
+const CustomCloakInputs = () => {
+	const [faviconUrl, setFaviconUrl] = useLocalStorage(
+		'customCloakFavicon',
+		''
+	);
+	const [titleInput, setTitleInput] = useLocalStorage('customCloakTitle', '');
+	const [localFavicon, setLocalFavicon] = useState(faviconUrl);
+	const [localTitle, setLocalTitle] = useState(titleInput);
+	const [faviconSaved, setFaviconSaved] = useState(false);
+	const [titleSaved, setTitleSaved] = useState(false);
+	const faviconTimer = useRef<ReturnType<typeof setTimeout>>(null);
+	const titleTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
+	const commitFavicon = useCallback(
+		(val: string) => {
+			setFaviconUrl(val);
+			setFaviconSaved(true);
+			setTimeout(() => setFaviconSaved(false), 1200);
+		},
+		[setFaviconUrl]
+	);
+
+	const commitTitle = useCallback(
+		(val: string) => {
+			setTitleInput(val);
+			setTitleSaved(true);
+			setTimeout(() => setTitleSaved(false), 1200);
+		},
+		[setTitleInput]
+	);
+
+	const handleFaviconChange = (val: string) => {
+		setLocalFavicon(val);
+		if (faviconTimer.current) clearTimeout(faviconTimer.current);
+		faviconTimer.current = setTimeout(() => commitFavicon(val), 1500);
+	};
+
+	const handleTitleChange = (val: string) => {
+		setLocalTitle(val);
+		if (titleTimer.current) clearTimeout(titleTimer.current);
+		titleTimer.current = setTimeout(() => commitTitle(val), 1500);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (faviconTimer.current) clearTimeout(faviconTimer.current);
+			if (titleTimer.current) clearTimeout(titleTimer.current);
+		};
+	}, []);
+
+	const faviconPreview =
+		localFavicon && URL_RE.test(localFavicon)
+			? normalizeUrl(localFavicon)
+			: null;
+
+	const resolvedTitle = URL_RE.test(localTitle)
+		? (() => {
+				try {
+					return new URL(normalizeUrl(localTitle)).hostname;
+				} catch {
+					return localTitle;
+				}
+			})()
+		: localTitle;
+
+	const inputStyle = {
+		background: 'rgba(255,255,255,0.03)',
+		border: '1px solid rgba(255,255,255,0.07)',
+		color: 'rgba(255,255,255,0.7)'
+	};
+
+	const inputFocusStyle = {
+		border: '1px solid rgba(139,92,246,0.3)',
+		boxShadow: '0 0 0 3px rgba(139,92,246,0.08)'
+	};
+
+	return (
+		<motion.div
+			initial={{ height: 0, opacity: 0 }}
+			animate={{ height: 'auto', opacity: 1 }}
+			exit={{ height: 0, opacity: 0 }}
+			transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+			className="overflow-hidden"
+		>
+			<div className="px-8 pb-6 pt-2 flex flex-col gap-4">
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.08, duration: 0.2 }}
+				>
+					<div className="flex items-center gap-3 mb-2">
+						<label className="text-xs font-medium text-white/30 uppercase tracking-wider">
+							Favicon Source URL (Auto Title)
+						</label>
+						<AnimatePresence>
+							{faviconSaved && (
+								<motion.span
+									initial={{ opacity: 0, x: -6 }}
+									animate={{ opacity: 1, x: 0 }}
+									exit={{ opacity: 0, x: -6 }}
+									className="text-xs text-purple-400/70"
+								>
+									Saved
+								</motion.span>
+							)}
+						</AnimatePresence>
+					</div>
+					<div className="flex items-center gap-3">
+						<div className="relative flex-1">
+							<input
+								type="text"
+								value={localFavicon}
+								onChange={e =>
+									handleFaviconChange(e.target.value)
+								}
+								placeholder="https://google.com"
+								spellCheck={false}
+								className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-150 placeholder:text-white/15"
+								style={inputStyle}
+								onFocus={e =>
+									Object.assign(
+										e.target.style,
+										inputFocusStyle
+									)
+								}
+								onBlur={e =>
+									Object.assign(e.target.style, inputStyle)
+								}
+							/>
+						</div>
+						<AnimatePresence>
+							{faviconPreview && (
+								<motion.div
+									initial={{ opacity: 0, scale: 0.8 }}
+									animate={{ opacity: 1, scale: 1 }}
+									exit={{ opacity: 0, scale: 0.8 }}
+									transition={{ duration: 0.15 }}
+									className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+									style={{
+										background: 'rgba(255,255,255,0.04)',
+										border: '1px solid rgba(255,255,255,0.06)'
+									}}
+								>
+									<img
+										src={faviconPreview}
+										alt=""
+										className="w-4 h-4"
+										onError={e => {
+											const img =
+												e.target as HTMLImageElement;
+											try {
+												const fallback =
+													new URL(faviconPreview)
+														.origin +
+													'/favicon.ico';
+												if (img.src !== fallback) {
+													img.src = fallback;
+													return;
+												}
+											} catch {
+												console.log(e);
+											}
+										}}
+									/>
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</div>
+				</motion.div>
+
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.16, duration: 0.2 }}
+				>
+					<div className="flex items-center gap-3 mb-2">
+						<label className="text-xs font-medium text-white/30 uppercase tracking-wider">
+							Tab Title (Auto Title Override)
+						</label>
+						<AnimatePresence>
+							{titleSaved && (
+								<motion.span
+									initial={{ opacity: 0, x: -6 }}
+									animate={{ opacity: 1, x: 0 }}
+									exit={{ opacity: 0, x: -6 }}
+									className="text-xs text-purple-400/70"
+								>
+									Saved
+								</motion.span>
+							)}
+						</AnimatePresence>
+					</div>
+					<input
+						type="text"
+						value={localTitle}
+						onChange={e => handleTitleChange(e.target.value)}
+						placeholder="Title or URL"
+						spellCheck={false}
+						className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-150 placeholder:text-white/15"
+						style={inputStyle}
+						onFocus={e =>
+							Object.assign(e.target.style, inputFocusStyle)
+						}
+						onBlur={e => Object.assign(e.target.style, inputStyle)}
+					/>
+					<AnimatePresence>
+						{resolvedTitle && localTitle && (
+							<motion.p
+								initial={{ opacity: 0, height: 0 }}
+								animate={{ opacity: 1, height: 'auto' }}
+								exit={{ opacity: 0, height: 0 }}
+								className="text-xs text-white/20 mt-2 pl-1"
+							>
+								Preview:{' '}
+								<span className="text-white/40">
+									{resolvedTitle}
+								</span>
+							</motion.p>
+						)}
+					</AnimatePresence>
+				</motion.div>
+			</div>
+		</motion.div>
+	);
+};
+
 const CloakPanel = () => {
 	const [autoBlank, setAutoBlank] = useLocalStorage('autoAboutBlank', false);
 	const [autoBlob, setAutoBlob] = useLocalStorage('autoBlob', false);
@@ -226,10 +502,12 @@ const CloakPanel = () => {
 					label="About:Blank"
 					desc="Open site inside a hidden blank tab"
 				>
-					<Btn>Launch</Btn>
+					<Btn onClick={() => launchAboutBlank(tabCloak)}>Launch</Btn>
 				</Row>
 				<Row label="Blob Cloak" desc="Use a temporary blob URL to hide">
-					<Btn variant="ghost">Launch</Btn>
+					<Btn variant="ghost" onClick={() => launchBlob(tabCloak)}>
+						Launch
+					</Btn>
 				</Row>
 			</Section>
 
@@ -272,11 +550,15 @@ const CloakPanel = () => {
 							'Desmos',
 							'Google Classroom',
 							'Google Drive',
-							'Khan Academy'
+							'Khan Academy',
+							'Custom'
 						]}
 						onChange={setTabCloak}
 					/>
 				</Row>
+				<AnimatePresence>
+					{tabCloak === 'Custom' && <CustomCloakInputs />}
+				</AnimatePresence>
 			</Section>
 		</div>
 	);
