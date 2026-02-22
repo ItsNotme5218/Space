@@ -6,10 +6,21 @@ import {
 	type ReactNode
 } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { EyeOff, Gauge, Globe, ChevronDown, Palette, Info } from 'lucide-react';
+import {
+	EyeOff,
+	Gauge,
+	Globe,
+	ChevronDown,
+	Palette,
+	Info,
+	Upload,
+	Link,
+	X
+} from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { launchAboutBlank, launchBlob, normalizeUrl } from '../lib/cloak';
+import bgPresets from '../data/backgrounds.json';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
@@ -29,7 +40,7 @@ const Toggle = ({ on, set }: { on: boolean; set: (v: boolean) => void }) => (
 		className="relative w-12 h-7 rounded-full cursor-pointer shrink-0"
 		animate={{
 			backgroundColor: on
-				? 'rgba(139,92,246,0.55)'
+				? 'rgba(139,92,246,0.65)'
 				: 'rgba(255,255,255,0.06)',
 			boxShadow: on
 				? '0 0 14px rgba(139,92,246,0.35), inset 0 0 6px rgba(139,92,246,0.2)'
@@ -226,7 +237,7 @@ const Section = ({
 		<div
 			className="rounded-2xl divide-y divide-white/4"
 			style={{
-				background: 'rgba(12,10,18,0.55)',
+				background: 'rgba(12,10,18,0.65)',
 				border: '1px solid rgba(255,255,255,0.06)',
 				backdropFilter: 'blur(8px)',
 				WebkitBackdropFilter: 'blur(8px)',
@@ -248,7 +259,7 @@ const Row = ({
 	desc?: string;
 	children: ReactNode;
 }) => (
-	<div className="flex items-center justify-between px-8 py-6 group transition-colors duration-150 hover:bg-white/[0.02]">
+	<div className="flex items-center justify-between px-8 py-6 group transition-colors duration-150 hover:bg-white/2 rounded-xl">
 		<div className="flex flex-col gap-1 mr-8 min-w-0">
 			<span className="text-[15px] text-white/75 font-medium group-hover:text-white/90 transition-colors duration-150">
 				{label}
@@ -564,6 +575,271 @@ const CloakPanel = () => {
 	);
 };
 
+const PRESET_COLORS = [
+	'#050312', '#0a0a1a', '#1a0a2e', '#0d1117', '#1c1c1c',
+	'#2d1b69', '#1a1a2e', '#16213e', '#0f3460', '#533483'
+];
+
+const BackgroundSelector = () => {
+	const [bgMode, setBgMode] = useLocalStorage('bgMode', 'solid');
+	const [bgValue, setBgValue] = useLocalStorage('bgValue', '#050312');
+	const [urlInput, setUrlInput] = useState('');
+	const [urlSaved, setUrlSaved] = useState(false);
+	const urlTimer = useRef<ReturnType<typeof setTimeout>>(null);
+	const fileRef = useRef<HTMLInputElement>(null);
+
+	const commitUrl = useCallback(
+		(val: string) => {
+			const normalized = /^https?:\/\//i.test(val) ? val : `https://${val}`;
+			setBgMode('image');
+			setBgValue(normalized);
+			setUrlSaved(true);
+			setTimeout(() => setUrlSaved(false), 1200);
+		},
+		[setBgMode, setBgValue]
+	);
+
+	const handleUrlChange = (val: string) => {
+		setUrlInput(val);
+		if (urlTimer.current) clearTimeout(urlTimer.current);
+		urlTimer.current = setTimeout(() => {
+			if (val.trim()) commitUrl(val.trim());
+		}, 1500);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (urlTimer.current) clearTimeout(urlTimer.current);
+		};
+	}, []);
+
+	const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			const result = reader.result as string;
+			setBgMode('image');
+			setBgValue(result);
+		};
+		reader.readAsDataURL(file);
+	};
+
+	const inputStyle = {
+		background: 'rgba(255,255,255,0.03)',
+		border: '1px solid rgba(255,255,255,0.07)',
+		color: 'rgba(255,255,255,0.7)'
+	};
+
+	const inputFocusStyle = {
+		border: '1px solid rgba(139,92,246,0.3)',
+		boxShadow: '0 0 0 3px rgba(139,92,246,0.08)'
+	};
+
+	return (
+		<motion.div
+			initial={{ height: 0, opacity: 0 }}
+			animate={{ height: 'auto', opacity: 1 }}
+			exit={{ height: 0, opacity: 0 }}
+			transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+			className="overflow-hidden"
+		>
+			<div className="px-8 pb-6 pt-2 flex flex-col gap-5">
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.06, duration: 0.2 }}
+				>
+					<label className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3 block">
+						Solid Colors
+					</label>
+					<div className="flex flex-wrap gap-2.5">
+						{PRESET_COLORS.map(c => (
+							<button
+								key={c}
+								onClick={() => {
+									setBgMode('solid');
+									setBgValue(c);
+								}}
+								className="w-9 h-9 rounded-xl cursor-pointer transition-all duration-150 shrink-0"
+								style={{
+									background: c,
+									border: bgMode === 'solid' && bgValue === c
+										? '2px solid rgba(139,92,246,0.6)'
+										: '2px solid rgba(255,255,255,0.06)',
+									boxShadow: bgMode === 'solid' && bgValue === c
+										? '0 0 12px rgba(139,92,246,0.25)'
+										: 'none'
+								}}
+							/>
+						))}
+						<div className="relative w-9 h-9 shrink-0">
+							<input
+								type="color"
+								value={bgMode === 'solid' ? bgValue : '#050312'}
+								onChange={e => {
+									setBgMode('solid');
+									setBgValue(e.target.value);
+								}}
+								className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+							/>
+							<div
+								className="w-full h-full rounded-xl pointer-events-none"
+								style={{
+									background: 'conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+									border: '2px solid rgba(255,255,255,0.06)'
+								}}
+							/>
+						</div>
+					</div>
+				</motion.div>
+
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.12, duration: 0.2 }}
+				>
+					<label className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3 block">
+						Preset Images
+					</label>
+					<div className="flex gap-3 overflow-x-auto pb-2">
+						{bgPresets.map(bg => (
+							<button
+								key={bg.id}
+								onClick={() => {
+									setBgMode('image');
+									setBgValue(bg.url);
+								}}
+								className="shrink-0 w-24 h-16 rounded-xl cursor-pointer overflow-hidden transition-all duration-150 relative group"
+								style={{
+									border: bgMode === 'image' && bgValue === bg.url
+										? '2px solid rgba(139,92,246,0.6)'
+										: '2px solid rgba(255,255,255,0.06)',
+									boxShadow: bgMode === 'image' && bgValue === bg.url
+										? '0 0 12px rgba(139,92,246,0.25)'
+										: 'none'
+								}}
+							>
+								<img
+									src={bg.thumb}
+									alt={bg.label}
+									className="w-full h-full object-cover"
+									loading="lazy"
+								/>
+								<span className="absolute inset-x-0 bottom-0 text-[9px] text-white/70 bg-black/50 px-1.5 py-0.5 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+									{bg.label}
+								</span>
+							</button>
+						))}
+					</div>
+				</motion.div>
+
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.18, duration: 0.2 }}
+				>
+					<div className="flex items-center gap-3 mb-2">
+						<label className="text-xs font-medium text-white/30 uppercase tracking-wider">
+							Image URL
+						</label>
+						<AnimatePresence>
+							{urlSaved && (
+								<motion.span
+									initial={{ opacity: 0, x: -6 }}
+									animate={{ opacity: 1, x: 0 }}
+									exit={{ opacity: 0, x: -6 }}
+									className="text-xs text-purple-400/70"
+								>
+									Saved
+								</motion.span>
+							)}
+						</AnimatePresence>
+					</div>
+					<div className="flex items-center gap-3">
+						<div className="relative flex-1">
+							<Link className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20 pointer-events-none" />
+							<input
+								type="text"
+								value={urlInput}
+								onChange={e => handleUrlChange(e.target.value)}
+								placeholder="https://example.com/bg.jpg"
+								spellCheck={false}
+								className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-150 placeholder:text-white/15"
+								style={inputStyle}
+								onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
+								onBlur={e => Object.assign(e.target.style, inputStyle)}
+							/>
+						</div>
+						<motion.button
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							onClick={() => fileRef.current?.click()}
+							className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm cursor-pointer shrink-0"
+							style={{
+								background: 'rgba(255,255,255,0.04)',
+								border: '1px solid rgba(255,255,255,0.07)',
+								color: 'rgba(255,255,255,0.45)'
+							}}
+						>
+							<Upload className="w-3.5 h-3.5" />
+							Upload
+						</motion.button>
+						<input
+							ref={fileRef}
+							type="file"
+							accept="image/*"
+							onChange={handleFileUpload}
+							className="hidden"
+						/>
+					</div>
+				</motion.div>
+
+				<AnimatePresence>
+					{bgMode === 'image' && bgValue && (
+						<motion.div
+							initial={{ opacity: 0, height: 0 }}
+							animate={{ opacity: 1, height: 'auto' }}
+							exit={{ opacity: 0, height: 0 }}
+							transition={{ duration: 0.2 }}
+						>
+							<div className="flex items-center gap-3">
+								<div
+									className="w-16 h-10 rounded-lg overflow-hidden shrink-0"
+									style={{
+										border: '1px solid rgba(255,255,255,0.06)'
+									}}
+								>
+									<img
+										src={bgValue}
+										alt=""
+										className="w-full h-full object-cover"
+										onError={e => ((e.target as HTMLImageElement).style.display = 'none')}
+									/>
+								</div>
+								<span className="text-xs text-white/25 truncate flex-1 min-w-0">
+									{bgValue.startsWith('data:') ? 'Uploaded image' : bgValue}
+								</span>
+								<motion.button
+									whileHover={{ scale: 1.1 }}
+									whileTap={{ scale: 0.9 }}
+									onClick={() => {
+										setBgMode('solid');
+										setBgValue('#050312');
+									}}
+									className="p-1.5 rounded-lg cursor-pointer text-white/25 hover:text-white/50 transition-colors"
+								>
+									<X className="w-3.5 h-3.5" />
+								</motion.button>
+							</div>
+						</motion.div>
+					)}
+				</AnimatePresence>
+			</div>
+		</motion.div>
+	);
+};
+
 const AppearPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
 	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage(
@@ -582,13 +858,16 @@ const AppearPanel = () => {
 				</Row>
 			</Section>
 
-			<Section title="Visual Effects" delay={0.06}>
+			<Section title="Background" delay={0.06}>
 				<Row
 					label="Starfield Particles"
-					desc="Animated star background on the home page"
+					desc="Animated star background — turn off to pick an image or color"
 				>
 					<Toggle on={particles} set={setParticles} />
 				</Row>
+				<AnimatePresence>
+					{!particles && <BackgroundSelector />}
+				</AnimatePresence>
 			</Section>
 
 			<Section title="Theme" delay={0.12}>
@@ -624,15 +903,22 @@ const AppearPanel = () => {
 };
 
 const PerfPanel = () => {
-	const [particles, setParticles] = useLocalStorage('particles', true);
+	const [, setParticles] = useLocalStorage('particles', true);
+	const [reduceMotion, setReduceMotion] = useLocalStorage('reduceMotion', false);
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Rendering" delay={0.0}>
 				<Row
 					label="Reduce Animations"
-					desc="Disable starfield and other effects on low-end devices"
+					desc="Disable starfield, transitions, and effects for low-end devices"
 				>
-					<Toggle on={!particles} set={v => setParticles(!v)} />
+					<Toggle
+						on={reduceMotion}
+						set={v => {
+							setReduceMotion(v);
+							if (v) setParticles(false);
+						}}
+					/>
 				</Row>
 			</Section>
 		</div>

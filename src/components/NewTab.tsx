@@ -23,7 +23,7 @@ export const NewTab = () => {
 		<div
 			className="w-full h-full flex flex-col items-center justify-center rounded-xl"
 			style={{
-				background: 'rgba(24, 20, 28, 0.2)',
+				background: 'rgba(24, 20, 28, 0.4)',
 				backdropFilter: 'blur(4px)',
 				WebkitBackdropFilter: 'blur(4px)',
 				border: '1px solid rgba(255, 255, 255, 0.06)'

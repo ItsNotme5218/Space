@@ -239,7 +239,7 @@ export const TopBar = ({
 						whileHover={{ scale: 1.06 }}
 						whileTap={{ scale: 0.94 }}
 						animate={{
-							opacity: inputFocused ? 1 : 0.55
+							opacity: inputFocused ? 1 : 0.65
 						}}
 						transition={{ duration: 0.15 }}
 						style={{

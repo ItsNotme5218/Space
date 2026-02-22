@@ -25,6 +25,8 @@ const App = () => {
 	const [showIntro, setShowIntro] = useState(true);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const [particles] = useLocalStorage('particles', true);
+	const [bgMode] = useLocalStorage('bgMode', 'solid');
+	const [bgValue] = useLocalStorage('bgValue', '#050312');
 	const nextIdRef = useRef(2);
 	const carouselRef = useRef<HTMLDivElement>(null);
 	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
@@ -180,7 +182,7 @@ const App = () => {
 												borderRadius: 12,
 												border: '1px solid rgba(255,255,255,0.06)',
 												background:
-													'rgba(24,20,28,0.2)',
+													'rgba(24,20,28,0.65)',
 												backdropFilter: 'blur(4px)',
 												WebkitBackdropFilter:
 													'blur(4px)' //todo for normal tabs make the opacity go down, but for newtabs just fuck with background blur because opacity and backgroundblur dont like eachother
@@ -216,10 +218,27 @@ const App = () => {
 		);
 	};
 
+	const bgStyle = (() => {
+		if (particles) return { background: '#050312' };
+		switch (bgMode) {
+			case 'image':
+				return {
+					background: '#050312',
+					backgroundImage: `url(${bgValue})`,
+					backgroundSize: 'cover',
+					backgroundPosition: 'center'
+				};
+			case 'solid':
+				return { background: bgValue || '#050312' };
+			default:
+				return { background: '#050312' };
+		}
+	})();
+
 	return (
 		<div
 			className="h-screen flex flex-col overflow-hidden"
-			style={{ background: '#050312' }}
+			style={bgStyle}
 		>
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
 				{particles && <SpaceStars mode="background" />}

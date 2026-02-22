@@ -110,7 +110,7 @@ const MediaCard = ({ entry, delay }: { entry: MediaEntry; delay: number }) => (
 		whileTap={{ scale: 0.97 }}
 		className="group block rounded-2xl overflow-hidden cursor-pointer"
 		style={{
-			background: 'rgba(12,10,18,0.55)',
+			background: 'rgba(12,10,18,0.65)',
 			border: '1px solid rgba(255,255,255,0.06)',
 			boxShadow:
 				'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
@@ -173,7 +173,7 @@ const SearchEntry = ({
 				paddingBottom: 0
 			}}
 			transition={{ ...soft, delay }}
-			className="group flex items-center gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/[0.02] rounded-xl"
+			className="group flex items-center gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/2 rounded-xl"
 		>
 			<div
 				className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
@@ -283,7 +283,7 @@ const SearchPanel = () => {
 				transition={soft}
 				className="flex items-center gap-3 px-5 py-3 rounded-xl"
 				style={{
-					background: 'rgba(12,10,18,0.55)',
+					background: 'rgba(12,10,18,0.65)',
 					border: '1px solid rgba(255,255,255,0.06)'
 				}}
 			>
@@ -325,7 +325,7 @@ const SearchPanel = () => {
 					<div
 						className="rounded-2xl divide-y divide-white/4 overflow-hidden"
 						style={{
-							background: 'rgba(12,10,18,0.55)',
+							background: 'rgba(12,10,18,0.65)',
 							border: '1px solid rgba(255,255,255,0.06)',
 							backdropFilter: 'blur(8px)',
 							WebkitBackdropFilter: 'blur(8px)',
