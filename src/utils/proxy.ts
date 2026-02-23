@@ -32,26 +32,29 @@ class Proxy implements ProxyInterface {
 	swConfigSettings!: Record<string, any>;
 	proxySetting!: string;
 	isStaticBuild: boolean = false;
+	ready: Promise<void>;
 
 	constructor() {
-		this.connection = new BareMux.BareMuxConnection('/bmworker/worker.js');
+		this.connection = new BareMux.BareMuxConnection('/b/worker.js');
 
 		this.settings = new SettingsAPI();
 
-		(async () => {
+		this.ready = (async () => {
 			this.swConfigSettings = {};
 			this.config = {
 				uv: {
 					type: 'sw',
-					file: '/data/sw.js',
+					file: '/sw.js',
 					config: window.__uv$config,
 					func: null
 				},
 				sj: {
 					type: 'sw',
-					file: '/assets/sw.js',
+					file: '/sw.js',
 					config: window.__scramjet$config,
 					func: async () => {
+						// @ts-ignore
+const { ScramjetController } = $scramjetLoadController();
 						const scramjet = new ScramjetController(
 							window.__scramjet$config
 						);
@@ -74,7 +77,7 @@ class Proxy implements ProxyInterface {
 				(location.protocol === 'https:' ? 'wss' : 'ws') +
 				'://' +
 				location.host +
-				'/wisp/';
+				'/w/';
 		})();
 	}
 
@@ -82,18 +85,18 @@ class Proxy implements ProxyInterface {
 		console.log('[Proxy] setTransports() called');
 		const transports = this.transportVar || 'libcurl';
 		const transportMap: Record<any, string> = {
-			epoxy: '/epoxy/index.mjs',
-			libcurl: '/libcurl/index.mjs'
+			epoxy: '/ep/index.mjs',
+			libcurl: '/l/index.mjs'
 		};
 
-		const transportFile = transportMap[transports] || '/libcurl/index.mjs';
+		const transportFile = transportMap[transports] || '/l/index.mjs';
 
 		const wispUrl =
 			this.wispUrl ||
 			(location.protocol === 'https:' ? 'wss' : 'ws') +
 			'://' +
 			location.host +
-			'/wisp/';
+			'/w/';
 
 		const transportOptions: Record<string, any> = {
 			base: transportFile,
@@ -108,7 +111,7 @@ class Proxy implements ProxyInterface {
 			remoteProxyServer !== 'null' &&
 			remoteProxyServer !== 'disabled' &&
 			remoteProxyServer !== 'false' &&
-			transportFile === '/libcurl/index.mjs'
+			transportFile === '/l/index.mjs'
 		) {
 			transportOptions.proxy = remoteProxyServer;
 		}
@@ -116,10 +119,10 @@ class Proxy implements ProxyInterface {
 		const isRefluxEnabled = await this.getRefluxStatus();
 
 		if (isRefluxEnabled) {
-			transportOptions.modules.push('/reflux/module.mjs');
+			transportOptions.modules.push('/r/module.mjs');
 		}
 
-		await this.connection.setTransport('/enigma/index.mjs', [
+		await this.connection.setTransport('/en/index.mjs', [
 			{ ...transportOptions }
 		]);
 
@@ -250,17 +253,9 @@ class Proxy implements ProxyInterface {
 		switch (swConfigSettings.type) {
 			case 'sw': {
 				let encodedUrl: string;
-
-				if (proxySetting === 'dy') {
-					encodedUrl =
-						swConfigSettings.config.prefix +
-						'route?url=' +
-						window.__uv$config.encodeUrl(this.search(url));
-				} else {
 					encodedUrl =
 						swConfigSettings.config.prefix +
 						window.__uv$config.encodeUrl(this.search(url));
-				}
 				console.log('[Proxy] Redirecting iframe to:', encodedUrl);
 				activeIframe.src = encodedUrl;
 				break;
@@ -381,7 +376,7 @@ class Proxy implements ProxyInterface {
 
 	async checkAuthentication(): Promise<boolean> {
 		try {
-			const basePath = '/plus';
+			const basePath = '/p';
 			const fileName = 'index.mjs';
 			const module = await import(`${basePath}/${fileName}`);
 			const PlusClient = module.default;

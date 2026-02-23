@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { allowedHosts } from './srv/vite/hosts';
+import { viteStaticCopy} from 'vite-plugin-static-copy';
+import { copyRoutes } from './srv/vite/copy';
 
 export default defineConfig({
 	plugins: [
@@ -11,7 +13,8 @@ export default defineConfig({
 		tsconfigPaths({
 			ignoreConfigErrors: true,
 			projects: ['./tsconfig.json']
-		})
+		}),
+		viteStaticCopy(copyRoutes())
 	],
 	css: {
 		transformer: 'lightningcss'
@@ -29,11 +32,11 @@ export default defineConfig({
 				target: 'http://localhost:8080',
 				changeOrigin: true
 			},
-			'/wisp/': {
-				target: 'ws://localhost:8080/wisp/',
+			'/w/': {
+				target: 'ws://localhost:8080/w/',
 				changeOrigin: true,
 				ws: true,
-				rewrite: path => path.replace(/^\/wisp\//, '')
+				rewrite: path => path.replace(/^\/w\//, '')
 			},
 			'/auth': {
 				target: 'http://localhost:8080',

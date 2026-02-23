@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import {
 	ArrowLeft,
@@ -51,19 +51,30 @@ interface TopBarProps {
 	sessions: Session[];
 	activeSession: number;
 	carouselRef: React.RefObject<HTMLDivElement | null>;
-	onSetSessionUrl: (id: number, url: string) => void;
+	proxyReady: boolean;
+	onNavigate: (url: string) => void;
+	onBack: () => void;
+	onForward: () => void;
+	onReload: () => void;
+	onHome: () => void;
 }
 
 export const TopBar = ({
 	sessions,
 	activeSession,
 	carouselRef,
-	onSetSessionUrl
+	proxyReady,
+	onNavigate,
+	onBack,
+	onForward,
+	onReload,
+	onHome
 }: TopBarProps) => {
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [inputFocused, setInputFocused] = useState(false);
 	const [inputValue, setInputValue] = useState('');
 	const [inputHovered, setInputHovered] = useState(false);
+	const [displayUrl, setDisplayUrl] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [searchEngine, setSearchEngine] = useLocalStorage(
 		'searchEngine',
@@ -84,6 +95,96 @@ export const TopBar = ({
 	const activeSessionData = sessions.find(s => s.id === activeSession);
 	const isOnNewTab = !activeSessionData?.url;
 
+	const decodeProxyUrl = useCallback((proxyUrl: string): string => {
+		if (!proxyUrl) return '';
+		try {
+			if (window.__uv$config && proxyUrl.startsWith(window.__uv$config.prefix)) {
+				const encoded = proxyUrl.slice(window.__uv$config.prefix.length);
+				return window.__uv$config.decodeUrl(encoded);
+			}
+			if (
+				window.__scramjet$config &&
+				proxyUrl.startsWith(window.__scramjet$config.prefix)
+			) {
+				const encoded = proxyUrl.slice(
+					window.__scramjet$config.prefix.length
+				);
+				if (
+					window.__scramjet$config.codec &&
+					typeof window.__scramjet$config.codec.decode === 'function'
+				) {
+					return window.__scramjet$config.codec.decode(encoded);
+				}
+			}
+		} catch {
+			/* ignore decode errors */
+		}
+		return proxyUrl;
+	}, []);
+
+	// Track the active iframe's URL and update the address bar
+	useEffect(() => {
+		if (isOnNewTab) {
+			setDisplayUrl('');
+			if (!inputFocused) setInputValue('');
+			return;
+		}
+
+		const url = activeSessionData?.url || '';
+		const decoded = decodeProxyUrl(url);
+		setDisplayUrl(decoded);
+		if (!inputFocused) setInputValue(decoded);
+	}, [activeSessionData?.url, isOnNewTab, inputFocused, decodeProxyUrl]);
+
+	// Poll active iframe for URL changes (in-page navigation)
+	useEffect(() => {
+		if (isOnNewTab) return;
+
+		const interval = setInterval(() => {
+			const activeIndex = sessions.findIndex(
+				s => s.id === activeSession
+			);
+			const root = carouselRef.current;
+			if (!root) return;
+			const containers = root.querySelectorAll('.iframeContainer');
+			const container = containers[activeIndex];
+			if (!container) return;
+			const iframe = container.querySelector(
+				'iframe'
+			) as HTMLIFrameElement | null;
+			if (!iframe) return;
+
+			try {
+				const iframeSrc = iframe.contentWindow?.location.href;
+				if (iframeSrc && iframeSrc !== 'about:blank') {
+					const decoded = decodeProxyUrl(iframeSrc);
+					if (decoded !== displayUrl) {
+						setDisplayUrl(decoded);
+						if (!inputFocused) setInputValue(decoded);
+					}
+				}
+			} catch {
+				// cross-origin - fall back to src attribute
+				const src = iframe.getAttribute('src') || '';
+				const decoded = decodeProxyUrl(src);
+				if (decoded !== displayUrl) {
+					setDisplayUrl(decoded);
+					if (!inputFocused) setInputValue(decoded);
+				}
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [
+		sessions,
+		activeSession,
+		isOnNewTab,
+		carouselRef,
+		displayUrl,
+		inputFocused,
+		decodeProxyUrl
+	]);
+
 	useEffect(() => {
 		const handleFullscreenChange = () => {
 			setIsFullscreen(Boolean(document.fullscreenElement));
@@ -101,8 +202,9 @@ export const TopBar = ({
 	}, []);
 
 	const handleHome = () => {
-		onSetSessionUrl(activeSession, '');
+		onHome();
 		setInputValue('');
+		setDisplayUrl('');
 	};
 
 	const cycleEngine = () => {
@@ -141,6 +243,7 @@ export const TopBar = ({
 			transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
 		});
 		reloadControls.set({ rotate: 0 });
+		onReload();
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -148,9 +251,20 @@ export const TopBar = ({
 		const query = inputValue.trim();
 		if (!query) return;
 
-		const url = `https://example.com#${encodeURIComponent(searchEngine)}`;
-		onSetSessionUrl(activeSession, url);
+		if (!proxyReady) {
+			console.warn('[TopBar] Proxy not ready yet');
+			return;
+		}
+
+		onNavigate(query);
 		inputRef.current?.blur();
+	};
+
+	const getProtocolDisplay = (): string => {
+		if (isOnNewTab) return 'spc://';
+		if (displayUrl.startsWith('https://')) return 'https://';
+		if (displayUrl.startsWith('http://')) return 'http://';
+		return 'https://';
 	};
 
 	const iconButtonClass =
@@ -167,7 +281,9 @@ export const TopBar = ({
 				<motion.button
 					whileHover={{ scale: 1.08 }}
 					whileTap={{ scale: 0.94 }}
+					onClick={onBack}
 					className={iconButtonClass}
+					title="Back"
 				>
 					<ArrowLeft className="w-4 h-4" />
 				</motion.button>
@@ -176,6 +292,7 @@ export const TopBar = ({
 					whileTap={{ scale: 0.94 }}
 					onClick={handleReloadClick}
 					className={iconButtonClass}
+					title="Reload"
 				>
 					<motion.div animate={reloadControls}>
 						<RotateCw className="w-4 h-4" />
@@ -184,7 +301,9 @@ export const TopBar = ({
 				<motion.button
 					whileHover={{ scale: 1.08 }}
 					whileTap={{ scale: 0.94 }}
+					onClick={onForward}
 					className={iconButtonClass}
+					title="Forward"
 				>
 					<ArrowRight className="w-4 h-4" />
 				</motion.button>
@@ -193,6 +312,7 @@ export const TopBar = ({
 					whileTap={{ scale: 0.94 }}
 					onClick={handleHome}
 					className={iconButtonClass}
+					title="Home"
 				>
 					<Home className="w-4 h-4" />
 				</motion.button>
@@ -329,8 +449,16 @@ export const TopBar = ({
 						type="text"
 						value={inputValue}
 						onChange={e => setInputValue(e.target.value)}
-						onFocus={() => setInputFocused(true)}
-						onBlur={() => setInputFocused(false)}
+						onFocus={() => {
+							setInputFocused(true);
+							if (displayUrl) setInputValue(displayUrl);
+						}}
+						onBlur={() => {
+							setInputFocused(false);
+							if (!inputValue.trim() && displayUrl) {
+								setInputValue(displayUrl);
+							}
+						}}
 						placeholder={
 							inputFocused
 								? `Search with ${engine.label} or enter URL`
@@ -358,7 +486,7 @@ export const TopBar = ({
 							letterSpacing: '0.02em'
 						}}
 					>
-						{isOnNewTab ? 'spc://' : 'https://'}
+						{getProtocolDisplay()}
 					</span>
 				</form>
 			</motion.div>

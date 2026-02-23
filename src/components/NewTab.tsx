@@ -16,8 +16,30 @@ const shortcuts = [
 	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' }
 ];
 
-export const NewTab = () => {
+interface NewTabProps {
+	onNavigate?: (url: string) => void;
+}
+
+export const NewTab = ({ onNavigate }: NewTabProps) => {
 	const [searchFocused, setSearchFocused] = useState(false);
+	const [searchValue, setSearchValue] = useState('');
+
+	const handleSearchSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		const query = searchValue.trim();
+		if (!query || !onNavigate) return;
+		onNavigate(query);
+	};
+
+	const handleShortcutClick = (
+		e: React.MouseEvent,
+		url: string
+	) => {
+		e.preventDefault();
+		if (onNavigate) {
+			onNavigate(url);
+		}
+	};
 
 	return (
 		<div
@@ -36,49 +58,53 @@ export const NewTab = () => {
 				className="w-full px-6"
 				style={{ maxWidth: 520 }}
 			>
-				<motion.div
-					animate={{
-						boxShadow: searchFocused
-							? '0 0 32px rgba(139, 92, 246, 0.2), 0 4px 32px rgba(0, 0, 0, 0.5)'
-							: '0 0 20px rgba(139, 92, 246, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4)',
-						borderColor: searchFocused
-							? 'rgba(139, 92, 246, 0.35)'
-							: 'rgba(255, 255, 255, 0.08)'
-					}}
-					transition={{ duration: 0.2 }}
-					className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
-					style={{
-						background: 'rgba(255, 255, 255, 0.07)',
-						backdropFilter: 'blur(12px)',
-						WebkitBackdropFilter: 'blur(12px)',
-						border: '1px solid rgba(255, 255, 255, 0.08)'
-					}}
-				>
-					<Search
-						className="shrink-0"
-						style={{
-							width: 18,
-							height: 18,
-							color: searchFocused
-								? 'rgba(167, 139, 250, 0.7)'
-								: 'rgba(255, 255, 255, 0.3)',
-							transition: 'color 0.2s'
+				<form onSubmit={handleSearchSubmit}>
+					<motion.div
+						animate={{
+							boxShadow: searchFocused
+								? '0 0 32px rgba(139, 92, 246, 0.2), 0 4px 32px rgba(0, 0, 0, 0.5)'
+								: '0 0 20px rgba(139, 92, 246, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4)',
+							borderColor: searchFocused
+								? 'rgba(139, 92, 246, 0.35)'
+								: 'rgba(255, 255, 255, 0.08)'
 						}}
-					/>
-					<input
-						type="text"
-						placeholder="Search or enter URL"
-						onFocus={() => setSearchFocused(true)}
-						onBlur={() => setSearchFocused(false)}
-						className="flex-1 bg-transparent border-none outline-none text-white/80 placeholder-white/25"
+						transition={{ duration: 0.2 }}
+						className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
 						style={{
-							fontSize: 15,
-							fontFamily:
-								"'DM Sans', 'Inter', system-ui, sans-serif",
-							letterSpacing: '0.01em'
+							background: 'rgba(255, 255, 255, 0.07)',
+							backdropFilter: 'blur(12px)',
+							WebkitBackdropFilter: 'blur(12px)',
+							border: '1px solid rgba(255, 255, 255, 0.08)'
 						}}
-					/>
-				</motion.div>
+					>
+						<Search
+							className="shrink-0"
+							style={{
+								width: 18,
+								height: 18,
+								color: searchFocused
+									? 'rgba(167, 139, 250, 0.7)'
+									: 'rgba(255, 255, 255, 0.3)',
+								transition: 'color 0.2s'
+							}}
+						/>
+						<input
+							type="text"
+							placeholder="Search or enter URL"
+							value={searchValue}
+							onChange={e => setSearchValue(e.target.value)}
+							onFocus={() => setSearchFocused(true)}
+							onBlur={() => setSearchFocused(false)}
+							className="flex-1 bg-transparent border-none outline-none text-white/80 placeholder-white/25"
+							style={{
+								fontSize: 15,
+								fontFamily:
+									"'DM Sans', 'Inter', system-ui, sans-serif",
+								letterSpacing: '0.01em'
+							}}
+						/>
+					</motion.div>
+				</form>
 			</motion.div>
 
 			<motion.div
@@ -95,6 +121,9 @@ export const NewTab = () => {
 						<motion.a
 							key={shortcut.name}
 							href={shortcut.url}
+							onClick={e =>
+								handleShortcutClick(e, shortcut.url)
+							}
 							initial={{ opacity: 0, scale: 0.85, y: 10 }}
 							animate={{ opacity: 1, scale: 1, y: 0 }}
 							transition={{ ...SPRING, delay: 0.2 + i * 0.04 }}

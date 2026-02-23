@@ -43,7 +43,7 @@ const server = Fastify({
 			handler(req, res);
 		});
 		srv.on('upgrade', (req, socket, head) => {
-			if (req.url?.endsWith('/wisp/')) {
+			if (req.url?.endsWith('/w/')) {
 				wisp.routeRequest(req, socket as any, head);
 			} else {
 				socket.destroy();

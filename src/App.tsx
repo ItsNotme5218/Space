@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -8,6 +8,7 @@ import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useTabCloak } from './hooks/useTabCloak';
+import { Proxy } from './utils/proxy';
 
 import './App.css';
 
@@ -32,6 +33,60 @@ const App = () => {
 	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
 	const [sessions, setSessions] = useState<Session[]>([{ id: 1, url: '' }]);
 	const [activeSession, setActiveSession] = useState(1);
+	const [proxyReady, setProxyReady] = useState(false);
+	const proxyRef = useRef<Proxy | null>(null);
+
+	useEffect(() => {
+		const proxy = new Proxy();
+		proxyRef.current = proxy;
+		window.proxy = proxy;
+
+		proxy.ready.then(async () => {
+			const swConfig = proxy.config;
+			const proxySetting = proxy.proxySetting;
+
+			if (
+				proxySetting === 'sj' &&
+				swConfig[proxySetting] &&
+				typeof swConfig[proxySetting].func === 'function'
+			) {
+				await swConfig[proxySetting].func();
+			}
+
+			await proxy.registerSW(swConfig[proxySetting]);
+			await proxy.setTransports();
+
+			const transport = await proxy.connection.getTransport();
+			if (transport == null) {
+				await proxy.setTransports();
+			}
+
+			setProxyReady(true);
+			console.log('[App] Proxy initialized and ready');
+		});
+	}, []);
+
+	const navigateSession = useCallback(
+		async (sessionId: number, input: string) => {
+			const proxy = proxyRef.current;
+			if (!proxy || !proxyReady) return;
+
+			const encodedUrl = await proxy.convertURL(
+				proxy.config,
+				proxy.proxySetting,
+				input
+			);
+
+			const idx = rawSessions.current.findIndex(
+				s => s.id === sessionId
+			);
+			if (idx !== -1) {
+				rawSessions.current[idx].url = encodedUrl;
+				setSessions([...rawSessions.current]);
+			}
+		},
+		[proxyReady]
+	);
 
 	useEffect(() => {
 		rawSessions.current = sessions;
@@ -100,6 +155,49 @@ const App = () => {
 		fadeTimerRef.current = setTimeout(() => setSiblingsOpaque(false), 500);
 		hideTimerRef.current = setTimeout(() => setSiblingsVisible(false), 900);
 	};
+
+	const getActiveIframe = useCallback((): HTMLIFrameElement | null => {
+		const activeIndex = sessions.findIndex(x => x.id === activeSession);
+		const root = carouselRef.current;
+		if (!root) return null;
+		const containers = root.querySelectorAll('.iframeContainer');
+		const container = containers[activeIndex];
+		if (!container) return null;
+		return container.querySelector('iframe') as HTMLIFrameElement | null;
+	}, [sessions, activeSession]);
+
+	const handleIframeBack = useCallback(() => {
+		const iframe = getActiveIframe();
+		if (iframe?.contentWindow) {
+			try {
+				iframe.contentWindow.history.back();
+			} catch {
+				/* cross-origin */
+			}
+		}
+	}, [getActiveIframe]);
+
+	const handleIframeForward = useCallback(() => {
+		const iframe = getActiveIframe();
+		if (iframe?.contentWindow) {
+			try {
+				iframe.contentWindow.history.forward();
+			} catch {
+				/* cross-origin */
+			}
+		}
+	}, [getActiveIframe]);
+
+	const handleIframeReload = useCallback(() => {
+		const iframe = getActiveIframe();
+		if (iframe?.contentWindow) {
+			try {
+				iframe.contentWindow.location.reload();
+			} catch {
+				if (iframe.src) iframe.src = iframe.src;
+			}
+		}
+	}, [getActiveIframe]);
 
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
@@ -175,6 +273,7 @@ const App = () => {
 									{s.url ? (
 										<iframe
 											src={s.url}
+											data-session-id={s.id}
 											data-true-frame-id={s.id - 1}
 											data-frame-id={index}
 											className="w-full h-full"
@@ -185,13 +284,14 @@ const App = () => {
 													'rgba(24,20,28,0.65)',
 												backdropFilter: 'blur(4px)',
 												WebkitBackdropFilter:
-													'blur(4px)' //todo for normal tabs make the opacity go down, but for newtabs just fuck with background blur because opacity and backgroundblur dont like eachother
+													'blur(4px)'
 											}}
 										/>
 									) : (
 										<NewTab
-											data-true-frame-id={s.id - 1}
-											data-frame-id={index}
+											onNavigate={url =>
+												navigateSession(s.id, url)
+											}
 										/>
 									)}
 								</div>
@@ -291,12 +391,19 @@ const App = () => {
 						sessions={sessions}
 						activeSession={activeSession}
 						carouselRef={carouselRef}
-						onSetSessionUrl={(id, url) => {
+						proxyReady={proxyReady}
+						onNavigate={url =>
+							navigateSession(activeSession, url)
+						}
+						onBack={handleIframeBack}
+						onForward={handleIframeForward}
+						onReload={handleIframeReload}
+						onHome={() => {
 							const idx = rawSessions.current.findIndex(
-								s => s.id === id
+								s => s.id === activeSession
 							);
 							if (idx !== -1) {
-								rawSessions.current[idx].url = url;
+								rawSessions.current[idx].url = '';
 								setSessions([...rawSessions.current]);
 							}
 						}}

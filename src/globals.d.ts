@@ -4,7 +4,7 @@ declare global {
 		__scramjet$config: SJConfig;
 		settings: SettingsAPI;
 		eventsAPI: EventSystem;
-		proxy: Proxy;
+		proxy: import('./utils/proxy').Proxy;
 		logging: Logger;
 		SWconfig: any;
 		SWSettings: any;
@@ -28,6 +28,41 @@ declare global {
 		file: string;
 		config: any;
 		func: Function;
+	}
+
+	interface SJConfig {
+		prefix: string;
+		files: {
+			wasm: string;
+			all?: string;
+			sync: string;
+		};
+		siteFlags?: Record<string, any>;
+		flags?: {
+			captureErrors?: boolean;
+			cleanErrors?: boolean;
+			naiiveRewriter?: boolean;
+			rewriterLogs?: boolean;
+			scramitize?: boolean;
+			serviceworkers?: boolean;
+			sourcemaps?: boolean;
+			strictRewrites?: boolean;
+			syncxhr?: boolean;
+		};
+		codec?: {
+			encode: (url: string) => string;
+			decode: (url: string) => string;
+		};
+		globals?: {
+			wrapfn: string;
+			wrapthisfn: string;
+			trysetfn: string;
+			importfn: string;
+			rewritefn: string;
+			metafn: string;
+			setrealmfn: string;
+			pushsourcemapfn: string;
+		};
 	}
 
 	interface SJOptions {

@@ -117,6 +117,19 @@ const initShadowApp = () => {
 	styleSheet.textContent = indexStyles;
 	shadowRoot.appendChild(styleSheet);
 
+	const uConfig = document.createElement('script');
+	uConfig.src = '/u/config.js';
+	uConfig.defer = true;
+	document.head.appendChild(uConfig);
+	const sConfig = document.createElement('script');
+	sConfig.src = '/s/config.js';
+	sConfig.defer = true;
+	document.head.appendChild(sConfig);
+	const sBundle = document.createElement('script');
+	sBundle.src = '/s/all.js';
+	sBundle.defer = true;
+	document.head.appendChild(sBundle);
+
 	const root = document.createElement('div');
 	root.id = 'root';
 	root.style.width = '100%';
