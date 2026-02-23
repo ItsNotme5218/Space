@@ -1,20 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sessions } from './Sessions';
-import {
-	Gamepad2,
-	LayoutGrid,
-	MonitorPlay,
-	History,
-	Settings
-} from 'lucide-react';
-import logoImg from '@assets/logo.png';
+import { Gamepad2, LayoutGrid, History, Settings } from 'lucide-react';
+import { SiDiscord } from '@icons-pack/react-simple-icons';
+import logoImg from '@assets/logo.webp';
 
 const navItems = [
 	{ id: 'games', icon: Gamepad2 },
 	{ id: 'apps', icon: LayoutGrid },
-	{ id: 'movies', icon: MonitorPlay },
-	{ id: 'history', icon: History },
+	{ id: 'discord', icon: SiDiscord },
+	{ id: 'playback', icon: History },
 	{ id: 'settings', icon: Settings }
 ];
 
@@ -46,7 +41,7 @@ const VDivider = ({
 				filter: blur > 0 ? `blur(${blur}px)` : undefined,
 				transform,
 				pointerEvents: 'none',
-				margin: '-2px 0 0 0',
+				margin: '-2px 0 0 0'
 			}}
 		>
 			<svg width="32" height="8" viewBox="0 0 32 8" fill="none">
@@ -243,11 +238,15 @@ export const Sidebar = ({
 
 	const measurePosition = useCallback(() => {
 		const container = navContainerRef.current;
-		const btn = buttonRefs.current[activeItem] || buttonRefs.current[navItems[0].id];
+		const btn =
+			buttonRefs.current[activeItem] ||
+			buttonRefs.current[navItems[0].id];
 		if (!container || !btn) return;
 		const containerRect = container.getBoundingClientRect();
 		const btnRect = btn.getBoundingClientRect();
-		setIndicatorY(btnRect.top - containerRect.top + btnRect.height / 2 - 20);
+		setIndicatorY(
+			btnRect.top - containerRect.top + btnRect.height / 2 - 20
+		);
 	}, [activeItem]);
 
 	useEffect(() => {
@@ -263,7 +262,7 @@ export const Sidebar = ({
 
 	return (
 		<div
-			className="fixed left-0 bottom-0 h-[calc(100vh-3.5rem)] w-20 z-50 flex flex-col items-center"
+			className="fixed left-0 bottom-0 h-[calc(100vh-3.5rem)] w-4 z-50 flex flex-col items-center"
 			onMouseEnter={() => handleHover(true)}
 			onMouseLeave={() => handleHover(false)}
 		>
@@ -283,55 +282,61 @@ export const Sidebar = ({
 			/>
 
 			<motion.nav
-				initial={{ x: -80, opacity: 0, y: '-50%' }}
+				initial={{ x: -80, opacity: 0 }}
 				animate={{
 					x: isVisible ? 8 : -80,
-					opacity: isVisible ? 1 : 0,
-					y: '-50%'
+					opacity: isVisible ? 1 : 0
 				}}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className="fixed left-0 top-1/2 w-16"
+				className="fixed left-0 bottom-0 w-14 flex flex-col items-center justify-center-safe h-[calc(100vh-4rem+8px)]"
 			>
 				<div
 					ref={navContainerRef}
-					className="relative rounded-full border border-[#1B1B1B] flex flex-col items-center"
+					className="relative rounded-full border w-14 border-[#1B1B1B] flex flex-col items-center"
 					style={{
 						background: 'rgba(14, 14, 16, 0.65)',
 						boxShadow:
 							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
 						backdropFilter: 'blur(4px)',
 						WebkitBackdropFilter: 'blur(4px)',
-						padding: '1.15rem 0.5rem'
+						padding: '0.875rem 0.5rem'
 					}}
 				>
 					<motion.div
 						className="absolute top-0 left-1/2 w-10 h-10 rounded-full pointer-events-none z-20"
-							style={{
-								background: 'rgba(255, 255, 255, 0.04)',
-								boxShadow:
-									'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
-								x: '-50%'
-							}}
-							initial={false}
-							animate={{
-								y: isHome ? 10 : indicatorY,
-								scaleX: 1,
-								scaleY: 1,
-								opacity: isHome ? 0 : 1
-							}}
-							transition={{
-								y: {
-									type: isHome ? 'tween' : 'spring',
-									stiffness: 550,
-									damping: 25,
-									mass: 1
-								},
-								scaleX: { type: 'spring', stiffness: 600, damping: 20 },
-								scaleY: { type: 'spring', stiffness: 600, damping: 20 },
-								opacity: { duration: 0.15 }
-							}}
-						/>
-
+						style={{
+							background: 'rgba(255, 255, 255, 0.04)',
+							boxShadow:
+								'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
+							x: '-50%'
+						}}
+						initial={false}
+						animate={{
+							y: isHome ? 10 : indicatorY,
+							scaleX: 1,
+							scaleY: 1,
+							opacity: isHome ? 0 : 1
+						}}
+						transition={{
+							y: {
+								type: isHome ? 'tween' : 'spring',
+								stiffness: 550,
+								damping: 25,
+								mass: 1
+							},
+							scaleX: {
+								type: 'spring',
+								stiffness: 600,
+								damping: 20
+							},
+							scaleY: {
+								type: 'spring',
+								stiffness: 600,
+								damping: 20
+							},
+							opacity: { duration: 0.15 }
+						}}
+					/>
 
 					<motion.button
 						whileHover={{ scale: 1.1 }}
@@ -366,7 +371,9 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
-								ref={el => { buttonRefs.current[item.id] = el; }}
+								ref={el => {
+									buttonRefs.current[item.id] = el;
+								}}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
 								onClick={() => onItemClick(item.id)}
@@ -403,10 +410,19 @@ export const Sidebar = ({
 						return (
 							<motion.button
 								key={item.id}
-								ref={el => { buttonRefs.current[item.id] = el; }}
+								ref={el => {
+									buttonRefs.current[item.id] = el;
+								}}
 								whileHover={{ scale: 1.1 }}
 								whileTap={{ scale: 0.95 }}
-								onClick={() => onItemClick(item.id)}
+								onClick={() => {
+									if (item.id === 'discord') {
+										window.location.href =
+											'https://discord.night-x.com';
+									} else {
+										onItemClick(item.id);
+									}
+								}}
 								className="relative w-10 h-10 rounded-full flex items-center justify-center"
 							>
 								<Icon
@@ -437,7 +453,7 @@ export const Sidebar = ({
 					<motion.button
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
-						className="flex items-center justify-center mt-2!"
+						className="flex items-center justify-center mt-2"
 					>
 						<NightPlusIcon />
 					</motion.button>

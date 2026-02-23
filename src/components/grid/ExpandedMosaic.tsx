@@ -79,7 +79,7 @@ export const ExpandedMosaic = () => {
 						backdropFilter: 'blur(2px)'
 					}}
 				>
-				<p className="text-white/40 text-sm leading-relaxed">
+					<p className="text-white/40 text-sm leading-relaxed">
 						No description available.
 					</p>
 				</motion.div>

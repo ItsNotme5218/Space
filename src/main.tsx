@@ -6,6 +6,39 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppsPage } from './pages/AppsPage.tsx';
 import { GamesPage } from './pages/GamesPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
+import { PlaybackPage } from './pages/PlaybackPage.tsx';
+import { launchAboutBlank, launchBlob, applyCloak } from './lib/cloak.ts';
+
+(() => {
+	if (window !== window.top) return;
+	const params = new URLSearchParams(window.location.search);
+	if (params.has('redirect')) return;
+
+	const readLocal = <T,>(key: string, fallback: T): T => {
+		try {
+			return JSON.parse(
+				localStorage.getItem(key) || JSON.stringify(fallback)
+			);
+		} catch {
+			return fallback;
+		}
+	};
+
+	const tabCloak = readLocal('tabCloak', 'None');
+	const autoBlank = readLocal('autoAboutBlank', false);
+	const autoBlob = readLocal('autoBlob', false);
+
+	applyCloak(tabCloak);
+
+	if (autoBlank) {
+		launchAboutBlank(tabCloak);
+		return;
+	}
+	if (autoBlob) {
+		launchBlob(tabCloak);
+		return;
+	}
+})();
 
 const originalDocumentOpen = document.open.bind(document);
 const originalDocumentWrite = document.write.bind(document);
@@ -77,8 +110,6 @@ const initShadowApp = () => {
 		staticShell.style.display = 'none';
 	}
 
-	document.title = 'space';
-
 	const appHost = document.getElementById('app-host')!;
 	shadowRoot = appHost.attachShadow({ mode: 'open' });
 
@@ -107,6 +138,7 @@ const initShadowApp = () => {
 						<Route path="apps" element={<AppsPage />} />
 						<Route path="games" element={<GamesPage />} />
 						<Route path="settings" element={<SettingsPage />} />
+						<Route path="playback" element={<PlaybackPage />} />
 					</Route>
 				</Routes>
 			</MemoryRouter>

@@ -29,9 +29,15 @@ export const Sessions = ({
 	};
 
 	return (
-		<div className="flex flex-col items-center mt-2!">
-			<div className="flex flex-col items-center p-2">
+		<div
+			className={
+				'flex flex-col items-center justify-end ' +
+				`${sessions.length >= 5 ? 'grow' : '-mt-1'}`
+			}
+		>
+			<div className="flex flex-col items-center p-2 mb-2">
 				{sessions.map((session, index) => {
+					console.log(sessions.length);
 					const isActive = activeSession === session.id;
 					const isHovered = hoveredSession === session.id;
 					const showClose = isActive && isHovered;
@@ -44,7 +50,7 @@ export const Sessions = ({
 							onMouseLeave={() => setHoveredSession(null)}
 							whileHover={{ scale: 1.08 }}
 							whileTap={{ scale: 0.92 }}
-							className={`relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mb-2!`}
+							className={`relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mt-2`}
 							style={{
 								background: isActive
 									? 'rgba(139, 92, 246, 0.15)'
@@ -113,11 +119,13 @@ export const Sessions = ({
 											'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(203, 166, 247, 0.05) 100%)',
 										border: '1px solid rgba(203, 166, 247, 0.3)'
 									}}
+									initial={{ rotate: 240 }}
+									animate={{ rotate: 0 }}
 									transition={{
 										type: 'spring',
-										stiffness: 500,
-										damping: 15,
-										duration: 0.1
+										stiffness: 128,
+										damping: 10,
+										duration: 1
 									}}
 								/>
 							)}
@@ -131,7 +139,10 @@ export const Sessions = ({
 				whileHover={{ scale: 1.1, rotate: 90 }}
 				whileTap={{ scale: 0.9 }}
 				transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-				className="w-7 h-7 rounded-full flex items-center justify-center"
+				className={
+					'w-7 h-7 rounded-full flex items-center -mt-2 justify-center ' +
+					`${sessions.length >= 5 ? 'hidden' : ''}`
+				}
 				style={{
 					background: 'rgba(26, 26, 26, 0.9)',
 					border: '1px solid rgba(45, 45, 58, 0.6)',

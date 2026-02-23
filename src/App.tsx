@@ -7,6 +7,7 @@ import { SpaceStars } from './components/SpaceStars';
 import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useTabCloak } from './hooks/useTabCloak';
 
 import './App.css';
 
@@ -16,19 +17,20 @@ export interface Session {
 }
 
 const App = () => {
+	useTabCloak();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [sidebarHovered, setSidebarHovered] = useState(false);
 	const [showIntro, setShowIntro] = useState(true);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [particles] = useLocalStorage('particles', true);
+	const [bgMode] = useLocalStorage('bgMode', 'solid');
+	const [bgValue] = useLocalStorage('bgValue', '#050312');
 	const nextIdRef = useRef(2);
-	const rawSessions = useRef<Session[]>([
-		{ id: 1, url: '' }
-	]);
-	const [sessions, setSessions] = useState<Session[]>([
-		{ id: 1, url: '' }
-	]);
+	const carouselRef = useRef<HTMLDivElement>(null);
+	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
+	const [sessions, setSessions] = useState<Session[]>([{ id: 1, url: '' }]);
 	const [activeSession, setActiveSession] = useState(1);
 
 	useEffect(() => {
@@ -39,13 +41,13 @@ const App = () => {
 		navigate(id === 'home' ? '/' : `/${id}`);
 	};
 
-
 	const handleAddSession = () => {
 		const newId = nextIdRef.current++;
 		const entry: Session = { id: newId, url: '' };
 		rawSessions.current.push(entry);
 		setSessions([...rawSessions.current]);
 		setActiveSession(newId);
+		navigate('/');
 	};
 
 	const handleCloseSession = (id: number) => {
@@ -75,17 +77,28 @@ const App = () => {
 	const isSpecialPage =
 		activeItem === 'games' ||
 		activeItem === 'apps' ||
-		activeItem === 'settings';
+		activeItem === 'settings' ||
+		activeItem === 'playback';
 
 	const [switching, setSwitching] = useState(false);
+	const [siblingsOpaque, setSiblingsOpaque] = useState(false);
+	const [siblingsVisible, setSiblingsVisible] = useState(false);
 	const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const handleSessionSwitch = (id: number) => {
 		if (id === activeSession) return;
 		setSwitching(true);
+		setSiblingsOpaque(true);
+		setSiblingsVisible(true);
 		setActiveSession(id);
 		if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+		if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+		if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
 		switchTimerRef.current = setTimeout(() => setSwitching(false), 500);
+		fadeTimerRef.current = setTimeout(() => setSiblingsOpaque(false), 500);
+		hideTimerRef.current = setTimeout(() => setSiblingsVisible(false), 900);
 	};
 
 	const renderMainContent = () => {
@@ -95,15 +108,16 @@ const App = () => {
 		return (
 			<>
 				<motion.div
+					ref={carouselRef}
 					animate={{
 						scale: switching ? 0.85 : 1,
-						opacity: switching ? 0.7 : 1,
+						opacity: switching ? 0.7 : 1
 					}}
 					transition={{
 						type: 'spring',
 						stiffness: 170,
 						damping: 15,
-						mass: 0.4,
+						mass: 0.4
 					}}
 					className="absolute inset-2"
 					style={{
@@ -114,11 +128,13 @@ const App = () => {
 					}}
 				>
 					<motion.div
-						animate={{ x: `${-activeIndex * (100 / sessions.length)}%` }}
+						animate={{
+							x: `calc(${-activeIndex * (100 / sessions.length)}% - ((${activeIndex}) * 8px))`
+						}}
 						transition={{
 							type: 'spring',
 							stiffness: 650,
-							damping: 75,
+							damping: 75
 						}}
 						style={{
 							position: 'absolute',
@@ -126,7 +142,7 @@ const App = () => {
 							left: 0,
 							height: '100%',
 							display: 'flex',
-							width: `${sessions.length * 100}%`,
+							width: `${sessions.length * 100}%`
 						}}
 					>
 						{sessions.map((s, index) => {
@@ -136,12 +152,24 @@ const App = () => {
 									key={s.id}
 									className="iframeContainer"
 									style={{
-										width: `${100 / sessions.length}%`,
+										width: `calc(${100 / sessions.length}%`,
 										height: '100%',
 										flexShrink: 0,
-										pointerEvents: isActive ? 'auto' : 'none',
-										visibility: (isActive || switching) ? 'visible' : 'hidden',
-										paddingLeft: '8px'
+										pointerEvents: isActive
+											? 'auto'
+											: 'none',
+										opacity: isActive
+											? 1
+											: siblingsOpaque
+												? 0.7
+												: 0,
+										transition: 'opacity 0.4s ease',
+										visibility:
+											isActive || siblingsVisible
+												? 'visible'
+												: 'hidden',
+										paddingLeft: '0px',
+										marginRight: '8px'
 									}}
 								>
 									{s.url ? (
@@ -153,13 +181,18 @@ const App = () => {
 											style={{
 												borderRadius: 12,
 												border: '1px solid rgba(255,255,255,0.06)',
-												background: 'rgba(24,20,28,0.2)',
+												background:
+													'rgba(24,20,28,0.65)',
 												backdropFilter: 'blur(4px)',
-												WebkitBackdropFilter: 'blur(4px)',
+												WebkitBackdropFilter:
+													'blur(4px)' //todo for normal tabs make the opacity go down, but for newtabs just fuck with background blur because opacity and backgroundblur dont like eachother
 											}}
 										/>
 									) : (
-										<NewTab />
+										<NewTab
+											data-true-frame-id={s.id - 1}
+											data-frame-id={index}
+										/>
 									)}
 								</div>
 							);
@@ -185,29 +218,57 @@ const App = () => {
 		);
 	};
 
+	const bgStyle = (() => {
+		if (particles) return { background: '#050312' };
+		switch (bgMode) {
+			case 'image':
+				return {
+					background: '#050312',
+					backgroundImage: `url(${bgValue})`,
+					backgroundSize: 'cover',
+					backgroundPosition: 'center'
+				};
+			case 'solid':
+				return { background: bgValue || '#050312' };
+			default:
+				return { background: '#050312' };
+		}
+	})();
+
 	return (
 		<div
 			className="h-screen flex flex-col overflow-hidden"
-			style={{ background: '#050312' }}
+			style={bgStyle}
 		>
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
-				<SpaceStars mode="background" />
+				{particles && <SpaceStars mode="background" />}
 			</div>
 
 			{showIntro && (
 				<IntroSplash onComplete={() => setShowIntro(false)} />
 			)}
 
-			<div className="relative flex flex-col h-full" style={{ zIndex: 1 }}>
-			{!isSpecialPage && (
-				<div className="shrink-0" style={{ height: '3rem' }} />
-			)}
+			<div
+				className="relative flex flex-col h-full"
+				style={{ zIndex: 1 }}
+			>
+				{!isSpecialPage && (
+					<div className="shrink-0" style={{ height: '3rem' }} />
+				)}
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
 						animate={{
-							width: isSpecialPage ? '4rem' : (!autoHideSidebar || sidebarHovered) ? '4rem' : 0
+							width: isSpecialPage
+								? '4rem'
+								: !autoHideSidebar || sidebarHovered
+									? '4rem'
+									: 0
 						}}
-						transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+						transition={{
+							type: 'spring',
+							stiffness: 300,
+							damping: 30
+						}}
 						className="shrink-0"
 					/>
 					<main className="flex-1 relative">
@@ -225,7 +286,22 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-				{!isSpecialPage && <TopBar />}
+				{!isSpecialPage && (
+					<TopBar
+						sessions={sessions}
+						activeSession={activeSession}
+						carouselRef={carouselRef}
+						onSetSessionUrl={(id, url) => {
+							const idx = rawSessions.current.findIndex(
+								s => s.id === id
+							);
+							if (idx !== -1) {
+								rawSessions.current[idx].url = url;
+								setSessions([...rawSessions.current]);
+							}
+						}}
+					/>
+				)}
 			</div>
 		</div>
 	);

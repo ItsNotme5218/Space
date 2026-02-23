@@ -29,7 +29,7 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 					style={{
 						position: 'fixed',
 						inset: 0,
-						zIndex: 9999,
+						zIndex: 9999
 					}}
 				>
 					<SpaceStars
@@ -44,14 +44,13 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 							right: 20,
 							bottom: '25px',
 							overflow: 'hidden',
-							zIndex: 9999,
+							zIndex: 9999
 						}}
 					>
 						<motion.button
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 0.5 }}
-							whileHover={{ opacity: 1, scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
+							whileHover={{ opacity: 1 }}
 							transition={{ duration: 0.3 }}
 							onClick={() => setFading(true)}
 							style={{
@@ -61,13 +60,14 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 								padding: '6px 16px',
 								color: 'rgba(255, 255, 255, 0.7)',
 								fontSize: 13,
-								fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
+								fontFamily:
+									"'DM Sans', 'Inter', system-ui, sans-serif",
 								cursor: 'pointer',
 								backdropFilter: 'blur(8px)',
-								letterSpacing: '0.02em',
+								letterSpacing: '0.02em'
 							}}
 						>
-							not jackin ts ode
+							skip
 						</motion.button>
 					</div>
 
@@ -81,7 +81,7 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 							background: 'rgba(255,255,255,0.06)',
 							overflow: 'hidden',
 							zIndex: 9999,
-							filter: 'blur(2px)',
+							filter: 'blur(2px)'
 						}}
 					>
 						<motion.div
@@ -93,8 +93,9 @@ export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 								height: '100%',
 								width: '100%',
 								transformOrigin: 'left center',
-								background: 'linear-gradient(90deg, rgba(139,92,246,0.6), rgba(167,139,250,0.8))',
-								boxShadow: '0 0 12px rgba(139,92,246,0.4)',
+								background:
+									'linear-gradient(90deg, rgba(139,92,246,0.6), rgba(167,139,250,0.8))',
+								boxShadow: '0 0 12px rgba(139,92,246,0.4)'
 							}}
 						/>
 					</div>

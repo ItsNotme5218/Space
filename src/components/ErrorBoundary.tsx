@@ -10,7 +10,10 @@ interface ErrorBoundaryState {
 	error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+	ErrorBoundaryProps,
+	ErrorBoundaryState
+> {
 	constructor(props: ErrorBoundaryProps) {
 		super(props);
 		this.state = { hasError: false, error: null };
@@ -32,16 +35,21 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 					style={{ background: 'var(--color-background)' }}
 				>
 					<div className="text-center">
-						<h1 className="text-4xl font-bold text-white/90 mb-4">Something went wrong</h1>
-						<p className="text-white/40 mb-6">{this.state.error?.message}</p>
+						<h1 className="text-4xl font-bold text-white/90 mb-4">
+							Something went wrong
+						</h1>
+						<p className="text-white/40 mb-6">
+							{this.state.error?.message}
+						</p>
 						<button
 							onClick={() => window.location.reload()}
 							className="px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer"
 							style={{
-								background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
+								background:
+									'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
 								border: '1px solid rgba(139,92,246,0.22)',
 								color: '#c4b5fd',
-								boxShadow: '0 0 16px rgba(139,92,246,0.15)',
+								boxShadow: '0 0 16px rgba(139,92,246,0.15)'
 							}}
 						>
 							Reload Page
@@ -64,9 +72,13 @@ export function ErrorBoundaryRoute() {
 			style={{ background: 'var(--color-background)' }}
 		>
 			<div className="text-center">
-				<h1 className="text-4xl font-bold text-white/90 mb-4">Page not found</h1>
+				<h1 className="text-4xl font-bold text-white/90 mb-4">
+					Page not found
+				</h1>
 				{isRouteErrorResponse(error) && (
-					<p className="text-white/40 mb-6">{error.statusText || error.status}</p>
+					<p className="text-white/40 mb-6">
+						{error.statusText || error.status}
+					</p>
 				)}
 				<a
 					href="/"
@@ -75,7 +87,7 @@ export function ErrorBoundaryRoute() {
 						background: 'rgba(255,255,255,0.04)',
 						border: '1px solid rgba(255,255,255,0.07)',
 						color: 'rgba(255,255,255,0.45)',
-						textDecoration: 'none',
+						textDecoration: 'none'
 					}}
 				>
 					Go Home
