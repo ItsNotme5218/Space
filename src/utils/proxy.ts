@@ -7,7 +7,9 @@ interface ProxyInterface {
 	transportVar: string;
 	wispUrl: string;
 	settings: SettingsAPI;
-	isStaticBuild: boolean;
+	config: Record<string, any>;
+	swConfigSettings: Record<string, any>;
+	proxySetting: string;
 	setTransports(): Promise<void>;
 	search(input: string): string;
 	registerSW(swConfig: any): Promise<void>;
@@ -26,16 +28,18 @@ class Proxy implements ProxyInterface {
 	transportVar!: string;
 	wispUrl!: string;
 	settings!: SettingsAPI;
+	config!: Record<string, any>;
+	swConfigSettings!: Record<string, any>;
+	proxySetting!: string;
 	isStaticBuild: boolean = false;
 
 	constructor() {
 		this.connection = new BareMux.BareMuxConnection('/bmworker/worker.js');
 
 		this.settings = new SettingsAPI();
-		this.isStaticBuild = false;
 
 		(async () => {
-			let swConfigSettings: Record<string, any> = {};
+			this.swConfigSettings = {};
 			this.config = {
 				uv: {
 					type: 'sw',
@@ -68,9 +72,9 @@ class Proxy implements ProxyInterface {
 			this.wispUrl =
 				(await this.settings.getItem('wisp')) ||
 				(location.protocol === 'https:' ? 'wss' : 'ws') +
-					'://' +
-					location.host +
-					'/wisp/';
+				'://' +
+				location.host +
+				'/wisp/';
 		})();
 	}
 
@@ -87,9 +91,9 @@ class Proxy implements ProxyInterface {
 		const wispUrl =
 			this.wispUrl ||
 			(location.protocol === 'https:' ? 'wss' : 'ws') +
-				'://' +
-				location.host +
-				'/wisp/';
+			'://' +
+			location.host +
+			'/wisp/';
 
 		const transportOptions: Record<string, any> = {
 			base: transportFile,
@@ -120,8 +124,8 @@ class Proxy implements ProxyInterface {
 		]);
 
 		/*await this.connection.setTransport(transportFile, [
-      { ...transportOptions },
-    ]);*/ // debug function
+	  { ...transportOptions },
+	]);*/ // debug function
 
 		console.log('[Proxy] Transport set with options:', transportOptions);
 	}
