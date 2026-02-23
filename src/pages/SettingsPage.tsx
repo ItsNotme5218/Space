@@ -20,7 +20,7 @@ import {
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { launchAboutBlank, launchBlob, normalizeUrl } from '../lib/cloak';
-import bgPresets from '../data/backgrounds.json';
+import bgPresets from '../json/backgrounds.json';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
