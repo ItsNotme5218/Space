@@ -27,9 +27,28 @@ const getGreeting = (): string => {
 	return 'Good night';
 };
 
-const getTime = (): string => {
+const readLS = (key: string, fallback: boolean): boolean => {
+	try {
+		const v = localStorage.getItem(key);
+		return v !== null ? JSON.parse(v) : fallback;
+	} catch { return fallback; }
+};
+
+const writeLS = (key: string, value: boolean) => {
+	localStorage.setItem(key, JSON.stringify(value));
+	window.dispatchEvent(new CustomEvent('local-storage', { detail: { key } }));
+};
+
+const formatTime = (hour12: boolean): { time: string; period: string } => {
 	const now = new Date();
-	return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+	if (!hour12) {
+		return { time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }), period: '' };
+	}
+	const h = now.getHours();
+	const m = now.getMinutes();
+	const period = h >= 12 ? 'PM' : 'AM';
+	const h12 = h % 12 || 12;
+	return { time: `${h12}:${m.toString().padStart(2, '0')}`, period };
 };
 
 interface NewTabProps {
@@ -39,13 +58,37 @@ interface NewTabProps {
 export const NewTab = ({ onNavigate }: NewTabProps) => {
 	const [searchFocused, setSearchFocused] = useState(false);
 	const [searchValue, setSearchValue] = useState('');
-	const [time, setTime] = useState(getTime);
+	const [hour12, setHour12] = useState(() => readLS('clock12h', false));
+	const [lockFormat, setLockFormat] = useState(() => readLS('clockLock', false));
+	const [timeParts, setTimeParts] = useState(() => formatTime(hour12));
 	const [greeting] = useState(getGreeting);
 
 	useEffect(() => {
-		const interval = setInterval(() => setTime(getTime()), 10_000);
-		return () => clearInterval(interval);
+		const update = () => {
+			setHour12(readLS('clock12h', false));
+			setLockFormat(readLS('clockLock', false));
+		};
+		window.addEventListener('storage', update);
+		window.addEventListener('local-storage', update);
+		return () => {
+			window.removeEventListener('storage', update);
+			window.removeEventListener('local-storage', update);
+		};
 	}, []);
+
+	useEffect(() => {
+		setTimeParts(formatTime(hour12));
+		const interval = setInterval(() => setTimeParts(formatTime(hour12)), 10_000);
+		return () => clearInterval(interval);
+	}, [hour12]);
+
+	const handleClockClick = () => {
+		if (lockFormat) return;
+		const next = !hour12;
+		setHour12(next);
+		writeLS('clock12h', next);
+		setTimeParts(formatTime(next));
+	};
 
 	const handleSearchSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -64,7 +107,6 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 			className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
 			style={{ background: 'transparent' }}
 		>
-			{/* Subtle radial glow behind content */}
 			<div
 				className="absolute pointer-events-none"
 				style={{
@@ -78,23 +120,50 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				}}
 			/>
 
-			{/* Clock and greeting */}
 			<motion.div
 				initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
 				animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
 				transition={{ ...SPRING_SOFT, delay: 0 }}
 				className="flex flex-col items-center mb-8 select-none"
 			>
-				<motion.span
-					className="text-[56px] font-extralight tracking-tight leading-none"
-					style={{
-						fontFamily: FONT,
-						color: 'rgba(255, 255, 255, 0.85)',
-						textShadow: '0 0 40px rgba(139, 92, 246, 0.15)'
-					}}
+				<motion.div
+					className="relative"
+					onClick={handleClockClick}
+					whileTap={lockFormat ? {} : { scale: 0.97 }}
+					style={{ cursor: lockFormat ? 'default' : 'pointer' }}
 				>
-					{time}
-				</motion.span>
+					<motion.span
+						className="text-[56px] font-extralight tracking-tight leading-none"
+						style={{
+							fontFamily: FONT,
+							color: 'rgba(255, 255, 255, 0.85)',
+							textShadow: '0 0 40px rgba(139, 92, 246, 0.15)'
+						}}
+					>
+						{timeParts.time}
+					</motion.span>
+					<AnimatePresence>
+						{timeParts.period && (
+							<motion.span
+								key="period"
+								initial={{ opacity: 0, filter: 'blur(4px)' }}
+								animate={{ opacity: 1, filter: 'blur(0px)' }}
+								exit={{ opacity: 0, filter: 'blur(4px)' }}
+								transition={{ duration: 0.2 }}
+								className="absolute text-[18px] font-light tracking-wide"
+								style={{
+									fontFamily: FONT,
+									color: 'rgba(255, 255, 255, 0.25)',
+									right: 0,
+									bottom: 0,
+									transform: 'translate(calc(100% + 6px), -4px)'
+								}}
+							>
+								{timeParts.period}
+							</motion.span>
+						)}
+					</AnimatePresence>
+				</motion.div>
 				<motion.span
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
@@ -110,7 +179,6 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				</motion.span>
 			</motion.div>
 
-			{/* Search bar */}
 			<motion.div
 				initial={{ opacity: 0, y: 16, scale: 0.97 }}
 				animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -194,7 +262,6 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				</form>
 			</motion.div>
 
-			{/* Shortcuts grid */}
 			<motion.div
 				initial={{ opacity: 0, y: 12 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -230,7 +297,6 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 								}}
 								transition={{ duration: 0.2 }}
 							>
-								{/* Subtle glow on hover */}
 								<div
 									className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
 									style={{

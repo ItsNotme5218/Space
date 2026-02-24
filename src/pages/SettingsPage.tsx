@@ -852,6 +852,8 @@ const AppearPanel = () => {
 		'autoHideSidebar',
 		true
 	);
+	const [clock12h, setClock12h] = useLocalStorage('clock12h', false);
+	const [clockLock, setClockLock] = useLocalStorage('clockLock', false);
 
 	return (
 		<div className="flex flex-col gap-12">
@@ -861,6 +863,21 @@ const AppearPanel = () => {
 					desc="Sidebar slides away when not hovered"
 				>
 					<Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
+				</Row>
+			</Section>
+
+			<Section title="New Tab" delay={0.03}>
+				<Row
+					label="12-Hour Clock"
+					desc="Show time in 12-hour format with AM/PM"
+				>
+					<Toggle on={clock12h} set={setClock12h} />
+				</Row>
+				<Row
+					label="Lock Clock Format"
+					desc="Disable clicking the clock to switch format"
+				>
+					<Toggle on={clockLock} set={setClockLock} />
 				</Row>
 			</Section>
 
