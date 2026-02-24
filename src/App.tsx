@@ -55,6 +55,8 @@ const App = () => {
 				await swConfig[proxySetting].func();
 			}
 
+			console.log(swConfig[proxySetting]);
+
 			await proxy.registerSW(swConfig[proxySetting]);
 			await proxy.setTransports();
 
@@ -210,12 +212,24 @@ const App = () => {
 	}, [sessions, activeSession]);
 
 	const handleIframeBack = useCallback(() => {
-		console.log(`${activeSession} navigated back`);
-	}, [activeSession]);
+		const iframe = getActiveIframe();
+		if (!iframe?.contentWindow) return;
+		try {
+			iframe.contentWindow.history.back();
+		} catch {
+			/* cross-origin – can't navigate */
+		}
+	}, [getActiveIframe]);
 
 	const handleIframeForward = useCallback(() => {
-		console.log(`${activeSession} navigated forward`);
-	}, [activeSession]);
+		const iframe = getActiveIframe();
+		if (!iframe?.contentWindow) return;
+		try {
+			iframe.contentWindow.history.forward();
+		} catch {
+			/* cross-origin – can't navigate */
+		}
+	}, [getActiveIframe]);
 
 	const handleIframeReload = useCallback(() => {
 		const iframe = getActiveIframe();

@@ -111,24 +111,31 @@ export const TopBar = ({
 
 	const decodeProxyUrl = useCallback((proxyUrl: string): string => {
 		if (!proxyUrl) return '';
+
+		// Strip origin so both "/s/res/..." and "http://host/s/res/..." work
+		let path = proxyUrl;
 		try {
-			if (window.__uv$config && proxyUrl.startsWith(window.__uv$config.prefix)) {
-				const encoded = proxyUrl.slice(window.__uv$config.prefix.length);
-				return window.__uv$config.decodeUrl(encoded);
+			const u = new URL(proxyUrl, window.location.origin);
+			path = u.pathname + u.search + u.hash;
+		} catch {
+			/* already a relative path */
+		}
+
+		// Both UV and SJ prefixes — convertURL always encodes with UV's encoder
+		const uvPrefix = window.__uv$config?.prefix || '/u/res/';
+		const sjPrefix = window.proxy?.scramConfig?.prefix || '/s/res/';
+
+		try {
+			let encoded: string | null = null;
+
+			if (path.startsWith(uvPrefix)) {
+				encoded = path.slice(uvPrefix.length);
+			} else if (path.startsWith(sjPrefix)) {
+				encoded = path.slice(sjPrefix.length);
 			}
-			if (
-				window.__scramjet$config &&
-				proxyUrl.startsWith(window.__scramjet$config.prefix)
-			) {
-				const encoded = proxyUrl.slice(
-					window.__scramjet$config.prefix.length
-				);
-				if (
-					window.__scramjet$config.codec &&
-					typeof window.__scramjet$config.codec.decode === 'function'
-				) {
-					return window.__scramjet$config.codec.decode(encoded);
-				}
+
+			if (encoded !== null && window.__uv$config?.decodeUrl) {
+				return window.__uv$config.decodeUrl(encoded);
 			}
 		} catch {
 			/* ignore decode errors */

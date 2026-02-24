@@ -119,15 +119,15 @@ const initShadowApp = () => {
 
 	const uConfig = document.createElement('script');
 	uConfig.src = '/u/config.js';
-	uConfig.defer = true;
+	//uConfig.defer = true; disable defer for a fix in the config not being loaded
 	document.head.appendChild(uConfig);
 	const sConfig = document.createElement('script');
 	sConfig.src = '/s/config.js';
-	sConfig.defer = true;
+	//sConfig.defer = true; disable defer for a fix in the config not being loaded
 	document.head.appendChild(sConfig);
 	const sBundle = document.createElement('script');
 	sBundle.src = '/s/all.js';
-	sBundle.defer = true;
+	//sBundle.defer = true; disable defer for a fix in the config not being loaded
 	document.head.appendChild(sBundle);
 
 	const root = document.createElement('div');

@@ -36,17 +36,17 @@ export default defineConfig({
 		},
 		proxy: {
 			'/api': {
-				target: 'http://localhost:8080',
+				target: 'http://localhost:6060',
 				changeOrigin: true
 			},
 			'/w/': {
-				target: 'ws://localhost:8080/w/',
+				target: 'ws://localhost:6060/w/',
 				changeOrigin: true,
 				ws: true,
 				rewrite: path => path.replace(/^\/w\//, '')
 			},
 			'/auth': {
-				target: 'http://localhost:8080',
+				target: 'http://localhost:6060',
 				changeOrigin: true
 			}
 		}

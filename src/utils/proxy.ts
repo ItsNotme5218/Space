@@ -33,6 +33,7 @@ class Proxy implements ProxyInterface {
 	proxySetting!: string;
 	isStaticBuild: boolean = false;
 	ready: Promise<void>;
+	scramConfig!: SJConfig;
 
 	constructor() {
 		this.connection = new BareMux.BareMuxConnection('/b/worker.js');
@@ -40,6 +41,59 @@ class Proxy implements ProxyInterface {
 		this.settings = new SettingsAPI();
 
 		this.ready = (async () => {
+			this.scramConfig = {
+				prefix: "/s/res/",
+				files: {
+					wasm: "/s/wasm.wasm",
+					all: "/s/all.js",
+					sync: "/s/sync.js",
+				},
+				siteFlags: {
+					"https://discord.com/.*": {
+						naiiveRewriter: false,
+					},
+				},
+				flags: {
+					captureErrors: false,
+					cleanErrors: true,
+					naiiveRewriter: false,
+					rewriterLogs: false,
+					scramitize: false,
+					serviceworkers: false,
+					sourcemaps: true,
+					strictRewrites: true,
+					syncxhr: false,
+				},
+				codec: {
+					encode: (url) => {
+						if (!url) return url;
+						return encodeURIComponent(
+							url
+								.toString()
+								.split("")
+								.map((char, ind) =>
+									ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char,
+								)
+								.join(""),
+						);
+					},
+
+					decode: (url) => {
+						if (!url) return url;
+						let [input, ...search] = url.split("?");
+
+						return (
+							decodeURIComponent(input)
+								.split("")
+								.map((char, ind) =>
+									ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char,
+								)
+								.join("") + (search.length ? "?" + search.join("?") : "")
+						);
+					},
+				},
+			};
+
 			this.swConfigSettings = {};
 			this.config = {
 				uv: {
@@ -51,12 +105,12 @@ class Proxy implements ProxyInterface {
 				sj: {
 					type: 'sw',
 					file: '/sw.js',
-					config: window.__scramjet$config,
+					config: this.scramConfig,
 					func: async () => {
 						// @ts-ignore
-const { ScramjetController } = $scramjetLoadController();
+						const { ScramjetController } = $scramjetLoadController();
 						const scramjet = new ScramjetController(
-							window.__scramjet$config
+							this.scramConfig
 						);
 						scramjet.init().then(async () => {
 							await this.setTransports();
@@ -253,9 +307,9 @@ const { ScramjetController } = $scramjetLoadController();
 		switch (swConfigSettings.type) {
 			case 'sw': {
 				let encodedUrl: string;
-					encodedUrl =
-						swConfigSettings.config.prefix +
-						window.__uv$config.encodeUrl(this.search(url));
+				encodedUrl =
+					swConfigSettings.config.prefix +
+					window.__uv$config.encodeUrl(this.search(url));
 				console.log('[Proxy] Redirecting iframe to:', encodedUrl);
 				activeIframe.src = encodedUrl;
 				break;
