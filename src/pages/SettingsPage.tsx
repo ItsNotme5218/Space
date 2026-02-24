@@ -67,19 +67,25 @@ const Select = ({
 	onChange: (v: string) => void;
 }) => {
 	const [open, setOpen] = useState(false);
-	const [dropUp, setDropUp] = useState(false);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const wrapperRef = useClickOutside<HTMLDivElement>(
 		useCallback(() => setOpen(false), [])
 	);
 
+	const [dropUp, setDropUp] = useState(false);
+
 	useEffect(() => {
-		if (open && triggerRef.current) {
+		const id = requestAnimationFrame(() => {
+			if (!open || !triggerRef.current) {
+				setDropUp(false);
+				return;
+			}
 			const rect = triggerRef.current.getBoundingClientRect();
 			const spaceBelow = window.innerHeight - rect.bottom;
 			const estimatedHeight = options.length * 44 + 16;
 			setDropUp(spaceBelow < estimatedHeight && rect.top > spaceBelow);
-		}
+		});
+		return () => cancelAnimationFrame(id);
 	}, [open, options.length]);
 
 	return (

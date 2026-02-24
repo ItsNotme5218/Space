@@ -5,6 +5,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { allowedHosts } from './srv/vite/hosts';
 import { viteStaticCopy} from 'vite-plugin-static-copy';
 import { copyRoutes } from './srv/vite/copy';
+import { resolve } from 'path';
 
 export default defineConfig({
 	plugins: [
@@ -20,7 +21,13 @@ export default defineConfig({
 		transformer: 'lightningcss'
 	},
 	build: {
-		cssCodeSplit: false
+		cssCodeSplit: false,
+		rollupOptions: {
+			input: {
+				main: resolve(__dirname, 'index.html'),
+				newtab: resolve(__dirname, 'newtab.html')
+			}
+		}
 	},
 	server: {
 		allowedHosts: allowedHosts,

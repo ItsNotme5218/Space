@@ -1,20 +1,36 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ArrowRight } from 'lucide-react';
 
-const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
 const SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 };
+const SPRING_SOFT = { type: 'spring' as const, stiffness: 200, damping: 22 };
+
+const FONT = "'DM Sans', 'Inter', system-ui, sans-serif";
 
 const shortcuts = [
-	{ name: 'YouTube', url: 'https://youtube.com', color: '#FF0000' },
-	{ name: 'Discord', url: 'https://discord.com', color: '#5865F2' },
-	{ name: 'Reddit', url: 'https://reddit.com', color: '#FF4500' },
-	{ name: 'GitHub', url: 'https://github.com', color: '#8b5cf6' },
-	{ name: 'Twitch', url: 'https://twitch.tv', color: '#9146FF' },
-	{ name: 'Twitter', url: 'https://x.com', color: '#1DA1F2' },
-	{ name: 'Netflix', url: 'https://netflix.com', color: '#E50914' },
-	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954' }
+	{ name: 'YouTube', url: 'https://youtube.com', color: '#FF0000', letter: 'Y' },
+	{ name: 'Discord', url: 'https://discord.com', color: '#5865F2', letter: 'D' },
+	{ name: 'Reddit', url: 'https://reddit.com', color: '#FF4500', letter: 'R' },
+	{ name: 'GitHub', url: 'https://github.com', color: '#8b5cf6', letter: 'G' },
+	{ name: 'Twitch', url: 'https://twitch.tv', color: '#9146FF', letter: 'T' },
+	{ name: 'Twitter', url: 'https://x.com', color: '#1DA1F2', letter: 'X' },
+	{ name: 'Netflix', url: 'https://netflix.com', color: '#E50914', letter: 'N' },
+	{ name: 'Spotify', url: 'https://spotify.com', color: '#1DB954', letter: 'S' }
 ];
+
+const getGreeting = (): string => {
+	const hour = new Date().getHours();
+	if (hour < 5) return 'Good night';
+	if (hour < 12) return 'Good morning';
+	if (hour < 17) return 'Good afternoon';
+	if (hour < 21) return 'Good evening';
+	return 'Good night';
+};
+
+const getTime = (): string => {
+	const now = new Date();
+	return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 interface NewTabProps {
 	onNavigate?: (url: string) => void;
@@ -23,6 +39,13 @@ interface NewTabProps {
 export const NewTab = ({ onNavigate }: NewTabProps) => {
 	const [searchFocused, setSearchFocused] = useState(false);
 	const [searchValue, setSearchValue] = useState('');
+	const [time, setTime] = useState(getTime);
+	const [greeting] = useState(getGreeting);
+
+	useEffect(() => {
+		const interval = setInterval(() => setTime(getTime()), 10_000);
+		return () => clearInterval(interval);
+	}, []);
 
 	const handleSearchSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -31,30 +54,67 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 		onNavigate(query);
 	};
 
-	const handleShortcutClick = (
-		e: React.MouseEvent,
-		url: string
-	) => {
+	const handleShortcutClick = (e: React.MouseEvent, url: string) => {
 		e.preventDefault();
-		if (onNavigate) {
-			onNavigate(url);
-		}
+		onNavigate?.(url);
 	};
 
 	return (
 		<div
-			className="w-full h-full flex flex-col items-center justify-center rounded-xl"
-			style={{
-				background: 'rgba(24, 20, 28, 0.4)',
-				backdropFilter: 'blur(4px)',
-				WebkitBackdropFilter: 'blur(4px)',
-				border: '1px solid rgba(255, 255, 255, 0.06)'
-			}}
+			className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
+			style={{ background: 'transparent' }}
 		>
+			{/* Subtle radial glow behind content */}
+			<div
+				className="absolute pointer-events-none"
+				style={{
+					width: 600,
+					height: 600,
+					top: '50%',
+					left: '50%',
+					transform: 'translate(-50%, -55%)',
+					background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.06) 0%, rgba(139, 92, 246, 0.02) 40%, transparent 70%)',
+					filter: 'blur(40px)'
+				}}
+			/>
+
+			{/* Clock and greeting */}
 			<motion.div
-				initial={{ opacity: 0, y: 24, scale: 0.96 }}
+				initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+				animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+				transition={{ ...SPRING_SOFT, delay: 0 }}
+				className="flex flex-col items-center mb-8 select-none"
+			>
+				<motion.span
+					className="text-[56px] font-extralight tracking-tight leading-none"
+					style={{
+						fontFamily: FONT,
+						color: 'rgba(255, 255, 255, 0.85)',
+						textShadow: '0 0 40px rgba(139, 92, 246, 0.15)'
+					}}
+				>
+					{time}
+				</motion.span>
+				<motion.span
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 0.15, duration: 0.4 }}
+					className="text-sm font-medium tracking-wide mt-1.5"
+					style={{
+						fontFamily: FONT,
+						color: 'rgba(255, 255, 255, 0.3)',
+						letterSpacing: '0.08em'
+					}}
+				>
+					{greeting}
+				</motion.span>
+			</motion.div>
+
+			{/* Search bar */}
+			<motion.div
+				initial={{ opacity: 0, y: 16, scale: 0.97 }}
 				animate={{ opacity: 1, y: 0, scale: 1 }}
-				transition={{ ...soft, delay: 0.05 }}
+				transition={{ ...SPRING_SOFT, delay: 0.08 }}
 				className="w-full px-6"
 				style={{ maxWidth: 520 }}
 			>
@@ -62,29 +122,29 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 					<motion.div
 						animate={{
 							boxShadow: searchFocused
-								? '0 0 32px rgba(139, 92, 246, 0.2), 0 4px 32px rgba(0, 0, 0, 0.5)'
-								: '0 0 20px rgba(139, 92, 246, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4)',
+								? '0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 24px rgba(139, 92, 246, 0.12), 0 4px 24px rgba(0, 0, 0, 0.4)'
+								: '0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
 							borderColor: searchFocused
-								? 'rgba(139, 92, 246, 0.35)'
-								: 'rgba(255, 255, 255, 0.08)'
+								? 'rgba(139, 92, 246, 0.3)'
+								: 'rgba(27, 27, 27, 0.8)'
 						}}
 						transition={{ duration: 0.2 }}
-						className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
+						className="flex items-center gap-3 px-4 py-3 rounded-2xl"
 						style={{
-							background: 'rgba(255, 255, 255, 0.07)',
-							backdropFilter: 'blur(12px)',
-							WebkitBackdropFilter: 'blur(12px)',
-							border: '1px solid rgba(255, 255, 255, 0.08)'
+							background: 'rgba(14, 14, 16, 0.65)',
+							backdropFilter: 'blur(4px)',
+							WebkitBackdropFilter: 'blur(4px)',
+							border: '1px solid rgba(27, 27, 27, 0.8)'
 						}}
 					>
 						<Search
 							className="shrink-0"
 							style={{
-								width: 18,
-								height: 18,
+								width: 16,
+								height: 16,
 								color: searchFocused
-									? 'rgba(167, 139, 250, 0.7)'
-									: 'rgba(255, 255, 255, 0.3)',
+									? 'rgba(139, 92, 246, 0.6)'
+									: 'rgba(255, 255, 255, 0.2)',
 								transition: 'color 0.2s'
 							}}
 						/>
@@ -95,67 +155,104 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 							onChange={e => setSearchValue(e.target.value)}
 							onFocus={() => setSearchFocused(true)}
 							onBlur={() => setSearchFocused(false)}
-							className="flex-1 bg-transparent border-none outline-none text-white/80 placeholder-white/25"
+							className="flex-1 bg-transparent border-none outline-none"
 							style={{
-								fontSize: 15,
-								fontFamily:
-									"'DM Sans', 'Inter', system-ui, sans-serif",
-								letterSpacing: '0.01em'
+								fontSize: 14,
+								fontFamily: FONT,
+								letterSpacing: '0.01em',
+								color: 'rgba(255, 255, 255, 0.75)',
+								caretColor: '#8b5cf6'
 							}}
 						/>
+						<AnimatePresence>
+							{searchValue.trim() && (
+								<motion.button
+									type="submit"
+									initial={{ opacity: 0, scale: 0.8 }}
+									animate={{ opacity: 1, scale: 1 }}
+									exit={{ opacity: 0, scale: 0.8 }}
+									transition={{ duration: 0.12 }}
+									className="shrink-0 flex items-center justify-center rounded-lg cursor-pointer"
+									style={{
+										width: 28,
+										height: 28,
+										background: 'rgba(139, 92, 246, 0.15)',
+										border: '1px solid rgba(139, 92, 246, 0.2)'
+									}}
+								>
+									<ArrowRight
+										style={{
+											width: 14,
+											height: 14,
+											color: 'rgba(139, 92, 246, 0.8)'
+										}}
+									/>
+								</motion.button>
+							)}
+						</AnimatePresence>
 					</motion.div>
 				</form>
 			</motion.div>
 
+			{/* Shortcuts grid */}
 			<motion.div
-				initial={{ opacity: 0, y: 16 }}
+				initial={{ opacity: 0, y: 12 }}
 				animate={{ opacity: 1, y: 0 }}
-				transition={{ ...soft, delay: 0.15 }}
-				className="mt-10 px-6"
+				transition={{ ...SPRING_SOFT, delay: 0.16 }}
+				className="mt-8 px-6"
 			>
 				<div
-					className="grid gap-3"
+					className="grid gap-2.5"
 					style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
 				>
 					{shortcuts.map((shortcut, i) => (
 						<motion.a
 							key={shortcut.name}
 							href={shortcut.url}
-							onClick={e =>
-								handleShortcutClick(e, shortcut.url)
-							}
-							initial={{ opacity: 0, scale: 0.85, y: 10 }}
+							onClick={e => handleShortcutClick(e, shortcut.url)}
+							initial={{ opacity: 0, scale: 0.85, y: 8 }}
 							animate={{ opacity: 1, scale: 1, y: 0 }}
-							transition={{ ...SPRING, delay: 0.2 + i * 0.04 }}
-							whileHover={{ scale: 1.06, y: -3 }}
+							transition={{ ...SPRING, delay: 0.22 + i * 0.035 }}
+							whileHover={{ scale: 1.06, y: -2 }}
 							whileTap={{ scale: 0.95 }}
-							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer transition-colors duration-150 hover:bg-white/4"
+							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer group"
 							style={{ textDecoration: 'none' }}
 						>
-							<div
-								className="w-11 h-11 rounded-xl flex items-center justify-center"
+							<motion.div
+								className="w-11 h-11 rounded-xl flex items-center justify-center relative overflow-hidden"
 								style={{
-									background: 'rgba(255, 255, 255, 0.06)',
-									border: '1px solid rgba(255, 255, 255, 0.07)',
-									boxShadow: `0 0 10px ${shortcut.color}15, 0 2px 6px rgba(0, 0, 0, 0.25)`
+									background: 'rgba(14, 14, 16, 0.65)',
+									border: '1px solid rgba(27, 27, 27, 0.8)',
+									boxShadow: '0 0 8px 1px rgba(255, 255, 255, 0.03), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset'
 								}}
+								whileHover={{
+									boxShadow: `0 0 12px ${shortcut.color}20, 0 0 8px 1px rgba(255, 255, 255, 0.03), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset`
+								}}
+								transition={{ duration: 0.2 }}
 							>
+								{/* Subtle glow on hover */}
+								<div
+									className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+									style={{
+										background: `radial-gradient(circle at center, ${shortcut.color}12 0%, transparent 70%)`
+									}}
+								/>
 								<span
-									className="text-base font-bold"
+									className="text-sm font-bold relative z-10"
 									style={{
 										color: shortcut.color,
-										fontFamily:
-											"'DM Sans', 'Inter', system-ui, sans-serif"
+										fontFamily: FONT,
+										opacity: 0.85
 									}}
 								>
-									{shortcut.name[0]}
+									{shortcut.letter}
 								</span>
-							</div>
+							</motion.div>
 							<span
-								className="text-[11px] text-white/40 leading-none"
+								className="text-[11px] leading-none opacity-35 group-hover:opacity-50 transition-opacity duration-200"
 								style={{
-									fontFamily:
-										"'DM Sans', 'Inter', system-ui, sans-serif",
+									fontFamily: FONT,
+									color: 'white',
 									letterSpacing: '0.02em'
 								}}
 							>

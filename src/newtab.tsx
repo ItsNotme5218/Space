@@ -3,11 +3,20 @@ import { createRoot } from 'react-dom/client';
 import { NewTab } from './components/NewTab';
 import './index.css';
 
+const handleNavigate = (url: string) => {
+	if (window.parent && window.parent !== window) {
+		window.parent.postMessage(
+			{ type: 'newtab-navigate', url },
+			'*'
+		);
+	}
+};
+
 const rootElement = document.getElementById('newtab-root');
 if (rootElement) {
 	createRoot(rootElement).render(
 		<StrictMode>
-			<NewTab />
+			<NewTab onNavigate={handleNavigate} />
 		</StrictMode>
 	);
 }

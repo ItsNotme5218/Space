@@ -37,7 +37,6 @@ export const Sessions = ({
 		>
 			<div className="flex flex-col items-center p-2 mb-2">
 				{sessions.map((session, index) => {
-					console.log(sessions.length);
 					const isActive = activeSession === session.id;
 					const isHovered = hoveredSession === session.id;
 					const showClose = isActive && isHovered;

@@ -2,15 +2,17 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { NewTab } from './components/NewTab';
 import { SpaceStars } from './components/SpaceStars';
 import { IntroSplash } from './components/IntroSplash';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useTabCloak } from './hooks/useTabCloak';
 import { Proxy } from './utils/proxy';
+import { getDefaultPagePath } from './utils/internal-pages';
 
 import './App.css';
+
+const NEWTAB_URL = getDefaultPagePath();
 
 export interface Session {
 	id: number;
@@ -28,11 +30,11 @@ const App = () => {
 	const [particles] = useLocalStorage('particles', true);
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
 	const [bgValue] = useLocalStorage('bgValue', '#050312');
-	const nextIdRef = useRef(2);
+	const nextIdRef = useRef(1);
 	const carouselRef = useRef<HTMLDivElement>(null);
-	const rawSessions = useRef<Session[]>([{ id: 1, url: '' }]);
-	const [sessions, setSessions] = useState<Session[]>([{ id: 1, url: '' }]);
-	const [activeSession, setActiveSession] = useState(1);
+	const rawSessions = useRef<Session[]>([{ id: 0, url: '' }]);
+	const [sessions, setSessions] = useState<Session[]>([{ id: 0, url: '' }]);
+	const [activeSession, setActiveSession] = useState(0);
 	const [proxyReady, setProxyReady] = useState(false);
 	const proxyRef = useRef<Proxy | null>(null);
 
@@ -90,6 +92,47 @@ const App = () => {
 
 	useEffect(() => {
 		rawSessions.current = sessions;
+	}, [sessions]);
+
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			if (event.data?.type !== 'newtab-navigate') return;
+			const url = event.data.url;
+			if (!url || typeof url !== 'string') return;
+
+			const root = carouselRef.current;
+			if (!root) return;
+			const iframes = root.querySelectorAll<HTMLIFrameElement>('iframe[data-session-uid]');
+			for (const iframe of iframes) {
+				if (iframe.contentWindow === event.source) {
+					const sessionUid = Number(iframe.dataset.sessionUid);
+					if (!isNaN(sessionUid)) {
+						navigateSession(sessionUid, url);
+					}
+					return;
+				}
+			}
+
+			navigateSession(activeSession, url);
+		};
+
+		window.addEventListener('message', handleMessage);
+		return () => window.removeEventListener('message', handleMessage);
+	}, [navigateSession, activeSession]);
+
+	useEffect(() => {
+		const root = carouselRef.current;
+		if (!root) return;
+		for (const s of sessions) {
+			const iframe = root.querySelector<HTMLIFrameElement>(
+				`iframe[data-session-uid="${s.id}"]`
+			);
+			if (!iframe) continue;
+			const targetSrc = s.url || NEWTAB_URL;
+			if (iframe.getAttribute('src') !== targetSrc) {
+				iframe.src = targetSrc;
+			}
+		}
 	}, [sessions]);
 
 	const handleNavClick = (id: string) => {
@@ -167,37 +210,32 @@ const App = () => {
 	}, [sessions, activeSession]);
 
 	const handleIframeBack = useCallback(() => {
-		const iframe = getActiveIframe();
-		if (iframe?.contentWindow) {
-			try {
-				iframe.contentWindow.history.back();
-			} catch {
-				/* cross-origin */
-			}
-		}
-	}, [getActiveIframe]);
+		console.log(`${activeSession} navigated back`);
+	}, [activeSession]);
 
 	const handleIframeForward = useCallback(() => {
-		const iframe = getActiveIframe();
-		if (iframe?.contentWindow) {
-			try {
-				iframe.contentWindow.history.forward();
-			} catch {
-				/* cross-origin */
-			}
-		}
-	}, [getActiveIframe]);
+		console.log(`${activeSession} navigated forward`);
+	}, [activeSession]);
 
 	const handleIframeReload = useCallback(() => {
 		const iframe = getActiveIframe();
-		if (iframe?.contentWindow) {
+		if (!iframe) return;
+
+		const activeSessionData = rawSessions.current.find(s => s.id === activeSession);
+		if (!activeSessionData?.url) {
+			iframe.src = NEWTAB_URL;
+			return;
+		}
+
+		if (iframe.contentWindow) {
 			try {
 				iframe.contentWindow.location.reload();
 			} catch {
+				// eslint-disable-next-line no-self-assign
 				if (iframe.src) iframe.src = iframe.src;
 			}
 		}
-	}, [getActiveIframe]);
+	}, [getActiveIframe, activeSession]);
 
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
@@ -270,30 +308,21 @@ const App = () => {
 										marginRight: '8px'
 									}}
 								>
-									{s.url ? (
-										<iframe
-											src={s.url}
-											data-session-id={s.id}
-											data-true-frame-id={s.id - 1}
-											data-frame-id={index}
-											className="w-full h-full"
-											style={{
-												borderRadius: 12,
-												border: '1px solid rgba(255,255,255,0.06)',
-												background:
-													'rgba(24,20,28,0.65)',
-												backdropFilter: 'blur(4px)',
-												WebkitBackdropFilter:
-													'blur(4px)'
-											}}
-										/>
-									) : (
-										<NewTab
-											onNavigate={url =>
-												navigateSession(s.id, url)
-											}
-										/>
-									)}
+								<iframe
+									src={s.url || NEWTAB_URL}
+									data-session-id={index}
+									data-session-uid={s.id}
+									className="w-full h-full"
+									style={{
+											borderRadius: 12,
+											border: '1px solid rgba(255,255,255,0.06)',
+											background:
+												'rgba(24,20,28,0.65)',
+											backdropFilter: 'blur(4px)',
+											WebkitBackdropFilter:
+												'blur(4px)'
+										}}
+									/>
 								</div>
 							);
 						})}

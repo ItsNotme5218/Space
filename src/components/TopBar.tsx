@@ -11,6 +11,7 @@ import {
 	Search
 } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { SPC_PROTOCOL } from '../utils/internal-pages';
 import type { Session } from '../App';
 
 const ENGINE_ORDER = [
@@ -30,7 +31,7 @@ const SEARCH_ENGINES: Record<
 		label: 'Google',
 		short: 'ggl',
 		color: '#4285F4',
-		letterColors: ['#EA4335', '#34A853', '#FBBC05']
+		letterColors: ['#EA4335', '#FBBC05', '#34A853']
 	},
 	Bing: { label: 'Bing', short: 'bng', color: '#00809D' },
 	Brave: { label: 'Brave', short: 'brv', color: '#FB542B' },
@@ -92,6 +93,19 @@ export const TopBar = ({
 	};
 	const glowRgb = hexToGlowRgb(engine.color);
 
+	const isGoogle = searchEngine === 'Google';
+	const headerGradient = isGoogle
+		? 'linear-gradient(135deg, rgba(66, 133, 244, 0.06) 0%, rgba(234, 67, 53, 0.04) 30%, rgba(251, 188, 5, 0.04) 60%, rgba(52, 168, 83, 0.05) 100%)'
+		: `linear-gradient(135deg, rgba(${glowRgb}, 0.06) 0%, transparent 60%, rgba(${glowRgb}, 0.02) 100%)`;
+
+	const shiftColor = (hex: string, hueShift: number, lighten: number): string => {
+		const r = parseInt(hex.slice(1, 3), 16);
+		const g = parseInt(hex.slice(3, 5), 16);
+		const b = parseInt(hex.slice(5, 7), 16);
+		return `rgb(${Math.min(255, r + lighten)}, ${Math.min(255, g + lighten + hueShift)}, ${Math.min(255, b + lighten - hueShift)})`;
+	};
+	const textGradient = `linear-gradient(135deg, ${engine.color}, ${shiftColor(engine.color, 15, 30)})`;
+
 	const activeSessionData = sessions.find(s => s.id === activeSession);
 	const isOnNewTab = !activeSessionData?.url;
 
@@ -122,18 +136,31 @@ export const TopBar = ({
 		return proxyUrl;
 	}, []);
 
-	// Track the active iframe's URL and update the address bar
 	useEffect(() => {
+		let timer: number | undefined;
+
 		if (isOnNewTab) {
-			setDisplayUrl('');
-			if (!inputFocused) setInputValue('');
-			return;
+			timer = window.setTimeout(() => {
+				setDisplayUrl('');
+				if (!inputFocused) setInputValue('');
+			}, 0);
+
+			return () => {
+				if (timer !== undefined) clearTimeout(timer);
+			};
 		}
 
 		const url = activeSessionData?.url || '';
 		const decoded = decodeProxyUrl(url);
-		setDisplayUrl(decoded);
-		if (!inputFocused) setInputValue(decoded);
+
+		timer = window.setTimeout(() => {
+			setDisplayUrl(decoded);
+			if (!inputFocused) setInputValue(decoded);
+		}, 0);
+
+		return () => {
+			if (timer !== undefined) clearTimeout(timer);
+		};
 	}, [activeSessionData?.url, isOnNewTab, inputFocused, decodeProxyUrl]);
 
 	// Poll active iframe for URL changes (in-page navigation)
@@ -261,7 +288,7 @@ export const TopBar = ({
 	};
 
 	const getProtocolDisplay = (): string => {
-		if (isOnNewTab) return 'spc://';
+		if (isOnNewTab) return SPC_PROTOCOL;
 		if (displayUrl.startsWith('https://')) return 'https://';
 		if (displayUrl.startsWith('http://')) return 'http://';
 		return 'https://';
@@ -271,7 +298,22 @@ export const TopBar = ({
 		'p-1.5 rounded-lg text-zinc-400 hover:text-white transition-colors cursor-pointer';
 
 	return (
-		<header className="fixed top-0 left-2 right-2 h-10 flex items-center z-40 mt-2 gap-2 pointer-events-none">
+		<header className="fixed top-0 left-2 right-2 h-10 flex items-center z-40 mt-2 gap-2 pointer-events-none"
+			style={{ position: 'fixed' }}
+		>
+			<div
+				className='engineBg'
+				style={{
+					position: 'absolute',
+					inset: '-1rem',
+					borderRadius: 20,
+					background: headerGradient,
+					pointerEvents: 'none',
+					transition: 'background 0.4s ease',
+					zIndex: 999,
+					filter: 'blur(4px)'
+				}}
+			/>
 			<motion.div
 				whileHover={{ scale: 1.01, y: -1 }}
 				transition={{ type: 'spring', stiffness: 340, damping: 24 }}
@@ -400,14 +442,20 @@ export const TopBar = ({
 								}}
 								transition={{ duration: 0.15 }}
 								className="text-[10px] font-semibold tracking-wider uppercase"
-								style={{
-									color: inputFocused
-										? engine.color
-										: 'rgba(255, 255, 255, 0.25)',
-									transition: 'color 0.2s',
-									fontFamily:
-										"'DM Sans', 'Inter', system-ui, sans-serif"
-								}}
+							style={{
+								background: inputFocused && !engine.letterColors
+									? textGradient
+									: 'none',
+								backgroundClip: inputFocused && !engine.letterColors ? 'text' : undefined,
+								WebkitBackgroundClip: inputFocused && !engine.letterColors ? 'text' : undefined,
+								WebkitTextFillColor: inputFocused && !engine.letterColors ? 'transparent' : undefined,
+								color: inputFocused
+									? engine.color
+									: 'rgba(255, 255, 255, 0.25)',
+								transition: 'color 0.2s',
+								fontFamily:
+									"'DM Sans', 'Inter', system-ui, sans-serif"
+							}}
 							>
 								{engine.letterColors
 									? engine.short.split('').map((ch, i) => (
