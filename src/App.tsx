@@ -381,8 +381,32 @@ const App = () => {
 				className="relative flex flex-col h-full"
 				style={{ zIndex: 1 }}
 			>
+
 				{!isSpecialPage && (
-					<div className="shrink-0" style={{ height: '3rem' }} />
+					<>
+						<div className="shrink-0" style={{ height: '3rem' }} />
+						<TopBar
+							sessions={sessions}
+							activeSession={activeSession}
+							carouselRef={carouselRef}
+							proxyReady={proxyReady}
+							onNavigate={url =>
+								navigateSession(activeSession, url)
+							}
+							onBack={handleIframeBack}
+							onForward={handleIframeForward}
+							onReload={handleIframeReload}
+							onHome={() => {
+								const idx = rawSessions.current.findIndex(
+									s => s.id === activeSession
+								);
+								if (idx !== -1) {
+									rawSessions.current[idx].url = '';
+									setSessions([...rawSessions.current]);
+								}
+							}}
+						/>
+					</>
 				)}
 				<div className="flex-1 flex overflow-hidden">
 					<motion.div
@@ -415,29 +439,6 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-				{!isSpecialPage && (
-					<TopBar
-						sessions={sessions}
-						activeSession={activeSession}
-						carouselRef={carouselRef}
-						proxyReady={proxyReady}
-						onNavigate={url =>
-							navigateSession(activeSession, url)
-						}
-						onBack={handleIframeBack}
-						onForward={handleIframeForward}
-						onReload={handleIframeReload}
-						onHome={() => {
-							const idx = rawSessions.current.findIndex(
-								s => s.id === activeSession
-							);
-							if (idx !== -1) {
-								rawSessions.current[idx].url = '';
-								setSessions([...rawSessions.current]);
-							}
-						}}
-					/>
-				)}
 			</div>
 		</div>
 	);

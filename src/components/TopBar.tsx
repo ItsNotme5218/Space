@@ -305,7 +305,7 @@ export const TopBar = ({
 				className='engineBg'
 				style={{
 					position: 'absolute',
-					inset: '-1rem',
+					inset: '-0.25rem',
 					borderRadius: 20,
 					background: headerGradient,
 					pointerEvents: 'none',
