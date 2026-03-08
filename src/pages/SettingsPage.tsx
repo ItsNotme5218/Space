@@ -18,6 +18,7 @@ import {
 	X
 } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { writeSetting } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { launchAboutBlank, launchBlob, normalizeUrl } from '../lib/cloak';
 import bgPresets from '../json/backgrounds.json';
@@ -243,12 +244,12 @@ const Section = ({
 		<div
 			className="rounded-2xl divide-y divide-white/4"
 			style={{
-				background: 'rgba(12,10,18,0.65)',
-				border: '1px solid rgba(255,255,255,0.06)',
-				backdropFilter: 'blur(8px)',
-				WebkitBackdropFilter: 'blur(8px)',
+				background: 'rgba(12,10,18,0.82)',
+				border: '1px solid rgba(255,255,255,0.05)',
+				backdropFilter: 'blur(40px)',
+				WebkitBackdropFilter: 'blur(40px)',
 				boxShadow:
-					'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+					'0 2px 16px -6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
 			}}
 		>
 			{children}
@@ -928,6 +929,7 @@ const AppearPanel = () => {
 const PerfPanel = () => {
 	const [, setParticles] = useLocalStorage('particles', true);
 	const [reduceMotion, setReduceMotion] = useLocalStorage('reduceMotion', false);
+	const [autoCapSessions, setAutoCapSessions] = useLocalStorage('autoCapSessions', true);
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Rendering" delay={0.0}>
@@ -944,14 +946,72 @@ const PerfPanel = () => {
 					/>
 				</Row>
 			</Section>
+
+			<Section title="Sessions" delay={0.03}>
+				<Row
+					label="Auto-cap Sessions"
+					desc="Limit max open sessions based on your screen size"
+				>
+					<Toggle on={autoCapSessions} set={setAutoCapSessions} />
+				</Row>
+			</Section>
 		</div>
 	);
 };
 
+const PROXY_KEY_MAP: Record<string, string> = {
+	Scramjet: 'sj',
+	Ultraviolet: 'uv'
+};
+
+const TRANSPORT_KEY_MAP: Record<string, string> = {
+	Libcurl: 'libcurl',
+	Epoxy: 'epoxy'
+};
+
+const SEARCH_ENGINE_URLS: Record<string, string> = {
+	DuckDuckGo: 'https://www.duckduckgo.com/?q=%s',
+	Google: 'https://www.google.com/search?q=%s',
+	Bing: 'https://www.bing.com/search?q=%s',
+	Brave: 'https://search.brave.com/search?q=%s',
+	'Yahoo!': 'https://search.yahoo.com/search?p=%s'
+};
+
 const ProxyPanel = () => {
-	const [proxy, setProxy] = useLocalStorage('proxy', 'Scramjet');
-	const [transport, setTransport] = useLocalStorage('transport', 'Libcurl');
+	const [proxy, setProxy] = useLocalStorage('proxyDisplay', 'Scramjet');
+	const [transport, setTransport] = useLocalStorage('transportDisplay', 'Libcurl');
 	const [engine, setEngine] = useLocalStorage('searchEngine', 'DuckDuckGo');
+
+	const handleProxyChange = (v: string) => {
+		setProxy(v);
+		const mapped = PROXY_KEY_MAP[v];
+		if (mapped) {
+			writeSetting('proxy', mapped);
+			if (window.proxy) window.proxy.proxySetting = mapped;
+		}
+	};
+
+	const handleTransportChange = (v: string) => {
+		setTransport(v);
+		const mapped = TRANSPORT_KEY_MAP[v];
+		if (mapped) {
+			writeSetting('transports', mapped);
+			if (window.proxy) {
+				window.proxy.transportVar = mapped;
+				window.proxy.setTransports();
+			}
+		}
+	};
+
+	const handleEngineChange = (v: string) => {
+		setEngine(v);
+		const url = SEARCH_ENGINE_URLS[v];
+		if (url) {
+			writeSetting('search', url);
+			if (window.proxy) window.proxy.searchVar = url;
+		}
+	};
+
 	return (
 		<div className="flex flex-col gap-12">
 			<Section title="Backend" delay={0.0}>
@@ -962,7 +1022,7 @@ const ProxyPanel = () => {
 					<Select
 						value={proxy}
 						options={['Scramjet', 'Ultraviolet']}
-						onChange={setProxy}
+						onChange={handleProxyChange}
 					/>
 				</Row>
 				<Row
@@ -972,7 +1032,7 @@ const ProxyPanel = () => {
 					<Select
 						value={transport}
 						options={['Libcurl', 'Epoxy']}
-						onChange={setTransport}
+						onChange={handleTransportChange}
 					/>
 				</Row>
 			</Section>
@@ -984,8 +1044,8 @@ const ProxyPanel = () => {
 				>
 					<Select
 						value={engine}
-						options={['DuckDuckGo', 'Google', 'Bing', 'Yahoo!']}
-						onChange={setEngine}
+						options={['DuckDuckGo', 'Google', 'Bing', 'Brave', 'Yahoo!']}
+						onChange={handleEngineChange}
 					/>
 				</Row>
 			</Section>
@@ -1054,13 +1114,6 @@ export const SettingsPage = () => {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ ...soft, delay: 0.06 }}
 						className="flex gap-2 p-2.5 rounded-2xl"
-						style={{
-							background: 'rgba(12,10,18,0.5)',
-							border: '1px solid rgba(255,255,255,0.05)',
-							backdropFilter: 'blur(40px)',
-							WebkitBackdropFilter: 'blur(40px)',
-							boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)'
-						}}
 					>
 						{tabs.map(t => {
 							const Icon = t.icon;
@@ -1106,7 +1159,7 @@ export const SettingsPage = () => {
 					initial={{ opacity: 0, scaleX: 0 }}
 					animate={{ opacity: 1, scaleX: 1 }}
 					transition={{ ...soft, delay: 0.1 }}
-					className="w-full max-w-3xl h-px mt-12 mb-14"
+					className="w-full max-w-3xl h-px mt-4 mb-14"
 					style={{
 						background:
 							'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)'

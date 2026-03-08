@@ -21,6 +21,7 @@ interface SidebarProps {
 	onHoverChange?: (hovered: boolean) => void;
 	sessions: Session[];
 	activeSession: number;
+	maxSessions: number;
 	onSessionChange: (id: number) => void;
 	onAddSession: () => void;
 	onCloseSession: (id: number) => void;
@@ -225,6 +226,7 @@ export const Sidebar = ({
 	onHoverChange,
 	sessions,
 	activeSession,
+	maxSessions,
 	onSessionChange,
 	onAddSession,
 	onCloseSession,
@@ -462,6 +464,7 @@ export const Sidebar = ({
 				<Sessions
 					sessions={sessions}
 					activeSession={activeSession}
+					maxSessions={maxSessions}
 					onSessionChange={onSessionChange}
 					onAddSession={onAddSession}
 					onCloseSession={onCloseSession}

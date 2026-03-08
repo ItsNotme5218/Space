@@ -1,13 +1,10 @@
-import localforage from 'localforage';
+import { store as sharedStore } from '../hooks/useLocalStorage';
 
 class SettingsAPI {
 	store: any;
 
 	constructor() {
-		this.store = localforage.createInstance({
-			name: 'settings',
-			storeName: 'settings'
-		});
+		this.store = sharedStore;
 	}
 
 	async getItem(key: String) {

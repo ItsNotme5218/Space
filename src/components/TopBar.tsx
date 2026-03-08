@@ -10,7 +10,7 @@ import {
 	MoreVertical,
 	Search
 } from 'lucide-react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useLocalStorage, writeSetting } from '../hooks/useLocalStorage';
 import { SPC_PROTOCOL } from '../utils/internal-pages';
 import type { Session } from '../App';
 
@@ -95,7 +95,7 @@ export const TopBar = ({
 
 	const isGoogle = searchEngine === 'Google';
 	const headerGradient = isGoogle
-		? 'linear-gradient(135deg, rgba(66, 133, 244, 0.06) 0%, rgba(234, 67, 53, 0.04) 30%, rgba(251, 188, 5, 0.04) 60%, rgba(52, 168, 83, 0.05) 100%)'
+		? 'linear-gradient(135deg, rgba(66, 133, 244, 0.08) 0%, transparent 15%, rgba(234, 67, 53, 0.07) 30%, rgba(251, 188, 5, 0.04) 60%, rgba(52, 168, 83, 0.09) 100%)'
 		: `linear-gradient(135deg, rgba(${glowRgb}, 0.06) 0%, transparent 60%, rgba(${glowRgb}, 0.02) 100%)`;
 
 	const shiftColor = (hex: string, hueShift: number, lighten: number): string => {
@@ -162,7 +162,7 @@ export const TopBar = ({
 
 		timer = window.setTimeout(() => {
 			setDisplayUrl(decoded);
-			if (!inputFocused) setInputValue(decoded);
+			if (!inputFocused) setInputValue(stripProtocol(decoded));
 		}, 0);
 
 		return () => {
@@ -194,16 +194,15 @@ export const TopBar = ({
 					const decoded = decodeProxyUrl(iframeSrc);
 					if (decoded !== displayUrl) {
 						setDisplayUrl(decoded);
-						if (!inputFocused) setInputValue(decoded);
+						if (!inputFocused) setInputValue(stripProtocol(decoded));
 					}
 				}
 			} catch {
-				// cross-origin - fall back to src attribute
 				const src = iframe.getAttribute('src') || '';
 				const decoded = decodeProxyUrl(src);
 				if (decoded !== displayUrl) {
 					setDisplayUrl(decoded);
-					if (!inputFocused) setInputValue(decoded);
+					if (!inputFocused) setInputValue(stripProtocol(decoded));
 				}
 			}
 		}, 1000);
@@ -241,12 +240,25 @@ export const TopBar = ({
 		setDisplayUrl('');
 	};
 
+	const SEARCH_ENGINE_URLS: Record<string, string> = {
+		DuckDuckGo: 'https://www.duckduckgo.com/?q=%s',
+		Google: 'https://www.google.com/search?q=%s',
+		Bing: 'https://www.bing.com/search?q=%s',
+		Brave: 'https://search.brave.com/search?q=%s',
+		'Yahoo!': 'https://search.yahoo.com/search?p=%s'
+	};
+
 	const cycleEngine = () => {
 		const idx = ENGINE_ORDER.indexOf(
 			searchEngine as (typeof ENGINE_ORDER)[number]
 		);
 		const next = ENGINE_ORDER[(idx + 1) % ENGINE_ORDER.length];
 		setSearchEngine(next);
+		const url = SEARCH_ENGINE_URLS[next];
+		if (url) {
+			writeSetting('search', url);
+			if (window.proxy) window.proxy.searchVar = url;
+		}
 	};
 
 	const toggleFullscreen = async () => {
@@ -299,6 +311,12 @@ export const TopBar = ({
 		if (displayUrl.startsWith('https://')) return 'https://';
 		if (displayUrl.startsWith('http://')) return 'http://';
 		return 'https://';
+	};
+
+	const stripProtocol = (url: string): string => {
+		if (url.startsWith('https://')) return url.slice(8);
+		if (url.startsWith('http://')) return url.slice(7);
+		return url;
 	};
 
 	const iconButtonClass =

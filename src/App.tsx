@@ -10,6 +10,16 @@ import { useTabCloak } from './hooks/useTabCloak';
 import { Proxy } from './utils/proxy';
 import { getDefaultPagePath } from './utils/internal-pages';
 
+const MAX_SESSIONS = 9;
+
+const getScreenCap = (): number => {
+	const h = window.innerHeight;
+	if (h < 600) return 3;
+	if (h < 800) return 5;
+	if (h < 1000) return 7;
+	return MAX_SESSIONS;
+};
+
 import './App.css';
 
 const NEWTAB_URL = getDefaultPagePath();
@@ -25,11 +35,22 @@ const App = () => {
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [sidebarHovered, setSidebarHovered] = useState(false);
-	const [showIntro, setShowIntro] = useState(true);
+	const [showIntro, setShowIntro] = useState(true); //TODO: switch to after first load, hide intro on subsequent loads. Also add it to settings (hide intro show intro everytime etc)
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const [particles] = useLocalStorage('particles', true);
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
 	const [bgValue] = useLocalStorage('bgValue', '#050312');
+	const [autoCapSessions] = useLocalStorage('autoCapSessions', true);
+	const [screenCap, setScreenCap] = useState(getScreenCap);
+	const maxSessions = autoCapSessions ? Math.min(screenCap, MAX_SESSIONS) : MAX_SESSIONS;
+
+
+	useEffect(() => {
+		if (!autoCapSessions) return;
+		const onResize = () => setScreenCap(getScreenCap());
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	}, [autoCapSessions]);
 	const nextIdRef = useRef(1);
 	const carouselRef = useRef<HTMLDivElement>(null);
 	const rawSessions = useRef<Session[]>([{ id: 0, url: '' }]);
@@ -142,6 +163,7 @@ const App = () => {
 	};
 
 	const handleAddSession = () => {
+		if (rawSessions.current.length >= maxSessions) return;
 		const newId = nextIdRef.current++;
 		const entry: Session = { id: newId, url: '' };
 		rawSessions.current.push(entry);
@@ -362,19 +384,20 @@ const App = () => {
 	};
 
 	const bgStyle = (() => {
-		if (particles) return { background: '#050312' };
+		if (particles) return { backgroundColor: '#050312' };
 		switch (bgMode) {
 			case 'image':
 				return {
-					background: '#050312',
+					backgroundColor: '#050312',
 					backgroundImage: `url(${bgValue})`,
 					backgroundSize: 'cover',
-					backgroundPosition: 'center'
+					backgroundPosition: 'center',
+					backgroundRepeat: 'no-repeat'
 				};
 			case 'solid':
-				return { background: bgValue || '#050312' };
+				return { backgroundColor: bgValue || '#050312' };
 			default:
-				return { background: '#050312' };
+				return { backgroundColor: '#050312' };
 		}
 	})();
 
@@ -448,6 +471,7 @@ const App = () => {
 					onHoverChange={setSidebarHovered}
 					sessions={sessions}
 					activeSession={activeSession}
+					maxSessions={maxSessions}
 					onSessionChange={handleSessionSwitch}
 					onAddSession={handleAddSession}
 					onCloseSession={handleCloseSession}

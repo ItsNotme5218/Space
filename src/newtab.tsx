@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { NewTab } from './components/NewTab';
+import { initSettings } from './hooks/useLocalStorage';
 import './index.css';
 
 const handleNavigate = (url: string) => {
@@ -12,11 +13,16 @@ const handleNavigate = (url: string) => {
 	}
 };
 
-const rootElement = document.getElementById('newtab-root');
-if (rootElement) {
-	createRoot(rootElement).render(
-		<StrictMode>
-			<NewTab onNavigate={handleNavigate} />
-		</StrictMode>
-	);
-}
+const boot = async () => {
+	await initSettings();
+	const rootElement = document.getElementById('newtab-root');
+	if (rootElement) {
+		createRoot(rootElement).render(
+			<StrictMode>
+				<NewTab onNavigate={handleNavigate} />
+			</StrictMode>
+		);
+	}
+};
+
+boot();

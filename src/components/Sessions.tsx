@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
 import type { Session } from '../App';
@@ -6,6 +6,7 @@ import type { Session } from '../App';
 interface SessionsProps {
 	sessions: Session[];
 	activeSession: number;
+	maxSessions: number;
 	onSessionChange: (id: number) => void;
 	onAddSession: () => void;
 	onCloseSession: (id: number) => void;
@@ -14,11 +15,14 @@ interface SessionsProps {
 export const Sessions = ({
 	sessions,
 	activeSession,
+	maxSessions,
 	onSessionChange,
 	onAddSession,
 	onCloseSession
 }: SessionsProps) => {
 	const [hoveredSession, setHoveredSession] = useState<number | null>(null);
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const atMax = sessions.length >= maxSessions;
 
 	const handleSessionClick = (session: Session) => {
 		if (activeSession === session.id && hoveredSession === session.id) {
@@ -28,14 +32,33 @@ export const Sessions = ({
 		}
 	};
 
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		const activeIdx = sessions.findIndex(s => s.id === activeSession);
+		const child = el.children[activeIdx] as HTMLElement | undefined;
+		child?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	}, [activeSession, sessions]);
+
 	return (
 		<div
 			className={
 				'flex flex-col items-center justify-end ' +
-				`${sessions.length >= 5 ? 'grow' : '-mt-1'}`
+				`${sessions.length >= maxSessions ? 'grow' : 'mt-0'}`
 			}
+			style={{ minHeight: 0 }}
 		>
-			<div className="flex flex-col items-center p-2 mb-2">
+			<div
+				ref={scrollRef}
+				className="flex flex-col items-center p-2 mb-2 pt-0"
+				style={{
+					overflowY: 'auto',
+					overflowX: 'hidden',
+					scrollbarWidth: 'none',
+					msOverflowStyle: 'none',
+					minHeight: 0
+				}}
+			>
 				{sessions.map((session, index) => {
 					const isActive = activeSession === session.id;
 					const isHovered = hoveredSession === session.id;
@@ -49,7 +72,7 @@ export const Sessions = ({
 							onMouseLeave={() => setHoveredSession(null)}
 							whileHover={{ scale: 1.08 }}
 							whileTap={{ scale: 0.92 }}
-							className={`relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mt-2`}
+							className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mt-2 shrink-0"
 							style={{
 								background: isActive
 									? 'rgba(139, 92, 246, 0.15)'
@@ -133,23 +156,27 @@ export const Sessions = ({
 				})}
 			</div>
 
-			<motion.button
-				onClick={onAddSession}
-				whileHover={{ scale: 1.1, rotate: 90 }}
-				whileTap={{ scale: 0.9 }}
-				transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-				className={
-					'w-7 h-7 rounded-full flex items-center -mt-2 justify-center ' +
-					`${sessions.length >= 5 ? 'hidden' : ''}`
-				}
-				style={{
-					background: 'rgba(26, 26, 26, 0.9)',
-					border: '1px solid rgba(45, 45, 58, 0.6)',
-					boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.05)'
-				}}
-			>
-				<Plus className="w-3.5 h-3.5 text-zinc-500" />
-			</motion.button>
+			<AnimatePresence>
+				{!atMax && (
+					<motion.button
+						onClick={onAddSession}
+						whileHover={{ scale: 1.1, rotate: 90 }}
+						whileTap={{ scale: 0.9 }}
+						initial={{ opacity: 0, scale: 0.6 }}
+						animate={{ opacity: 1, scale: 1 }}
+						exit={{ opacity: 0, scale: 0.6 }}
+						transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+						className="w-7 h-7 rounded-full flex items-center -mt-2 justify-center shrink-0"
+						style={{
+							background: 'rgba(26, 26, 26, 0.9)',
+							border: '1px solid rgba(45, 45, 58, 0.6)',
+							boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.05)'
+						}}
+					>
+						<Plus className="w-3.5 h-3.5 text-zinc-500" />
+					</motion.button>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 };

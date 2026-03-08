@@ -72,7 +72,7 @@ class Proxy implements ProxyInterface {
 								.toString()
 								.split("")
 								.map((char, ind) =>
-									ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char,
+									ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char,
 								)
 								.join(""),
 						);
@@ -153,9 +153,7 @@ class Proxy implements ProxyInterface {
 			'/w/';
 
 		const transportOptions: Record<string, any> = {
-			base: transportFile,
 			wisp: wispUrl,
-			modules: []
 		};
 
 		const remoteProxyServer = await this.getRemoteProxyServer();
@@ -170,13 +168,7 @@ class Proxy implements ProxyInterface {
 			transportOptions.proxy = remoteProxyServer;
 		}
 
-		const isRefluxEnabled = await this.getRefluxStatus();
-
-		if (isRefluxEnabled) {
-			transportOptions.modules.push('/r/module.mjs');
-		}
-
-		await this.connection.setTransport('/en/index.mjs', [
+		await this.connection.setTransport(transportFile, [
 			{ ...transportOptions }
 		]);
 

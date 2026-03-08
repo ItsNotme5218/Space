@@ -47,7 +47,7 @@ const createCategories = (
 		})
 	}));
 
-const CategoryRow = ({
+const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop them with clones at start and end, then snap scroll position when reaching clones)
 	category,
 	categoryIndex,
 	delay,

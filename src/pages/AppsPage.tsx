@@ -20,12 +20,9 @@ export const AppsPage = () => {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.22 }}
 				>
-					<h1 className="text-2xl md:text-3xl font-bold text-white/92 tracking-tight">
+					<h1 className="text-2xl font-bold text-white/92 tracking-tight">
 						Apps
 					</h1>
-					<p className="mt-1 text-sm text-white/42">
-						Browse and launch applications.
-					</p>
 				</motion.div>
 			}
 		/>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { readSetting, writeSetting, cache, subscribe } from '../hooks/useLocalStorage';
 
 const SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const SPRING_SOFT = { type: 'spring' as const, stiffness: 200, damping: 22 };
@@ -28,15 +29,12 @@ const getGreeting = (): string => {
 };
 
 const readLS = (key: string, fallback: boolean): boolean => {
-	try {
-		const v = localStorage.getItem(key);
-		return v !== null ? JSON.parse(v) : fallback;
-	} catch { return fallback; }
+	if (cache.has(key)) return cache.get(key) as boolean;
+	return fallback;
 };
 
 const writeLS = (key: string, value: boolean) => {
-	localStorage.setItem(key, JSON.stringify(value));
-	window.dispatchEvent(new CustomEvent('local-storage', { detail: { key } }));
+	writeSetting(key, value);
 };
 
 const formatTime = (hour12: boolean): { time: string; period: string } => {
@@ -64,15 +62,28 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 	const [greeting] = useState(getGreeting);
 
 	useEffect(() => {
-		const update = () => {
-			setHour12(readLS('clock12h', false));
-			setLockFormat(readLS('clockLock', false));
+		let cancelled = false;
+		const load = async () => {
+			const [h12, lock] = await Promise.all([
+				readSetting('clock12h', false),
+				readSetting('clockLock', false)
+			]); // yo, check chat for liveshare
+			if (cancelled) return;
+			setHour12(h12);
+			setLockFormat(lock);
 		};
-		window.addEventListener('storage', update);
-		window.addEventListener('local-storage', update);
+		load();
+
+		const unsub12 = subscribe('clock12h', () => {
+			setHour12(readLS('clock12h', false));
+		});
+		const unsubLock = subscribe('clockLock', () => {
+			setLockFormat(readLS('clockLock', false));
+		});
 		return () => {
-			window.removeEventListener('storage', update);
-			window.removeEventListener('local-storage', update);
+			cancelled = true;
+			unsub12();
+			unsubLock();
 		};
 	}, []);
 
@@ -240,19 +251,15 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 									animate={{ opacity: 1, scale: 1 }}
 									exit={{ opacity: 0, scale: 0.8 }}
 									transition={{ duration: 0.12 }}
-									className="shrink-0 flex items-center justify-center rounded-lg cursor-pointer"
-									style={{
-										width: 28,
-										height: 28,
-										background: 'rgba(139, 92, 246, 0.15)',
-										border: '1px solid rgba(139, 92, 246, 0.2)'
-									}}
+									whileHover={{ scale: 1.1 }}
+									whileTap={{ scale: 0.9 }}
+									className="shrink-0 flex items-center justify-center cursor-pointer"
 								>
-									<ArrowRight
+									<Search
 										style={{
-											width: 14,
-											height: 14,
-											color: 'rgba(139, 92, 246, 0.8)'
+											width: 15,
+											height: 15,
+											color: 'rgba(139, 92, 246, 0.7)'
 										}}
 									/>
 								</motion.button>

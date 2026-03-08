@@ -1,3 +1,5 @@
+import { readSetting } from '../hooks/useLocalStorage';
+
 export interface CloakPreset {
 	title: string;
 	favicon: string;
@@ -38,24 +40,20 @@ const URL_RE = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
 export const normalizeUrl = (raw: string): string =>
 	/^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 
-const readLocal = (key: string): string => {
-	try {
-		return JSON.parse(localStorage.getItem(key) || '""');
-	} catch {
-		return '';
-	}
+const readLocal = async (key: string): Promise<string> => {
+	return readSetting(key, '');
 };
 
-export const resolveCloak = (
+export const resolveCloak = async (
 	preset: string
-): { title: string; favicon: string; redirect: string } | null => {
+): Promise<{ title: string; favicon: string; redirect: string } | null> => {
 	switch (preset) {
 		case 'None':
 			return null;
 
 		case 'Custom': {
-			const rawFavicon = readLocal('customCloakFavicon');
-			const rawTitle = readLocal('customCloakTitle');
+			const rawFavicon = await readLocal('customCloakFavicon');
+			const rawTitle = await readLocal('customCloakTitle');
 
 			let favicon = '/favicon.ico';
 			if (rawFavicon && URL_RE.test(rawFavicon)) {
@@ -117,8 +115,8 @@ const applyToParent = (title: string, favicon: string) => {
 	} catch {}
 };
 
-export const applyCloak = (preset: string) => {
-	const cloak = resolveCloak(preset);
+export const applyCloak = async (preset: string) => {
+	const cloak = await resolveCloak(preset);
 	if (!cloak) {
 		document.title = 'space';
 		setFavicon(document, '/favicon.ico');
@@ -131,8 +129,8 @@ export const applyCloak = (preset: string) => {
 	applyToParent(cloak.title, cloak.favicon);
 };
 
-export const launchAboutBlank = (preset: string) => {
-	const cloak = resolveCloak(preset);
+export const launchAboutBlank = async (preset: string) => {
+	const cloak = await resolveCloak(preset);
 	const redirect = cloak?.redirect ?? 'https://google.com';
 
 	const win = window.open('', '_blank');
@@ -159,8 +157,8 @@ export const launchAboutBlank = (preset: string) => {
 	window.location.href = redirect;
 };
 
-export const launchBlob = (preset: string) => {
-	const cloak = resolveCloak(preset);
+export const launchBlob = async (preset: string) => {
+	const cloak = await resolveCloak(preset);
 	const redirect = cloak?.redirect ?? 'https://google.com';
 	const title = cloak?.title ?? 'space';
 	const favicon = cloak?.favicon ?? '/favicon.ico';

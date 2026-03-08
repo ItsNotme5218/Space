@@ -8,37 +8,33 @@ import { GamesPage } from './pages/GamesPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { PlaybackPage } from './pages/PlaybackPage.tsx';
 import { launchAboutBlank, launchBlob, applyCloak } from './lib/cloak.ts';
+import { readSetting, initSettings } from './hooks/useLocalStorage';
 
-(() => {
-	if (window !== window.top) return;
-	const params = new URLSearchParams(window.location.search);
-	if (params.has('redirect')) return;
+const boot = async () => {
+	await initSettings();
 
-	const readLocal = <T,>(key: string, fallback: T): T => {
-		try {
-			return JSON.parse(
-				localStorage.getItem(key) || JSON.stringify(fallback)
-			);
-		} catch {
-			return fallback;
+	if (window === window.top) {
+		const params = new URLSearchParams(window.location.search);
+		if (!params.has('redirect')) {
+			const tabCloak = await readSetting('tabCloak', 'None');
+			const autoBlank = await readSetting('autoAboutBlank', false);
+			const autoBlob = await readSetting('autoBlob', false);
+
+			await applyCloak(tabCloak);
+
+			if (autoBlank) {
+				await launchAboutBlank(tabCloak);
+				return;
+			}
+			if (autoBlob) {
+				await launchBlob(tabCloak);
+				return;
+			}
 		}
-	};
-
-	const tabCloak = readLocal('tabCloak', 'None');
-	const autoBlank = readLocal('autoAboutBlank', false);
-	const autoBlob = readLocal('autoBlob', false);
-
-	applyCloak(tabCloak);
-
-	if (autoBlank) {
-		launchAboutBlank(tabCloak);
-		return;
 	}
-	if (autoBlob) {
-		launchBlob(tabCloak);
-		return;
-	}
-})();
+
+	initShadowApp();
+};
 
 const originalDocumentOpen = document.open.bind(document);
 const originalDocumentWrite = document.write.bind(document);
@@ -159,4 +155,4 @@ const initShadowApp = () => {
 	);
 };
 
-initShadowApp();
+boot();

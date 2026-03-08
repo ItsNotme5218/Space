@@ -36,6 +36,8 @@ export const GridCard = memo(
 		return (
 			<div
 				className="relative w-full h-full"
+				onMouseEnter={() => onHoverStart(item.id)}
+				onMouseLeave={onHoverEnd}
 				style={{
 					...expandedStyle,
 					perspective: '750px',
@@ -46,7 +48,6 @@ export const GridCard = memo(
 					layoutId={`card-${item.id}`}
 					onClick={() => onCardClick(item.id)}
 					onMouseEnter={() => onHoverStart(item.id)}
-					onMouseLeave={onHoverEnd}
 					onAnimationComplete={() => setHasAnimated(true)}
 					initial={{ opacity: 0, scale: 0.8, y: 20 }}
 					animate={{

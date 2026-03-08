@@ -9,8 +9,7 @@ interface IntroSplashProps {
 export const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 	const [fading, setFading] = useState(false);
 	const [progress, setProgress] = useState(0);
-
-	const handleIntroComplete = useCallback(() => {
+	const handleIntroComplete = useCallback(() => { 
 		setFading(true);
 	}, []);
 

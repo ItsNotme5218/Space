@@ -22,9 +22,9 @@ const STATE = {
 type StateValue = (typeof STATE)[keyof typeof STATE];
 
 const CONFIG = {
-	totalStars: 120,
+	totalStars: 550, //TODO: Total -> maxStars depending on screen res or user agent (120 -> 3500 for pc, 600 -> 1500 for chromebooks)
 	minStars: 0,
-	maxStars: 3500,
+	maxStars: 2500,
 	backgroundStars: 989,
 	galaxyRadius: 750,
 	galaxyTiltX: 0.84,
