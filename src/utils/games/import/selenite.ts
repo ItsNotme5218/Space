@@ -1,7 +1,7 @@
 class SeleniteGames {
     private seleniteUrl: string;
     constructor() {
-        this.seleniteUrl = "https://selenite.cc";
+        this.seleniteUrl = "https://selenite.cc/";
     }
 
     async fetchJson() {

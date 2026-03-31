@@ -1,35 +1,38 @@
-import { FernGames } from "./import/fern";
-import { GnMathGames } from "./import/gn-math";
-import { TruffledGames } from "./import/truffled";
-import { SeleniteGames } from "./import/selenite";
+import games from "../../json/games.json";
+import { ImportedGames, generateGameId } from "./import";
 
-class ImportedGames {
-    truffled: TruffledGames;
-    selenite: SeleniteGames;
-    fern: FernGames;
-    gnMath: GnMathGames;
+class SpaceGames {
+    gamesList: any[];
+    importedGames: ImportedGames;
+
     constructor() {
-        this.fern = new FernGames();
-        this.gnMath = new GnMathGames();
-        this.truffled = new TruffledGames();
-        this.selenite = new SeleniteGames();
+        this.gamesList = games;
+        this.importedGames = new ImportedGames();
     }
 
     async fetchGamesList() {
-        const fernGames = await this.fern.rewriteGamesList();
-        const gnMathGames = await this.gnMath.rewriteGamesList();
-        const truffledGames = await this.truffled.rewriteGamesList();
-        const seleniteGames = await this.selenite.rewriteGamesList();
+        // Add IDs to local games
+        const localGames = this.gamesList.map(game => ({
+            ...game,
+            id: generateGameId(game.name)
+        }));
 
-        return [...fernGames, ...gnMathGames, ...truffledGames, ...seleniteGames];
+        // Fetch imported games (already have IDs)
+        const importedWithIds = await this.importedGames.fetchGamesList();
+
+        // Create a map of local game IDs for deduplication
+        const localIds = new Set(localGames.map(g => g.id));
+
+        // Filter out imported games that already exist locally
+        const uniqueImported = importedWithIds.filter((game: any) => !localIds.has(game.id));
+
+        // Merge and sort
+        const allGames = [...localGames, ...uniqueImported];
+        const sortedGames = allGames.sort((a, b) => a.name.localeCompare(b.name));
+
+        return sortedGames;
     }
 
-    async rewriteGamesList(jsonGames: any[]) {
-
-        jsonGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
-
-        return jsonGames;
-    }
 }
 
-export { ImportedGames };
+export { SpaceGames, generateGameId };

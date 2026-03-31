@@ -1,5 +1,5 @@
 export interface GridItem {
-	id: number;
+	id: string;
 	title: string;
 }
 

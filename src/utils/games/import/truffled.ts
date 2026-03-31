@@ -11,7 +11,8 @@ class TruffledGames {
     }
 
     async rewriteGamesList() {
-        const jsonGames = await this.fetchJson();
+        const jsonData = await this.fetchJson();
+        const jsonGames = jsonData.games || [];
 
         const rewrittenGames = jsonGames.map((entry: any) => ({
             image: this.truffledUrl + entry.thumbnail,

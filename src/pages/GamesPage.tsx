@@ -3,10 +3,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ItemGrid } from '../components/grid';
 import type { GridItem } from '../components/grid';
+import { SpaceGames } from '../utils/games';
 
 interface GameItem {
-	id: number;
+	id: string;
 	title: string;
+	image?: string;
+	url?: string;
+	tags?: string[];
 }
 
 interface GameCategory {
@@ -31,21 +35,16 @@ interface CategoryRowProps {
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(max, Math.max(min, value));
 
-const createCategories = (
-	categoryCount: number,
-	itemsPerCategory: number
-): GameCategory[] =>
-	Array.from({ length: categoryCount }, (_, categoryIndex) => ({
-		id: categoryIndex + 1,
-		label: `Example ${categoryIndex + 1}`,
-		items: Array.from({ length: itemsPerCategory }, (_, itemIndex) => {
-			const id = categoryIndex * itemsPerCategory + itemIndex + 1;
-			return {
-				id,
-				title: `Example ${id}`
-			};
-		})
-	}));
+const spaceGames = new SpaceGames();
+
+// Category definitions with display labels
+const CATEGORY_CONFIG: { tag: string; label: string }[] = [
+	{ tag: 'popular', label: 'Popular' },
+	{ tag: 'multiplayer', label: 'Multiplayer' },
+	{ tag: 'horror', label: 'Horror' },
+	{ tag: 'emulator', label: 'Emulators' },
+	{ tag: 'all', label: 'All Games' }
+];
 
 const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop them with clones at start and end, then snap scroll position when reaching clones)
 	category,
@@ -229,15 +228,26 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 										boxShadow: '0 10px 26px rgba(0,0,0,0.3)'
 									}}
 								>
-									<div
-										className="h-24 md:h-28 rounded-xl"
-										style={{
-											background:
-												'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))',
-											border: '1px solid rgba(255,255,255,0.08)'
-										}}
-									/>
-									<h3 className="mt-1.5 text-sm md:text-[15px] font-semibold text-white/92">
+									{item.image ? (
+										<img
+											src={item.image}
+											alt={item.title}
+											className="h-24 md:h-28 w-full rounded-xl object-cover"
+											style={{
+												border: '1px solid rgba(255,255,255,0.08)'
+											}}
+										/>
+									) : (
+										<div
+											className="h-24 md:h-28 rounded-xl"
+											style={{
+												background:
+													'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))',
+												border: '1px solid rgba(255,255,255,0.08)'
+											}}
+										/>
+									)}
+									<h3 className="mt-1.5 text-sm md:text-[15px] font-semibold text-white/92 truncate">
 										{item.title}
 									</h3>
 								</motion.button>
@@ -251,9 +261,33 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 };
 
 export const GamesPage = () => {
-	const categories = useMemo(() => createCategories(6, 14), []);
+	const [games, setGames] = useState<GameItem[]>([]);
 	const [viewer, setViewer] = useState<ViewerState | null>(null);
 	const [viewAllCategory, setViewAllCategory] = useState<number | null>(null);
+
+	useEffect(() => {
+		spaceGames.fetchGamesList().then((gamesList) => {
+			const mappedGames = gamesList.map((game: { id: string; name: string; image?: string; url?: string; tags?: string[] }) => ({
+				id: game.id,
+				title: game.name,
+				image: game.image,
+				url: game.url,
+				tags: game.tags || []
+			}));
+			setGames(mappedGames);
+		});
+	}, []);
+
+	// Create categories based on tags
+	const categories: GameCategory[] = useMemo(() => {
+		if (games.length === 0) return [];
+		
+		return CATEGORY_CONFIG.map((config, index) => ({
+			id: index + 1,
+			label: config.label,
+			items: games.filter(game => game.tags?.includes(config.tag))
+		})).filter(category => category.items.length > 0);
+	}, [games]);
 
 	const openViewer = useCallback(
 		(categoryIndex: number, itemIndex: number) => {
@@ -598,6 +632,9 @@ export const GamesPage = () => {
 				>
 					<h1 className="text-2xl md:text-3xl font-bold text-white/92 tracking-tight">
 						Games
+						<span className="ml-2 text-base font-normal text-white/40">
+							({games.length})
+						</span>
 					</h1>
 					<p className="mt-1 text-sm text-white/42">
 						Browse games by category.
