@@ -32,8 +32,7 @@ const isAdRequest = (url) => BLOCK_REGEX.some((rule) => rule.test(url));
 
 async function handleRequest(event) {
   await scramjet.loadConfig();
-  if (isAdRequest(event.request.url))
-    return new Response(null, { status: 204 });
+  if (isAdRequest(event.request.url)) return new Response(null, { status: 204 });
   if (scramjet.route(event)) {
     return scramjet.fetch(event);
   }
