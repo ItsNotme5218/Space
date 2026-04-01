@@ -70,22 +70,32 @@ export const Sessions = ({
 							onClick={() => handleSessionClick(session)}
 							onMouseEnter={() => setHoveredSession(session.id)}
 							onMouseLeave={() => setHoveredSession(null)}
-							whileHover={{ scale: 1.08 }}
+							initial={{ y: 0 }}
+							animate={{
+								y: isActive ? 0 : [0, -3, 0]
+							}}
+							whileHover={{ 
+								scale: 1.1,
+								boxShadow: isActive 
+									? '0 0 15px 3px rgba(139, 92, 246, 0.4), inset 0 0 10px rgba(203, 166, 247, 0.3)'
+									: '0 0 10px 1px rgba(139, 92, 246, 0.2), inset 0 0 5px rgba(203, 166, 247, 0.1)'
+							}}
 							whileTap={{ scale: 0.92 }}
 							className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden mt-2 shrink-0"
 							style={{
 								background: isActive
-									? 'rgba(139, 92, 246, 0.15)'
+									? 'rgba(139, 92, 246, 0.2)'
 									: 'rgba(26, 26, 26, 0.8)',
 								border: isActive
-									? '1px solid rgba(203, 166, 247, 0.4)'
+									? '1px solid rgba(203, 166, 247, 0.5)'
 									: '1px solid rgba(45, 45, 58, 0.5)',
 								boxShadow: isActive
 									? '0 0 12px 2px rgba(139, 92, 246, 0.3), inset 0 0 8px rgba(203, 166, 247, 0.2)'
 									: 'inset 0 1px 1px rgba(255,255,255,0.03)'
 							}}
 							transition={{
-								duration: 0.1
+								y: { repeat: Infinity, duration: 4 + (index % 3), ease: 'easeInOut' },
+								duration: 0.2
 							}}
 						>
 							<AnimatePresence mode="wait">

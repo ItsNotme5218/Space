@@ -8,35 +8,41 @@ const __dirname = process.cwd();
 const frontendPath = path.join(__dirname, 'dist');
 
 async function router(fastify: FastifyInstance) {
-	// i think this shoulf work, but idfk
 	await fastify.register(fastifyStatic, {
 		root: frontendPath,
 		prefix: '/',
 		index: ['index.html'],
 		extensions: ['html'],
-		setHeaders: (res, path) => {
-			if (path.includes('/res/g/')) {
+		setHeaders: (res, filePath) => {
+			if (
+				filePath.includes('/res/g/') ||
+				filePath.includes('/assets/') ||
+				filePath.endsWith('.webp') ||
+				filePath.endsWith('.woff2') ||
+				filePath.endsWith('.woff')
+			) {
 				res.setHeader(
 					'Cache-Control',
 					'public, max-age=31536000, immutable'
+				);
+			} else if (
+				filePath.endsWith('.js') ||
+				filePath.endsWith('.css')
+			) {
+				res.setHeader(
+					'Cache-Control',
+					'public, max-age=31536000, immutable'
+				);
+			} else if (filePath.endsWith('.html')) {
+				res.setHeader(
+					'Cache-Control',
+					'no-cache'
 				);
 			}
 		}
 	});
 
 	await APIRouter(fastify);
-	// removed atm because gotta learn react router
-	// oh my lod this was NOT me NO IT FUCKING EWASNT
-	// PULL IT
-	// I DIDNT EVEN KNOW THIS EXISTED
-
-	/*fastify.setNotFoundHandler(
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      return reply
-        .status(404)
-        .sendFile("error/index.html", path.join(__dirname, "dist/internal"));
-    },
-  );*/
 }
 
 export { router };

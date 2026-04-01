@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { constants as zlibConstants } from 'node:zlib';
 import fastifyCompress from '@fastify/compress';
 import fastifyHelmet from '@fastify/helmet';
 // @ts-ignore
@@ -54,7 +55,9 @@ const server = Fastify({
 });
 
 await server.register(fastifyCompress, {
-	encodings: ['br', 'gzip', 'deflate']
+	encodings: ['br', 'gzip', 'deflate'],
+	brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 } },
+	zlibOptions: { level: 6 }
 });
 
 await server.register(fastifyHelmet, {

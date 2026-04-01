@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ItemGrid } from '../components/grid';
 import type { GridItem } from '../components/grid';
 import { SpaceGames } from '../utils/games';
+import { Loading } from '../components/Loading';
 
 interface GameItem {
 	id: string;
@@ -37,7 +38,6 @@ const clamp = (value: number, min: number, max: number) =>
 
 const spaceGames = new SpaceGames();
 
-// Category definitions with display labels
 const CATEGORY_CONFIG: { tag: string; label: string }[] = [
 	{ tag: 'popular', label: 'Popular' },
 	{ tag: 'multiplayer', label: 'Multiplayer' },
@@ -46,7 +46,7 @@ const CATEGORY_CONFIG: { tag: string; label: string }[] = [
 	{ tag: 'all', label: 'All Games' }
 ];
 
-const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop them with clones at start and end, then snap scroll position when reaching clones)
+const CategoryRow = ({
 	category,
 	categoryIndex,
 	delay,
@@ -127,26 +127,52 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 
 	return (
 		<motion.section
-			initial={{ opacity: 0, y: 14 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.26, delay }}
+			initial="hidden"
+			animate="visible"
+			variants={{
+				hidden: { opacity: 0, y: 30 },
+				visible: { 
+					opacity: 1, 
+					y: 0,
+					transition: {
+						duration: 0.6,
+						delay,
+						ease: [0.22, 1, 0.36, 1],
+						staggerChildren: 0.08
+					}
+				}
+			}}
 		>
 			<div className="mb-3 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<h2 className="text-lg md:text-xl font-semibold text-white/90 tracking-tight">
+					<motion.h2 
+						variants={{
+							hidden: { opacity: 0, x: -20 },
+							visible: { opacity: 1, x: 0 }
+						}}
+						className="text-lg md:text-xl font-semibold text-white/90 tracking-tight"
+					>
 						{category.label}
-					</h2>
-					<button
+					</motion.h2>
+					<motion.button
+						variants={{
+							hidden: { opacity: 0 },
+							visible: { opacity: 1 }
+						}}
 						onClick={() => onViewAll(categoryIndex)}
 						className="text-xs font-medium text-white/45 hover:text-white/75 transition-colors"
 					>
 						View All
-					</button>
+					</motion.button>
 				</div>
 				<div className="flex items-center gap-1.5">
 					<motion.button
+						variants={{
+							hidden: { opacity: 0, scale: 0.8 },
+							visible: { opacity: 1, scale: 1 }
+						}}
 						onClick={() => scrollBy('left')}
-						whileHover={{ scale: 1.1 }}
+						whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
 						whileTap={{ scale: 0.9 }}
 						animate={{ opacity: canScrollLeft ? 1 : 0.25 }}
 						className="h-8 w-8 rounded-full flex items-center justify-center"
@@ -159,8 +185,12 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 						<ChevronLeft className="h-4 w-4 text-white/80" />
 					</motion.button>
 					<motion.button
+						variants={{
+							hidden: { opacity: 0, scale: 0.8 },
+							visible: { opacity: 1, scale: 1 }
+						}}
 						onClick={() => scrollBy('right')}
-						whileHover={{ scale: 1.1 }}
+						whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
 						whileTap={{ scale: 0.9 }}
 						animate={{ opacity: canScrollRight ? 1 : 0.25 }}
 						className="h-8 w-8 rounded-full flex items-center justify-center"
@@ -201,6 +231,20 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 							return (
 								<motion.button
 									key={`${category.id}-${item.id}`}
+									variants={{
+										hidden: { opacity: 0, scale: 0.5, y: 20, filter: 'blur(10px)' },
+										visible: { 
+											opacity: baseOpacity, 
+											scale: baseScale, 
+											y: 0, 
+											filter: 'blur(0px)',
+											transition: {
+												type: 'spring',
+												stiffness: 260,
+												damping: 20
+											}
+										}
+									}}
 									onClick={() =>
 										onSelect(categoryIndex, itemIndex)
 									}
@@ -209,29 +253,31 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 										opacity: baseOpacity
 									}}
 									whileHover={{
-										y: -4,
-										scale: Math.min(baseScale + 0.04, 1.06),
-										opacity: 1
+										y: -8,
+										scale: Math.min(baseScale + 0.05, 1.08),
+										opacity: 1,
+										boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(139, 92, 246, 0.3)',
+										borderColor: 'rgba(203, 166, 247, 0.6)'
 									}}
 									whileTap={{
-										scale: Math.max(baseScale - 0.03, 0.84)
+										scale: Math.max(baseScale - 0.04, 0.82)
 									}}
-									transition={{
-										type: 'spring',
-										stiffness: 280,
-										damping: 22
-									}}
-									className="shrink-0 w-40 md:w-50 rounded-2xl p-3 md:p-4 text-left"
+									className="shrink-0 w-40 md:w-50 rounded-2xl p-3 md:p-4 text-left cursor-pointer"
 									style={{
-										background: 'rgba(20, 10, 30, 1)',
+										background: 'rgba(20, 10, 30, 0.75)',
 										border: '1px solid rgba(139, 92, 246, 0.3)',
-										boxShadow: '0 10px 26px rgba(0,0,0,0.3)'
+										backdropFilter: 'blur(12px)',
+										WebkitBackdropFilter: 'blur(12px)',
+										boxShadow: '0 10px 26px rgba(0,0,0,0.3)',
+										transformStyle: 'preserve-3d'
 									}}
 								>
 									{item.image ? (
 										<img
 											src={item.image}
 											alt={item.title}
+											loading="lazy"
+											decoding="async"
 											className="h-24 md:h-28 w-full rounded-xl object-cover"
 											style={{
 												border: '1px solid rgba(255,255,255,0.08)'
@@ -262,6 +308,7 @@ const CategoryRow = ({ // todo: have infinite scroll (triple the items and loop 
 
 export const GamesPage = () => {
 	const [games, setGames] = useState<GameItem[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 	const [viewer, setViewer] = useState<ViewerState | null>(null);
 	const [viewAllCategory, setViewAllCategory] = useState<number | null>(null);
 
@@ -275,18 +322,30 @@ export const GamesPage = () => {
 				tags: game.tags || []
 			}));
 			setGames(mappedGames);
+			setIsLoading(false);
 		});
 	}, []);
 
-	// Create categories based on tags
 	const categories: GameCategory[] = useMemo(() => {
 		if (games.length === 0) return [];
-		
-		return CATEGORY_CONFIG.map((config, index) => ({
-			id: index + 1,
-			label: config.label,
-			items: games.filter(game => game.tags?.includes(config.tag))
-		})).filter(category => category.items.length > 0);
+
+		const tagMap: Record<string, GameItem[]> = {};
+		for (const game of games) {
+			if (game.tags) {
+				for (const tag of game.tags) {
+					if (!tagMap[tag]) tagMap[tag] = [];
+					tagMap[tag].push(game);
+				}
+			}
+		}
+
+		return CATEGORY_CONFIG
+			.map((config, index) => ({
+				id: index + 1,
+				label: config.label,
+				items: tagMap[config.tag] || []
+			}))
+			.filter(category => category.items.length > 0);
 	}, [games]);
 
 	const openViewer = useCallback(
@@ -385,6 +444,10 @@ export const GamesPage = () => {
 		},
 		[viewAllCategory, categories]
 	);
+
+	if (isLoading) {
+		return <Loading />;
+	}
 
 	if (viewAllCategory !== null) {
 		return (
@@ -622,12 +685,32 @@ export const GamesPage = () => {
 	}
 
 	return (
-		<div className="relative h-full w-full overflow-y-auto px-5 py-6 md:px-10 md:py-8">
+		<motion.div 
+			initial="hidden"
+			animate="visible"
+			variants={{
+				hidden: { opacity: 0 },
+				visible: {
+					opacity: 1,
+					transition: {
+						staggerChildren: 0.15,
+						delayChildren: 0.1
+					}
+				}
+			}}
+			className="relative h-full w-full overflow-y-auto px-5 py-6 md:px-10 md:py-8"
+		>
 			<div className="mx-auto max-w-350 pb-10">
 				<motion.header
-					initial={{ opacity: 0, y: 12 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.28 }}
+					variants={{
+						hidden: { opacity: 0, y: -20, filter: 'blur(10px)' },
+						visible: { 
+							opacity: 1, 
+							y: 0, 
+							filter: 'blur(0px)',
+							transition: { type: 'spring', stiffness: 300, damping: 25 }
+						}
+					}}
 					className="mb-6"
 				>
 					<h1 className="text-2xl md:text-3xl font-bold text-white/92 tracking-tight">
@@ -647,7 +730,7 @@ export const GamesPage = () => {
 							key={category.id}
 							category={category}
 							categoryIndex={index}
-							delay={index * 0.05}
+							delay={0}
 							onSelect={openViewer}
 							onViewAll={openViewAll}
 						/>
@@ -849,6 +932,6 @@ export const GamesPage = () => {
 					</motion.section>
 				)}
 			</AnimatePresence>
-		</div>
+		</motion.div>
 	);
 };

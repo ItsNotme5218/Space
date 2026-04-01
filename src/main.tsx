@@ -1,14 +1,16 @@
-import { StrictMode } from 'react';
+import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { Loading } from './components/Loading.tsx';
 import indexStyles from './index.css?inline';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AppsPage } from './pages/AppsPage.tsx';
-import { GamesPage } from './pages/GamesPage.tsx';
-import { SettingsPage } from './pages/SettingsPage.tsx';
-import { PlaybackPage } from './pages/PlaybackPage.tsx';
 import { launchAboutBlank, launchBlob, applyCloak } from './lib/cloak.ts';
 import { readSetting, initSettings } from './hooks/useLocalStorage';
+
+const AppsPage = lazy(() => import('./pages/AppsPage.tsx').then(m => ({ default: m.AppsPage })));
+const GamesPage = lazy(() => import('./pages/GamesPage.tsx').then(m => ({ default: m.GamesPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.tsx').then(m => ({ default: m.SettingsPage })));
+const PlaybackPage = lazy(() => import('./pages/PlaybackPage.tsx').then(m => ({ default: m.PlaybackPage })));
 
 const boot = async () => {
 	await initSettings();
@@ -115,15 +117,15 @@ const initShadowApp = () => {
 
 	const uConfig = document.createElement('script');
 	uConfig.src = '/u/config.js';
-	//uConfig.defer = true; disable defer for a fix in the config not being loaded
+
 	document.head.appendChild(uConfig);
 	const sConfig = document.createElement('script');
 	sConfig.src = '/s/config.js';
-	//sConfig.defer = true; disable defer for a fix in the config not being loaded
+
 	document.head.appendChild(sConfig);
 	const sBundle = document.createElement('script');
 	sBundle.src = '/s/all.js';
-	//sBundle.defer = true; disable defer for a fix in the config not being loaded
+
 	document.head.appendChild(sBundle);
 
 	const root = document.createElement('div');
@@ -144,10 +146,10 @@ const initShadowApp = () => {
 			<MemoryRouter initialEntries={['/']}>
 				<Routes>
 					<Route path="/" element={<App />}>
-						<Route path="apps" element={<AppsPage />} />
-						<Route path="games" element={<GamesPage />} />
-						<Route path="settings" element={<SettingsPage />} />
-						<Route path="playback" element={<PlaybackPage />} />
+						<Route path="apps" element={<Suspense fallback={<Loading />}><AppsPage /></Suspense>} />
+						<Route path="games" element={<Suspense fallback={<Loading />}><GamesPage /></Suspense>} />
+						<Route path="settings" element={<Suspense fallback={<Loading />}><SettingsPage /></Suspense>} />
+						<Route path="playback" element={<Suspense fallback={<Loading />}><PlaybackPage /></Suspense>} />
 					</Route>
 				</Routes>
 			</MemoryRouter>

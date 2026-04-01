@@ -11,6 +11,7 @@ import {
 	Search
 } from 'lucide-react';
 import { useLocalStorage, writeSetting } from '../hooks/useLocalStorage';
+import { useClickOutside } from '../hooks/useClickOutside';
 import { SPC_PROTOCOL } from '../utils/internal-pages';
 import type { Session } from '../App';
 
@@ -82,6 +83,10 @@ export const TopBar = ({
 		'DuckDuckGo'
 	);
 	const reloadControls = useAnimation();
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useClickOutside(menuRef, () => setIsMenuOpen(false));
 
 	const engine = SEARCH_ENGINES[searchEngine] || SEARCH_ENGINES.DuckDuckGo;
 
@@ -112,7 +117,6 @@ export const TopBar = ({
 	const decodeProxyUrl = useCallback((proxyUrl: string): string => {
 		if (!proxyUrl) return '';
 
-		// Strip origin so both "/s/res/..." and "http://host/s/res/..." work
 		let path = proxyUrl;
 		try {
 			const u = new URL(proxyUrl, window.location.origin);
@@ -121,7 +125,6 @@ export const TopBar = ({
 			/* already a relative path */
 		}
 
-		// Both UV and SJ prefixes — convertURL always encodes with UV's encoder
 		const uvPrefix = window.__uv$config?.prefix || '/u/res/';
 		const sjPrefix = window.proxy?.scramConfig?.prefix || '/s/res/';
 
@@ -170,44 +173,69 @@ export const TopBar = ({
 		};
 	}, [activeSessionData?.url, isOnNewTab, inputFocused, decodeProxyUrl]);
 
-	// Poll active iframe for URL changes (in-page navigation)
 	useEffect(() => {
-		if (isOnNewTab) return;
+		let interval: ReturnType<typeof setInterval> | null = null;
 
-		const interval = setInterval(() => {
-			const activeIndex = sessions.findIndex(
-				s => s.id === activeSession
-			);
-			const root = carouselRef.current;
-			if (!root) return;
-			const containers = root.querySelectorAll('.iframeContainer');
-			const container = containers[activeIndex];
-			if (!container) return;
-			const iframe = container.querySelector(
-				'iframe'
-			) as HTMLIFrameElement | null;
-			if (!iframe) return;
+		const startPolling = () => {
+			if (interval) return;
+			if (isOnNewTab) return;
 
-			try {
-				const iframeSrc = iframe.contentWindow?.location.href;
-				if (iframeSrc && iframeSrc !== 'about:blank') {
-					const decoded = decodeProxyUrl(iframeSrc);
+			interval = setInterval(() => {
+				const activeIndex = sessions.findIndex(
+					s => s.id === activeSession
+				);
+				const root = carouselRef.current;
+				if (!root) return;
+				const containers = root.querySelectorAll('.iframeContainer');
+				const container = containers[activeIndex];
+				if (!container) return;
+				const iframe = container.querySelector(
+					'iframe'
+				) as HTMLIFrameElement | null;
+				if (!iframe) return;
+
+				try {
+					const iframeSrc = iframe.contentWindow?.location.href;
+					if (iframeSrc && iframeSrc !== 'about:blank') {
+						const decoded = decodeProxyUrl(iframeSrc);
+						if (decoded !== displayUrl) {
+							setDisplayUrl(decoded);
+							if (!inputFocused) setInputValue(stripProtocol(decoded));
+						}
+					}
+				} catch {
+					const src = iframe.getAttribute('src') || '';
+					const decoded = decodeProxyUrl(src);
 					if (decoded !== displayUrl) {
 						setDisplayUrl(decoded);
 						if (!inputFocused) setInputValue(stripProtocol(decoded));
 					}
 				}
-			} catch {
-				const src = iframe.getAttribute('src') || '';
-				const decoded = decodeProxyUrl(src);
-				if (decoded !== displayUrl) {
-					setDisplayUrl(decoded);
-					if (!inputFocused) setInputValue(stripProtocol(decoded));
-				}
-			}
-		}, 1000);
+			}, 1000);
+		};
 
-		return () => clearInterval(interval);
+		const stopPolling = () => {
+			if (interval) {
+				clearInterval(interval);
+				interval = null;
+			}
+		};
+
+		const handleVisibility = () => {
+			if (document.hidden) {
+				stopPolling();
+			} else {
+				startPolling();
+			}
+		};
+
+		startPolling();
+		document.addEventListener('visibilitychange', handleVisibility);
+
+		return () => {
+			stopPolling();
+			document.removeEventListener('visibilitychange', handleVisibility);
+		};
 	}, [
 		sessions,
 		activeSession,
@@ -275,6 +303,7 @@ export const TopBar = ({
 				: document.querySelectorAll('.iframeContainer');
 			const target =
 				(containers[activeIndex] as HTMLElement) ??
+				document.getElementById('app-root') ??
 				document.documentElement;
 
 			await target.requestFullscreen();
@@ -326,8 +355,13 @@ export const TopBar = ({
 		<header className="fixed top-0 left-2 right-2 h-10 flex items-center z-40 mt-2 gap-2 pointer-events-none"
 			style={{ position: 'fixed' }}
 		>
-			<div
+			<motion.div
 				className='engineBg'
+				animate={{
+					opacity: inputFocused ? [0.6, 0.9, 0.6] : [0.2, 0.4, 0.2],
+					scale: inputFocused ? [0.99, 1.01, 0.99] : 1
+				}}
+				transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
 				style={{
 					position: 'absolute',
 					inset: '-0.25rem',
@@ -336,11 +370,11 @@ export const TopBar = ({
 					pointerEvents: 'none',
 					transition: 'background 0.4s ease',
 					zIndex: 999,
-					filter: 'blur(4px)'
+					filter: 'blur(5px)'
 				}}
 			/>
 			<motion.div
-				whileHover={{ scale: 1.01, y: -1 }}
+				whileHover={{ scale: 1.01, y: -1, boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)` }}
 				transition={{ type: 'spring', stiffness: 340, damping: 24 }}
 				className="flex items-center gap-0.5 h-10 rounded-full p-2!"
 				style={pillStyle}
@@ -391,18 +425,19 @@ export const TopBar = ({
 				onMouseEnter={() => setInputHovered(true)}
 				onMouseLeave={() => setInputHovered(false)}
 				animate={{
+					scale: inputFocused ? 1.005 : 1,
 					borderColor: inputFocused
 						? `rgba(${glowRgb}, 0.4)`
 						: inputHovered
 							? `rgba(${glowRgb}, 0.2)`
 							: 'rgba(45, 45, 58, 0.5)',
 					boxShadow: inputFocused
-						? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 20px rgba(${glowRgb}, 0.15), inset 0 0 20px rgba(${glowRgb}, 0.08)`
+						? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 25px rgba(${glowRgb}, 0.2), inset 0 0 15px rgba(${glowRgb}, 0.1)`
 						: inputHovered
-							? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 12px rgba(${glowRgb}, 0.08)`
+							? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 15px rgba(${glowRgb}, 0.1)`
 							: '0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset'
 				}}
-				transition={{ duration: 0.2 }}
+				transition={{ type: 'spring', stiffness: 350, damping: 30, mass: 1 }}
 				style={{
 					background: 'rgba(14, 14, 16, 0.65)',
 					border: '1px solid rgba(45, 45, 58, 0.5)',
@@ -565,10 +600,11 @@ export const TopBar = ({
 			</motion.div>
 
 			<motion.div
-				whileHover={{ scale: 1.01, y: -1 }}
+				whileHover={{ scale: 1.01, y: -1, boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)` }}
 				transition={{ type: 'spring', stiffness: 340, damping: 24 }}
-				className="flex items-center gap-0.5 h-10 rounded-full p-2!"
+				className="flex items-center gap-0.5 h-10 rounded-full p-2! relative"
 				style={pillStyle}
+				ref={menuRef}
 			>
 				<motion.button
 					whileHover={{ scale: 1.08 }}
@@ -588,10 +624,50 @@ export const TopBar = ({
 				<motion.button
 					whileHover={{ scale: 1.08 }}
 					whileTap={{ scale: 0.94 }}
+					onClick={() => setIsMenuOpen(!isMenuOpen)}
 					className={iconButtonClass}
 				>
 					<MoreVertical className="w-4 h-4" />
 				</motion.button>
+
+				<AnimatePresence>
+					{isMenuOpen && (
+						<motion.div
+							initial={{ opacity: 0, scale: 0.8, y: -15, filter: 'blur(12px)', rotateX: -15 }}
+							animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', rotateX: 0 }}
+							exit={{ opacity: 0, scale: 0.8, y: -10, filter: 'blur(10px)', rotateX: -10 }}
+							transition={{ type: 'spring', stiffness: 450, damping: 25, mass: 1 }}
+							className="absolute right-0 top-full mt-3 w-48 rounded-2xl p-2 flex flex-col gap-1 z-50 pointer-events-auto"
+							style={{
+								background: 'rgba(14, 14, 16, 0.75)',
+								border: '1px solid rgba(203, 166, 247, 0.3)',
+								boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(203, 166, 247, 0.1)',
+								backdropFilter: 'blur(16px)',
+								WebkitBackdropFilter: 'blur(16px)',
+								transformOrigin: 'top right'
+							}}
+						>
+							{['Settings', 'Extensions', 'History', 'Downloads'].map((item, i) => (
+								<motion.button
+									key={item}
+									initial={{ opacity: 0, x: -10 }}
+									animate={{ opacity: 1, x: 0 }}
+									transition={{ delay: i * 0.05 + 0.1, type: 'spring', stiffness: 400, damping: 25 }}
+									whileHover={{ 
+										scale: 1.02, 
+										x: 4,
+										background: 'rgba(203, 166, 247, 0.15)',
+										boxShadow: 'inset 0 0 8px rgba(203, 166, 247, 0.2)' 
+									}}
+									whileTap={{ scale: 0.95 }}
+									className="px-3 py-2 text-sm text-left text-white/80 hover:text-white rounded-xl transition-colors cursor-pointer"
+								>
+									{item}
+								</motion.button>
+							))}
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</motion.div>
 		</header>
 	);

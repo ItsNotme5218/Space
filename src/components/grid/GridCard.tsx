@@ -12,8 +12,8 @@ interface GridCardProps {
 	expandedStyle: React.CSSProperties;
 	staggerIndex: number;
 	staggerDelay: number;
-	onCardClick: (id: number) => void;
-	onHoverStart: (id: number) => void;
+	onCardClick: (id: string) => void;
+	onHoverStart: (id: string) => void;
 	onHoverEnd: () => void;
 }
 
@@ -53,24 +53,32 @@ export const GridCard = memo(
 					animate={{
 						opacity: isHiddenByExpansion ? 0 : 1,
 						scale: isHiddenByExpansion ? 0.8 : 1,
-						y: isHovered && !isExpanded ? -30 : 0,
-						rotateX: isHovered && !isExpanded ? -12 : 0
+						y: isHovered && !isExpanded ? [-25, -32, -25] : 0,
+						rotateX: isHovered && !isExpanded ? -12 : 0,
+						boxShadow: isHovered && !isExpanded
+							? '0 0 25px 5px rgba(139, 92, 246, 0.4), inset 0 0 15px rgba(203, 166, 247, 0.3)'
+							: '0 0 0px 0px rgba(139, 92, 246, 0), inset 0 0 0px rgba(203, 166, 247, 0)'
 					}}
 					transition={{
-						layout: { type: 'spring', stiffness: 400, damping: 35 },
+						layout: { type: 'spring', stiffness: 350, damping: 30 },
 						opacity: { duration: 0.25, delay },
 						scale: { duration: 0.25, delay },
-						y: { type: 'spring', stiffness: 500, damping: 30 },
-						rotateX: { type: 'spring', stiffness: 400, damping: 25 }
+						y: isHovered && !isExpanded 
+							? { repeat: Infinity, duration: 3, ease: 'easeInOut' }
+							: { type: 'spring', stiffness: 400, damping: 25 },
+						rotateX: { type: 'spring', stiffness: 400, damping: 25 },
+						boxShadow: { duration: 0.4 }
 					}}
 					className="relative rounded-2xl overflow-visible cursor-pointer w-full h-full"
 					style={{
 						background: isExpanded
 							? 'transparent'
-							: 'rgba(20, 10, 30, 1)',
+							: 'rgba(20, 10, 30, 0.65)',
 						border: isExpanded
 							? 'none'
-							: '1px solid rgba(139, 92, 246, 0.3)',
+							: '1px solid rgba(203, 166, 247, 0.3)',
+						backdropFilter: 'blur(8px)',
+						WebkitBackdropFilter: 'blur(8px)',
 						pointerEvents: isHiddenByExpansion ? 'none' : 'auto',
 						transformStyle: 'preserve-3d',
 						transformOrigin: 'center bottom'

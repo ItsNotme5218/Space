@@ -21,7 +21,7 @@ export default defineConfig({
 		transformer: 'lightningcss'
 	},
 	build: {
-		cssCodeSplit: false,
+		cssCodeSplit: true,
 		rollupOptions: {
 			input: {
 				main: resolve(__dirname, 'index.html'),

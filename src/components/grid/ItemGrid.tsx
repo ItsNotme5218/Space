@@ -22,8 +22,8 @@ export const ItemGrid = ({
 	const itemsPerPage = cols * rows;
 
 	const [currentPage, setCurrentPage] = useState(0);
-	const [expandedId, setExpandedId] = useState<number | null>(null);
-	const [hoveredId, setHoveredId] = useState<number | null>(null);
+	const [expandedId, setExpandedId] = useState<string | null>(null);
+	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const [staggerKey, setStaggerKey] = useState(0);
 
 	const totalPages = Math.ceil(items.length / itemsPerPage);
@@ -90,7 +90,7 @@ export const ItemGrid = ({
 	};
 
 	const handleCardClick = useCallback(
-		(id: number) => {
+		(id: string) => {
 			if (onItemClick) {
 				const item = items.find(i => i.id === id);
 				if (item) onItemClick(item);
@@ -101,7 +101,7 @@ export const ItemGrid = ({
 		[onItemClick, items]
 	);
 
-	const handleHoverStart = useCallback((id: number) => {
+	const handleHoverStart = useCallback((id: string) => {
 		setHoveredId(id);
 	}, []);
 

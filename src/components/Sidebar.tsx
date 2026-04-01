@@ -239,16 +239,18 @@ export const Sidebar = ({
 	const isHome = !navItems.some(item => item.id === activeItem);
 
 	const measurePosition = useCallback(() => {
-		const container = navContainerRef.current;
-		const btn =
-			buttonRefs.current[activeItem] ||
-			buttonRefs.current[navItems[0].id];
-		if (!container || !btn) return;
-		const containerRect = container.getBoundingClientRect();
-		const btnRect = btn.getBoundingClientRect();
-		setIndicatorY(
-			btnRect.top - containerRect.top + btnRect.height / 2 - 20
-		);
+		requestAnimationFrame(() => {
+			const container = navContainerRef.current;
+			const btn =
+				buttonRefs.current[activeItem] ||
+				buttonRefs.current[navItems[0].id];
+			if (!container || !btn) return;
+			const containerRect = container.getBoundingClientRect();
+			const btnRect = btn.getBoundingClientRect();
+			setIndicatorY(
+				btnRect.top - containerRect.top + btnRect.height / 2 - 20
+			);
+		});
 	}, [activeItem]);
 
 	useEffect(() => {
@@ -307,34 +309,30 @@ export const Sidebar = ({
 					<motion.div
 						className="absolute top-0 left-1/2 w-10 h-10 rounded-full pointer-events-none z-20"
 						style={{
-							background: 'rgba(255, 255, 255, 0.04)',
+							background: 'rgba(139, 92, 246, 0.2)',
 							boxShadow:
-								'0px 2px 6px 0px rgba(140,140,160,0.25), inset 0px 2px 4px -2px rgba(255,255,255,0.25)',
+								'0px 0px 15px 2px rgba(139,92,246,0.4), inset 0px 0px 8px 2px rgba(203,166,247,0.3)',
 							x: '-50%'
 						}}
 						initial={false}
 						animate={{
 							y: isHome ? 10 : indicatorY,
-							scaleX: 1,
-							scaleY: 1,
+							scaleX: isHome ? 0.8 : [1, 1.05, 1],
+							scaleY: isHome ? 0.8 : [1, 1.05, 1],
 							opacity: isHome ? 0 : 1
 						}}
 						transition={{
 							y: {
 								type: isHome ? 'tween' : 'spring',
-								stiffness: 550,
-								damping: 25,
-								mass: 1
+								stiffness: 400,
+								damping: 22,
+								mass: 0.8
 							},
 							scaleX: {
-								type: 'spring',
-								stiffness: 600,
-								damping: 20
+								repeat: Infinity, duration: 2.5, ease: "easeInOut"
 							},
 							scaleY: {
-								type: 'spring',
-								stiffness: 600,
-								damping: 20
+								repeat: Infinity, duration: 2.5, ease: "easeInOut"
 							},
 							opacity: { duration: 0.15 }
 						}}

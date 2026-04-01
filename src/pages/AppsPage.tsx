@@ -4,7 +4,7 @@ import { ItemGrid, type GridItem } from '../components/grid';
 
 const generateMockApps = (count: number): GridItem[] =>
 	Array.from({ length: count }, (_, i) => ({
-		id: i + 1,
+		id: `app-${i + 1}`,
 		title: `App ${i + 1}`
 	}));
 

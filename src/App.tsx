@@ -35,7 +35,9 @@ const App = () => {
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [sidebarHovered, setSidebarHovered] = useState(false);
-	const [showIntro, setShowIntro] = useState(true); //TODO: switch to after first load, hide intro on subsequent loads. Also add it to settings (hide intro show intro everytime etc)
+	const [showIntro, setShowIntro] = useState(true);
+	const [introProgress, setIntroProgress] = useState(0);
+	const [isSkipped, setIsSkipped] = useState(false);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const [particles] = useLocalStorage('particles', true);
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
@@ -209,6 +211,14 @@ const App = () => {
 	const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+	useEffect(() => {
+		return () => {
+			if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+			if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+			if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+		};
+	}, []);
+
 	const handleSessionSwitch = (id: number) => {
 		if (id === activeSession) return;
 		setSwitching(true);
@@ -267,8 +277,7 @@ const App = () => {
 			try {
 				iframe.contentWindow.location.reload();
 			} catch {
-				// eslint-disable-next-line no-self-assign
-				if (iframe.src) iframe.src = iframe.src;
+				if (iframe.src) iframe.src = iframe.src; // eslint-disable-line no-self-assign
 			}
 		}
 	}, [getActiveIframe, activeSession]);
@@ -351,12 +360,12 @@ const App = () => {
 									className="w-full h-full"
 									style={{
 											borderRadius: 12,
-											border: '1px solid rgba(255,255,255,0.06)',
-											background:
-												'rgba(24,20,28,0.65)',
-											backdropFilter: 'blur(4px)',
-											WebkitBackdropFilter:
-												'blur(4px)'
+											border: s.url ? '1px solid rgba(255,255,255,0.06)' : 'none',
+											background: s.url
+												? 'rgba(24,20,28,0.65)'
+												: 'transparent',
+											backdropFilter: s.url ? 'blur(4px)' : 'none',
+											WebkitBackdropFilter: s.url ? 'blur(4px)' : 'none'
 										}}
 									/>
 								</div>
@@ -383,6 +392,14 @@ const App = () => {
 		);
 	};
 
+	const [introDone, setIntroDone] = useState(false);
+
+	useEffect(() => {
+		if (!showIntro) {
+			setIntroDone(true);
+		}
+	}, [showIntro]);
+
 	const bgStyle = (() => {
 		if (particles) return { backgroundColor: '#050312' };
 		switch (bgMode) {
@@ -403,20 +420,37 @@ const App = () => {
 
 	return (
 		<div
+			id="app-root"
 			className="h-screen flex flex-col overflow-hidden"
 			style={bgStyle}
 		>
 			<div className="fixed inset-0" style={{ zIndex: 0 }}>
-				{particles && <SpaceStars mode="background" />}
+				{particles && (
+					<SpaceStars 
+						mode="intro" 
+						skip={isSkipped}
+						onIntroComplete={() => setShowIntro(false)} 
+						onProgress={setIntroProgress} 
+					/>
+				)}
 			</div>
 
 			{showIntro && (
-				<IntroSplash onComplete={() => setShowIntro(false)} />
+				<IntroSplash 
+					progress={introProgress} 
+					onComplete={() => {
+						setIsSkipped(true);
+						setShowIntro(false);
+					}} 
+				/>
 			)}
 
-			<div
+			<motion.div
 				className="relative flex flex-col h-full"
 				style={{ zIndex: 1 }}
+				initial={{ opacity: 0 }}
+				animate={{ opacity: introDone ? 1 : 0 }}
+				transition={{ duration: 1.5, ease: 'easeInOut' }}
 			>
 
 				{!isSpecialPage && (
@@ -477,9 +511,10 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-			</div>
+			</motion.div>
 		</div>
 	);
 };
 
 export default App;
+
