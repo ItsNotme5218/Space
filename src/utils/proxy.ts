@@ -362,9 +362,7 @@ class Proxy implements ProxyInterface {
 
   async checkAuthentication(): Promise<boolean> {
     try {
-      const basePath = "/p";
-      const fileName = "index.mjs";
-      const module = await import(`${basePath}/${fileName}`);
+      const module = await import(window.location.origin + "/p/index.mjs");
       const PlusClient = module.default;
       const client = new PlusClient();
       const sessionToken = await client.getSessionToken();

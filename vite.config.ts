@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { allowedHosts } from "./srv/vite/hosts.ts";
 import { viteStaticCopy } from "vite-plugin-static-copy";
@@ -19,7 +19,41 @@ export default defineConfig({
     transformer: "lightningcss",
   },
   build: {
+    target: "esnext",
     cssCodeSplit: true,
+    cssMinify: "lightningcss",
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          minSize: 10000,
+          groups: [
+            {
+              name: "vendor-react",
+              test: /[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-motion",
+              test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-lucide",
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "vendor-utils",
+              test: /[\\/]node_modules[\\/](axios|localforage|chalk)[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
@@ -27,8 +61,16 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    rolldownOptions: {
+      exclude: ["@mercuryworkshop/bare-mux"],
+    },
+  },
   server: {
     allowedHosts: allowedHosts,
+    warmup: {
+      clientFiles: ["./src/main.tsx", "./src/App.tsx", "./src/index.css"],
+    },
     watch: {
       ignored: ["**/.github/**"],
     },

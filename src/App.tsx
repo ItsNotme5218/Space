@@ -261,7 +261,9 @@ const App = () => {
       try {
         iframe.contentWindow.location.reload();
       } catch {
-        if (iframe.src) iframe.src = iframe.src;
+        const currentSrc = iframe.src;
+        iframe.src = "";
+        iframe.src = currentSrc;
       }
     }
   }, [getActiveIframe, activeSession]);
