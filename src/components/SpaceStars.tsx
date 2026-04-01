@@ -630,16 +630,22 @@ export const SpaceStars = ({
 	onTextFormed,
 	onIntroComplete,
 	onProgress,
-	className
+	className,
+	skip = false
 }: SpaceStarsProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const callbackFired = useRef(false);
 	const onTextFormedRef = useRef(onTextFormed);
 	const onIntroCompleteRef = useRef(onIntroComplete);
 	const onProgressRef = useRef(onProgress);
+	const skipRef = useRef(skip);
 	onTextFormedRef.current = onTextFormed;
 	onIntroCompleteRef.current = onIntroComplete;
 	onProgressRef.current = onProgress;
+
+	useEffect(() => {
+		skipRef.current = skip;
+	}, [skip]);
 
 	const runAnimation = useCallback(() => {
 		const canvas = canvasRef.current;

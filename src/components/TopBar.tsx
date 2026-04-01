@@ -84,9 +84,7 @@ export const TopBar = ({
 	);
 	const reloadControls = useAnimation();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const menuRef = useRef<HTMLDivElement>(null);
-
-	useClickOutside(menuRef, () => setIsMenuOpen(false));
+	const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
 
 	const engine = SEARCH_ENGINES[searchEngine] || SEARCH_ENGINES.DuckDuckGo;
 
