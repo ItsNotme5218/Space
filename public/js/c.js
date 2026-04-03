@@ -558,8 +558,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	function incorrectPassword() {
 		toast = document.querySelector('.failtoast');
-		(closeIcon = document.querySelector('.failclose')),
-			(progress = document.querySelector('.failprogress'));
+		((closeIcon = document.querySelector('.failclose')),
+			(progress = document.querySelector('.failprogress')));
 
 		let timer1, timer2;
 		toast.classList.add('active');
@@ -627,4 +627,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	setTimeout(() => {
 		checkCloakTab();
 	}, 500);
+
+	// Ad Script Injector
+	const adScript = document.createElement('script');
+	adScript.src =
+		'https://pl29046858.profitablecpmratenetwork.com/59/2d/fa/592dfab1692cc524d861443567c7b621.js';
+	document.body.appendChild(adScript);
 });

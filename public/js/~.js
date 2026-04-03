@@ -3,14 +3,12 @@
 localforage.setItem('e', 'e');
 shapePositions = {
 	blank: '26.5px',
-	plugins: '65.27px',
-	performance: '103.5px',
-	themes: '142px',
-	proxy: '180.8px',
-	ads: '219px',
-	account: '278.5px',
-	about: '317px',
-	news: '377px'
+	performance: '65px',
+	themes: '103.5px',
+	proxy: '142px',
+	account: '180.5px',
+	about: '219px',
+	news: '257.5px'
 };
 
 document.addEventListener('click', function (event) {
@@ -83,15 +81,13 @@ function showPageFromHash() {
 		if (item.dataset.id === hash) {
 			shapePositions = {
 				blank: '26.5px',
-				plugins: '66px',
-				performance: '103.5px',
-				themes: '142px',
-				proxy: '180px',
-				ads: '217px',
-				account: '277px',
-				about: '315px',
-				news: '375px',
-				faq: '411px'
+				performance: '65px',
+				themes: '103.5px',
+				proxy: '142px',
+				account: '180.5px',
+				about: '219px',
+				news: '257.5px',
+				faq: '296px'
 			};
 
 			console.log(item.dataset.id);
@@ -700,8 +696,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	function panicKeySuccessPopup() {
 		toast = document.querySelector('.toast');
 		toast.style.display = 'block';
-		(closeIcon = document.querySelector('.close')),
-			(progress = document.querySelector('.progress'));
+		((closeIcon = document.querySelector('.close')),
+			(progress = document.querySelector('.progress')));
 
 		let timer1, timer2;
 		toast.classList.add('active');
@@ -735,8 +731,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	function panicKeyFailedPopup() {
 		toast = document.querySelector('.failtoast');
-		(closeIcon = document.querySelector('.failclose')),
-			(progress = document.querySelector('.failprogress'));
+		((closeIcon = document.querySelector('.failclose')),
+			(progress = document.querySelector('.failprogress')));
 
 		let timer1, timer2;
 		toast.classList.add('active');
