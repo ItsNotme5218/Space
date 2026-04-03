@@ -230,7 +230,7 @@ const CategoryRow = ({
 
 							return (
 								<motion.button
-									key={`${category.id}-${item.id}`}
+									key={`${category.id}-${item.id}-${itemIndex}`}
 									variants={{
 										hidden: { opacity: 0, scale: 0.5, y: 20, filter: 'blur(10px)' },
 										visible: { 
@@ -340,11 +340,22 @@ export const GamesPage = () => {
 		}
 
 		return CATEGORY_CONFIG
-			.map((config, index) => ({
-				id: index + 1,
-				label: config.label,
-				items: tagMap[config.tag] || []
-			}))
+			.map((config, index) => {
+				// Deduplicate items within each category by ID
+				const items = tagMap[config.tag] || [];
+				const seen = new Set<string>();
+				const uniqueItems = items.filter(item => {
+					if (seen.has(item.id)) return false;
+					seen.add(item.id);
+					return true;
+				});
+				
+				return {
+					id: index + 1,
+					label: config.label,
+					items: uniqueItems
+				};
+			})
 			.filter(category => category.items.length > 0);
 	}, [games]);
 

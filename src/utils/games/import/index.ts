@@ -2,6 +2,14 @@
 import { GnMathGames } from "./gn-math";
 import { TruffledGames } from "./truffled";
 import { SeleniteGames } from "./selenite";
+import { VelaraGames } from "./velara";
+import { DefinitelyScienceGames } from "./defsci";
+import { NowGGGames } from "./nowgg";
+import { CoolMathGames } from "./coolmath";
+import { VaporGames } from "./vapor";
+import { DogeUBGames } from "./dogeub";
+import { PokiGames } from "./poki";
+import { Proxy } from "@/utils/proxy";
 
 /**
  * Generate a unique ID from a game name
@@ -24,11 +32,27 @@ class ImportedGames {
     selenite: SeleniteGames;
     //fern: FernGames;
     gnMath: GnMathGames;
+    velara: VelaraGames;
+    ds: DefinitelyScienceGames;
+    nowgg: NowGGGames;
+    coolmath: CoolMathGames;
+    vapor: VaporGames;
+    dogeub: DogeUBGames;
+    poki: PokiGames;
+    fetch: typeof Proxy.prototype.fetch;
     constructor() {
+        this.fetch = Proxy.prototype.fetch.bind(new Proxy());
         //this.fern = new FernGames();
-        this.gnMath = new GnMathGames();
-        this.truffled = new TruffledGames();
-        this.selenite = new SeleniteGames();
+        this.gnMath = new GnMathGames(this.fetch);
+        this.truffled = new TruffledGames(this.fetch);
+        this.selenite = new SeleniteGames(this.fetch);
+        this.velara = new VelaraGames(this.fetch);
+        this.ds = new DefinitelyScienceGames(this.fetch);
+        this.nowgg = new NowGGGames(this.fetch);
+        this.coolmath = new CoolMathGames(this.fetch);
+        this.vapor = new VaporGames(this.fetch);
+        this.dogeub = new DogeUBGames(this.fetch);
+        this.poki = new PokiGames(this.fetch);
     }
 
     async fetchGamesList() {
@@ -36,9 +60,16 @@ class ImportedGames {
         const gnMathGames = await this.gnMath.rewriteGamesList();
         const truffledGames = await this.truffled.rewriteGamesList();
         const seleniteGames = await this.selenite.rewriteGamesList();
+        const velaraGames = await this.velara.rewriteGamesList();
+        const dsGames = await this.ds.rewriteGamesList();
+        const nowggGames = await this.nowgg.rewriteGamesList();
+        const coolmathGames = await this.coolmath.rewriteGamesList();
+        const vaporGames = await this.vapor.rewriteGamesList();
+        const dogeUBGames = await this.dogeub.rewriteGamesList();
+        const pokiGames = await this.poki.rewriteGamesList();
 
         // Merge all imported games and add IDs
-        const allGames = [...gnMathGames, ...truffledGames, ...seleniteGames];
+        const allGames = [...gnMathGames, ...truffledGames, ...seleniteGames, ...velaraGames, ...dsGames, ...nowggGames, ...coolmathGames, ...vaporGames, ...dogeUBGames, ...pokiGames];
         const gamesWithIds = allGames.map(game => ({
             ...game,
             id: generateGameId(game.name)

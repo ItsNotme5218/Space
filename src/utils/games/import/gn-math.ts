@@ -2,16 +2,19 @@ class GnMathGames {
     private jsonUrl: string;
     private htmlUrl: string;
     private coverUrl: string;
-    constructor() {
+    private fetch: any;
+
+    constructor(fetch: any) {
         this.jsonUrl = "https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json";
         this.htmlUrl = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
         this.coverUrl = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
-
+        this.fetch = fetch;
     }
 
     async fetchJson() {
-        const response = await fetch(this.jsonUrl);
-        const data = await response.json();
+        const response = await this.fetch(this.jsonUrl);
+        console.log('[GnMathGames] Fetched JSON:', response);
+        const data = JSON.parse(await response);
         return data;
     }
 
@@ -25,7 +28,8 @@ class GnMathGames {
                 image: this.coverUrl + "/" + (entry.url.split("/")[1] || entry.id + ".png"),
                 url: this.htmlUrl + "/" + (entry.url.split("/")[1] || entry.id + ".html"),
                 tags: entry.tags || [],
-                engine: "iframe"
+                engine: "iframe",
+                description: entry.description || null
             }));
 
         rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));

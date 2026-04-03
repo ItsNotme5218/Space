@@ -145,12 +145,14 @@ class Proxy implements ProxyInterface {
 
 		const transportFile = transportMap[transports] || '/l/index.mjs';
 
-		const wispUrl =
+		/*const wispUrl =
 			this.wispUrl ||
 			(location.protocol === 'https:' ? 'wss' : 'ws') +
 			'://' +
 			location.host +
-			'/w/';
+			'/w/';*/
+		
+		const wispUrl = "wss://daydreamx.pro/wisp/";
 
 		const transportOptions: Record<string, any> = {
 			wisp: wispUrl,
@@ -338,7 +340,7 @@ class Proxy implements ProxyInterface {
 		return encodedUrl;
 	}
 
-	async fetch(url: any, params?: any) {
+	async fetch(url: string, params?: any): Promise<string> {
 		await this.setTransports();
 		const client = new BareMux.BareClient();
 		let response: Response;

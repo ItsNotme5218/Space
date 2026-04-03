@@ -5,4 +5,5 @@ interface GameEntry {
     url: string;
     tags: string[];
     engine: string;
+    description: string | null;
 }
