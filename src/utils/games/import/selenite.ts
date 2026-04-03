@@ -14,8 +14,8 @@ class SeleniteGames {
         return data;
     }
 
-    async rewriteGamesList() {
-        const jsonGames = await this.fetchJson();
+  async rewriteGamesList() {
+    const jsonGames = await this.fetchJson();
 
         const rewrittenGames = jsonGames.map((entry: any) => ({
             image: this.seleniteUrl + "resources/semag/" + entry.directory + "/" + entry.image,
@@ -26,10 +26,10 @@ class SeleniteGames {
             description: entry.description || null
         }));
 
-        rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-        return rewrittenGames;
-    }
+    return rewrittenGames;
+  }
 }
 
 export { SeleniteGames };

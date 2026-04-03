@@ -19,19 +19,19 @@ import { Proxy } from "@/utils/proxy";
  * - Collapses multiple underscores into one
  */
 function generateGameId(name: string): string {
-    return name
-        .toLowerCase()
-        .replace(/\s+/g, '_')           // spaces -> underscores
-        .replace(/[^a-z0-9_]/g, '')     // remove special chars
-        .replace(/_+/g, '_')            // collapse multiple underscores
-        .replace(/^_|_$/g, '');         // trim leading/trailing underscores
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, "_") // spaces -> underscores
+    .replace(/[^a-z0-9_]/g, "") // remove special chars
+    .replace(/_+/g, "_") // collapse multiple underscores
+    .replace(/^_|_$/g, ""); // trim leading/trailing underscores
 }
 
 class ImportedGames {
-    truffled: TruffledGames;
-    selenite: SeleniteGames;
-    //fern: FernGames;
-    gnMath: GnMathGames;
+  truffled: TruffledGames;
+  selenite: SeleniteGames;
+  //fern: FernGames;
+  gnMath: GnMathGames;
     velara: VelaraGames;
     ds: DefinitelyScienceGames;
     nowgg: NowGGGames;
@@ -40,12 +40,12 @@ class ImportedGames {
     dogeub: DogeUBGames;
     poki: PokiGames;
     fetch: typeof Proxy.prototype.fetch;
-    constructor() {
+  constructor() {
         this.fetch = Proxy.prototype.fetch.bind(new Proxy());
-        //this.fern = new FernGames();
-        this.gnMath = new GnMathGames(this.fetch);
-        this.truffled = new TruffledGames(this.fetch);
-        this.selenite = new SeleniteGames(this.fetch);
+    //this.fern = new FernGames();
+    this.gnMath = new GnMathGames(this.fetch);
+    this.truffled = new TruffledGames(this.fetch);
+    this.selenite = new SeleniteGames(this.fetch);
         this.velara = new VelaraGames(this.fetch);
         this.ds = new DefinitelyScienceGames(this.fetch);
         this.nowgg = new NowGGGames(this.fetch);
@@ -53,7 +53,7 @@ class ImportedGames {
         this.vapor = new VaporGames(this.fetch);
         this.dogeub = new DogeUBGames(this.fetch);
         this.poki = new PokiGames(this.fetch);
-    }
+  }
 
     async fetchGamesList() {
         //const fernGames = await this.fern.rewriteGamesList();
@@ -75,23 +75,22 @@ class ImportedGames {
             id: generateGameId(game.name)
         }));
 
-        // Deduplicate by ID (keep first occurrence)
-        const seen = new Set<string>();
-        const uniqueGames = gamesWithIds.filter(game => {
-            if (seen.has(game.id)) return false;
-            seen.add(game.id);
-            return true;
-        });
+    // Deduplicate by ID (keep first occurrence)
+    const seen = new Set<string>();
+    const uniqueGames = gamesWithIds.filter((game) => {
+      if (seen.has(game.id)) return false;
+      seen.add(game.id);
+      return true;
+    });
 
-        return uniqueGames;
-    }
+    return uniqueGames;
+  }
 
-    async rewriteGamesList(jsonGames: any[]) {
+  async rewriteGamesList(jsonGames: any[]) {
+    jsonGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-        jsonGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
-
-        return jsonGames;
-    }
+    return jsonGames;
+  }
 }
 
 export { ImportedGames, generateGameId };

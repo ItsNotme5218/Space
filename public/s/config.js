@@ -6,10 +6,10 @@ self.__scramjet$config = {
     sync: "/s/sync.js",
   },
   siteFlags: {
-		"https://discord.com/.*": {
-			naiiveRewriter: false,
-		},
-	},
+    "https://discord.com/.*": {
+      naiiveRewriter: false,
+    },
+  },
   flags: {
     captureErrors: false,
     cleanErrors: true,
@@ -28,9 +28,7 @@ self.__scramjet$config = {
         url
           .toString()
           .split("")
-          .map((char, ind) =>
-            ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char,
-          )
+          .map((char, ind) => (ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char))
           .join(""),
       );
     },
@@ -42,9 +40,7 @@ self.__scramjet$config = {
       return (
         decodeURIComponent(input)
           .split("")
-          .map((char, ind) =>
-            ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char,
-          )
+          .map((char, ind) => (ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char))
           .join("") + (search.length ? "?" + search.join("?") : "")
       );
     },

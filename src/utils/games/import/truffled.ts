@@ -13,9 +13,9 @@ class TruffledGames {
         return data;
     }
 
-    async rewriteGamesList() {
-        const jsonData = await this.fetchJson();
-        const jsonGames = jsonData.games || [];
+  async rewriteGamesList() {
+    const jsonData = await this.fetchJson();
+    const jsonGames = jsonData.games || [];
 
         const rewrittenGames = jsonGames.map((entry: any) => ({
             image: this.truffledUrl + entry.thumbnail,
@@ -26,10 +26,10 @@ class TruffledGames {
             description: entry.description || null
         }));
 
-        rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-        return rewrittenGames;
-    }
+    return rewrittenGames;
+  }
 }
 
 export { TruffledGames };

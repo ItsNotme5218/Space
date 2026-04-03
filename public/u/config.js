@@ -7,9 +7,7 @@ self.__uv$config = {
       str
         .toString()
         .split("")
-        .map((char, ind) =>
-          ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char,
-        )
+        .map((char, ind) => (ind % 2 ? String.fromCharCode(char.charCodeAt() ^ 3) : char))
         .join(""),
     );
   },
@@ -20,9 +18,7 @@ self.__uv$config = {
     return (
       decodeURIComponent(input)
         .split("")
-        .map((char, ind) =>
-          ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char,
-        )
+        .map((char, ind) => (ind % 2 ? String.fromCharCode(char.charCodeAt(0) ^ 3) : char))
         .join("") + (search.length ? "?" + search.join("?") : "")
     );
   },
