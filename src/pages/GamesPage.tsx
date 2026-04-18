@@ -194,12 +194,12 @@ const CategoryRow = ({ category, categoryIndex, delay, onSelect, onViewAll }: Ca
       <div className="-mx-4 px-4">
         <div
           ref={scrollerRef}
-          className="overflow-x-auto overflow-y-visible pb-3"
+          className="overflow-x-auto overflow-y-visible pb-3 px-15 -mx-10"
           style={{
             WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
             maskImage:
-              "linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
             scrollPaddingInline: "1rem",
           }}
         >
@@ -293,19 +293,57 @@ export const GamesPage = () => {
   const [viewAllCategory, setViewAllCategory] = useState<number | null>(null);
 
   useEffect(() => {
-    spaceGames.fetchGamesList().then((gamesList) => {
-      const mappedGames = gamesList.map(
-        (game: { id: string; name: string; image?: string; url?: string; tags?: string[] }) => ({
-          id: game.id,
-          title: game.name,
-          image: game.image,
-          url: game.url,
-          tags: game.tags || [],
-        }),
-      );
-      setGames(mappedGames);
-      setIsLoading(false);
+    let cancelled = false;
+
+    const mapGame = (game: {
+      id: string;
+      name: string;
+      image?: string;
+      url?: string;
+      tags?: string[];
+    }): GameItem => ({
+      id: game.id,
+      title: game.name,
+      image: game.image,
+      url: game.url,
+      tags: game.tags || [],
     });
+
+    // 1) Show local games instantly so the page never hangs on remote fetches.
+    spaceGames
+      .fetchLocalGamesList()
+      .then((localGames) => {
+        if (cancelled) return;
+        setGames(localGames.map(mapGame));
+        setIsLoading(false);
+
+        // 2) Fold in remote-imported games once (or if) they arrive.
+        const localIds = new Set(localGames.map((g) => g.id));
+        spaceGames
+          .fetchImportedGamesList(localIds)
+          .then((importedGames) => {
+            if (cancelled || importedGames.length === 0) return;
+            setGames((prev) => {
+              const seen = new Set(prev.map((g) => g.id));
+              const additions = importedGames.filter((g: any) => !seen.has(g.id)).map(mapGame);
+              if (additions.length === 0) return prev;
+              return [...prev, ...additions].sort((a, b) => a.title.localeCompare(b.title));
+            });
+          })
+          .catch((err) => {
+            console.warn("[GamesPage] imported games failed:", err);
+          });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[GamesPage] local games failed:", err);
+        setGames([]);
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const categories: GameCategory[] = useMemo(() => {

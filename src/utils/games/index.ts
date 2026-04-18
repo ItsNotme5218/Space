@@ -9,24 +9,30 @@ class SpaceGames {
     this.importedGames = new ImportedGames();
   }
 
-  async fetchGamesList() {
+  async fetchLocalGamesList() {
     if (!cachedGames) {
       const mod = await import("../../json/games.json");
       cachedGames = mod.default;
     }
 
-    const localGames = cachedGames!.map((game) => ({
-      ...game,
-      id: generateGameId(game.name),
-    }));
+    return cachedGames!
+      .map((game) => ({ ...game, id: generateGameId(game.name) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
 
+  async fetchImportedGamesList(existingIds: Set<string>) {
     const importedWithIds = await this.importedGames.fetchGamesList();
+    return importedWithIds
+      .filter((game: any) => !existingIds.has(game.id))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+  }
 
+  // Kept for backwards compatibility; returns everything merged.
+  async fetchGamesList() {
+    const localGames = await this.fetchLocalGamesList();
     const localIds = new Set(localGames.map((g) => g.id));
-    const uniqueImported = importedWithIds.filter((game: any) => !localIds.has(game.id));
-
-    const allGames = [...localGames, ...uniqueImported];
-    return allGames.sort((a, b) => a.name.localeCompare(b.name));
+    const uniqueImported = await this.fetchImportedGamesList(localIds);
+    return [...localGames, ...uniqueImported].sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 

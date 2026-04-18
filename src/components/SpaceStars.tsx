@@ -996,7 +996,21 @@ export const SpaceStars = ({
           }
           currentState = STATE.BACKGROUND;
           stateTimer = 0;
-          stars = stars.filter((s) => s.keepAfterExplosion);
+          // Match the skip path: keep background stars + flagged keepers,
+          // and restore background stars to their home positions since
+          // IMPLODING/EXPLODING moved them to scattered targets.
+          stars = stars.filter((s) => s.isBackground || s.keepAfterExplosion);
+          for (const s of stars) {
+            if (s.isBackground) {
+              s.x = s.homeX;
+              s.y = s.homeY;
+              s.z = -300;
+              s.startX = s.x;
+              s.startY = s.y;
+              s.startZ = s.z;
+              s.fadeAlpha = 1;
+            }
+          }
         }
         return;
       }

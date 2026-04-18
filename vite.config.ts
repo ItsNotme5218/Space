@@ -14,6 +14,15 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), viteStaticCopy(copyRoutes())],
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      "@": resolve(__dirname, "src"),
+      "@components": resolve(__dirname, "src/components"),
+      "@pages": resolve(__dirname, "src/pages"),
+      "@hooks": resolve(__dirname, "src/hooks"),
+      "@utils": resolve(__dirname, "src/utils"),
+      "@assets": resolve(__dirname, "src/assets"),
+      "@json": resolve(__dirname, "src/json"),
+    },
   },
   css: {
     transformer: "lightningcss",

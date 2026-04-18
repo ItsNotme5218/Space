@@ -273,14 +273,19 @@ const App = () => {
     const activeIndex = sessions.findIndex((x) => x.id === activeSession);
 
     return (
-      <div className="relative flex-1">
+      <div className="relative w-full h-full">
         <motion.div
           ref={carouselRef}
           initial={false}
           animate={{
             scale: isPage ? 0.94 : switching ? 0.85 : 1,
             opacity: isPage ? 0 : switching ? 0.7 : 1,
-            filter: isPage ? "blur(20px)" : "blur(0px)",
+            // Note: no `filter` here. When `isPage` is true the carousel
+            // is already opacity 0 (page overlay covers it), so blurring an
+            // invisible element has no visible effect. Keeping a permanent
+            // `filter: blur(0px)` in the animate map creates a filter
+            // rendering context that re-rasterizes the nested iframes every
+            // frame of the scale animation — visible as side-to-side jitter.
             y: isPage ? -20 : 0,
           }}
           transition={{
@@ -293,8 +298,11 @@ const App = () => {
           style={{
             pointerEvents: isPage ? "none" : "auto",
             borderRadius: 12,
-            transformOrigin: "center center",
-            perspective: 1200,
+            // Promote to its own GPU layer so the nested iframe scales on a
+            // composited texture instead of re-rasterizing each frame.
+            willChange: "transform, opacity",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
           }}
         >
           <motion.div
@@ -313,6 +321,12 @@ const App = () => {
               height: "100%",
               display: "flex",
               width: `${sessions.length * 100}%`,
+              // Put the carousel on its own layer too so the percentage-based
+              // translate doesn't fight sub-pixel rounding when the ancestor
+              // scale animates.
+              willChange: "transform",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
           >
             {sessions.map((s, index) => {
@@ -322,7 +336,7 @@ const App = () => {
                   key={s.id}
                   className="iframeContainer"
                   style={{
-                    width: `calc(${100 / sessions.length}%`,
+                    width: `${100 / sessions.length}%`,
                     height: "100%",
                     flexShrink: 0,
                     pointerEvents: isActive ? "auto" : "none",
@@ -466,7 +480,7 @@ const App = () => {
             }}
             className="shrink-0"
           />
-          <main className="flex-1 relative">{renderMainContent()}</main>
+          <main className="flex-1 relative flex flex-col">{renderMainContent()}</main>
         </div>
         <Sidebar
           activeItem={activeItem}

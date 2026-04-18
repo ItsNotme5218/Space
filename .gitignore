@@ -8,6 +8,7 @@ lerna-debug.log*
 *-lock.yaml
 *-lock.json
 *.lock
+*.lockb
 node_modules
 dist
 dist-ssr

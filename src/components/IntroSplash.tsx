@@ -32,48 +32,46 @@ export const IntroSplash = ({ progress, onComplete }: IntroSplashProps) => {
             pointerEvents: "none",
           }}
         >
-          {hasSeenIntro && (
-            <div
+          <div
+            style={{
+              position: "absolute",
+              right: 20,
+              bottom: "25px",
+              overflow: "hidden",
+              zIndex: 9999,
+              pointerEvents: "auto",
+            }}
+          >
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: hasSeenIntro ? 0.5 : 0.35 }}
+              whileHover={{
+                opacity: 1,
+                scale: 1.05,
+                boxShadow: "0 0 10px rgba(255,255,255,0.2)",
+              }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => {
+                writeSetting("hasSeenIntro", true);
+                setFading(true);
+                onComplete();
+              }}
               style={{
-                position: "absolute",
-                right: 20,
-                bottom: "25px",
-                overflow: "hidden",
-                zIndex: 9999,
-                pointerEvents: "auto",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: 8,
+                padding: "6px 16px",
+                color: "rgba(255, 255, 255, 0.7)",
+                fontSize: 13,
+                cursor: "pointer",
+                backdropFilter: "blur(8px)",
+                letterSpacing: "0.02em",
               }}
             >
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                whileHover={{
-                  opacity: 1,
-                  scale: 1.05,
-                  boxShadow: "0 0 10px rgba(255,255,255,0.2)",
-                }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                onClick={() => {
-                  writeSetting("hasSeenIntro", true);
-                  setFading(true);
-                  onComplete();
-                }}
-                style={{
-                  background: "rgba(255, 255, 255, 0.08)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 8,
-                  padding: "6px 16px",
-                  color: "rgba(255, 255, 255, 0.7)",
-                  fontSize: 13,
-                  cursor: "pointer",
-                  backdropFilter: "blur(8px)",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                skip
-              </motion.button>
-            </div>
-          )}
+              skip
+            </motion.button>
+          </div>
 
           <div
             style={{
