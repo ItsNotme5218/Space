@@ -9,33 +9,39 @@
  * 		- Crllect <3
  */
 
-export const spcProtocol = "spc://";
+export const spcProtocol = 'spc://';
 
 export interface InternalPage {
-  name: string;
-  path: string;
-  title: string;
+	name: string;
+	path: string;
+	title: string;
 }
 
-const internalPages: InternalPage[] = [{ name: "newtab", path: "/newtab.html", title: "New Tab" }];
+const internalPages: InternalPage[] = [
+	{ name: 'newtab', path: '/newtab.html', title: 'New Tab' }
+];
 
-const pagesByName = new Map<string, InternalPage>(internalPages.map((p) => [p.name, p]));
+const pagesByName = new Map<string, InternalPage>(
+	internalPages.map(p => [p.name, p])
+);
 
-const pagesByPath = new Map<string, InternalPage>(internalPages.map((p) => [p.path, p]));
+const pagesByPath = new Map<string, InternalPage>(
+	internalPages.map(p => [p.path, p])
+);
 
 export const resolveInternalUrl = (spcUrl: string): string | null => {
-  if (!spcUrl.startsWith(spcProtocol)) return null;
-  const name = spcUrl.slice(spcProtocol.length).toLowerCase().trim();
-  return pagesByName.get(name)?.path ?? null;
+	if (!spcUrl.startsWith(spcProtocol)) return null;
+	const name = spcUrl.slice(spcProtocol.length).toLowerCase().trim();
+	return pagesByName.get(name)?.path ?? null;
 };
 
 export const isInternalPage = (path: string): boolean => pagesByPath.has(path);
 
 export const toSpcUrl = (path: string): string | null => {
-  const page = pagesByPath.get(path);
-  return page ? `${spcProtocol}${page.name}` : null;
+	const page = pagesByPath.get(path);
+	return page ? `${spcProtocol}${page.name}` : null;
 };
 
-export const getDefaultPagePath = (): string => pagesByName.get("newtab")!.path;
+export const getDefaultPagePath = (): string => pagesByName.get('newtab')!.path;
 
 export const getInternalPages = (): readonly InternalPage[] => internalPages;

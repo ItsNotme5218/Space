@@ -1,41 +1,48 @@
 class GnMathGames {
-  private jsonUrl: string;
-  private htmlUrl: string;
-  private coverUrl: string;
-  private fetch: any;
+	private jsonUrl: string;
+	private htmlUrl: string;
+	private coverUrl: string;
+	private fetch: any;
 
-  constructor(fetch: any) {
-    this.jsonUrl = "https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json";
-    this.htmlUrl = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
-    this.coverUrl = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
-    this.fetch = fetch;
-  }
+	constructor(fetch: any) {
+		this.jsonUrl =
+			'https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json';
+		this.htmlUrl = 'https://cdn.jsdelivr.net/gh/gn-math/html@main';
+		this.coverUrl = 'https://cdn.jsdelivr.net/gh/gn-math/covers@main';
+		this.fetch = fetch;
+	}
 
-  async fetchJson() {
-    const response = await this.fetch(this.jsonUrl);
-    console.log('[GnMathGames] Fetched JSON:', response);
-    const data = JSON.parse(await response);
-    return data;
-  }
+	async fetchJson() {
+		const response = await this.fetch(this.jsonUrl);
+		console.log('[GnMathGames] Fetched JSON:', response);
+		const data = JSON.parse(await response);
+		return data;
+	}
 
-  async rewriteGamesList() {
-    const jsonGames = await this.fetchJson();
+	async rewriteGamesList() {
+		const jsonGames = await this.fetchJson();
 
-    const rewrittenGames = jsonGames
-      .filter((entry: any) => entry.id !== -1)
-      .map((entry: any) => ({
-        name: entry.name,
-        image: this.coverUrl + "/" + (entry.url.split("/")[1] || entry.id + ".png"),
-        url: this.htmlUrl + "/" + (entry.url.split("/")[1] || entry.id + ".html"),
-        tags: entry.tags || [],
-        engine: "iframe",
-        description: entry.description || null
-      }));
+		const rewrittenGames = jsonGames
+			.filter((entry: any) => entry.id !== -1)
+			.map((entry: any) => ({
+				name: entry.name,
+				image:
+					this.coverUrl +
+					'/' +
+					(entry.url.split('/')[1] || entry.id + '.png'),
+				url:
+					this.htmlUrl +
+					'/' +
+					(entry.url.split('/')[1] || entry.id + '.html'),
+				tags: entry.tags || [],
+				engine: 'iframe',
+				description: entry.description || null
+			}));
 
-        rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
+		rewrittenGames.sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-    return rewrittenGames;
-  }
+		return rewrittenGames;
+	}
 }
 
 export { GnMathGames };
