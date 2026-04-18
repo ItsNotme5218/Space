@@ -147,7 +147,7 @@ export const Sessions = ({
                   style={{
                     background:
                       "linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(203, 166, 247, 0.05) 100%)",
-                    border: "1px solid rgba(203, 166, 247, 0.3)",
+                    outline: "1px solid rgba(203, 166, 247, 0.3)",
                   }}
                   initial={{ rotate: 240 }}
                   animate={{ rotate: 0 }}

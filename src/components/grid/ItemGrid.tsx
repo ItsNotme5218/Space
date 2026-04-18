@@ -3,7 +3,7 @@ import { AnimatePresence, LayoutGroup } from "framer-motion";
 import { GridCard } from "./GridCard";
 import { Pagination } from "./Pagination";
 import type { GridItem, GridConfig } from "./types";
-import { DEFAULT_GRID_CONFIG } from "./types";
+import { defaultGridConfig } from "./types";
 
 interface ItemGridProps {
   items: GridItem[];
@@ -13,7 +13,7 @@ interface ItemGridProps {
 }
 
 export const ItemGrid = ({ items, config, header, onItemClick }: ItemGridProps) => {
-  const { cols, rows, staggerDelay } = { ...DEFAULT_GRID_CONFIG, ...config };
+  const { cols, rows, staggerDelay } = { ...defaultGridConfig, ...config };
   const itemsPerPage = cols * rows;
 
   const [currentPage, setCurrentPage] = useState(0);

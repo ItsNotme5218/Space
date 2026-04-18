@@ -10,19 +10,19 @@ import { useTabCloak } from "./hooks/useTabCloak";
 import { Proxy } from "./utils/proxy";
 import { getDefaultPagePath } from "./utils/internal-pages";
 
-const MAX_SESSIONS = 9;
+const maxSessionsLimit = 9;
 
 const getScreenCap = (): number => {
   const h = window.innerHeight;
   if (h < 600) return 3;
   if (h < 800) return 5;
   if (h < 1000) return 7;
-  return MAX_SESSIONS;
+  return maxSessionsLimit;
 };
 
 import "./App.css";
 
-const NEWTAB_URL = getDefaultPagePath();
+const newTabUrl = getDefaultPagePath();
 
 export interface Session {
   id: number;
@@ -35,16 +35,17 @@ const App = () => {
   const navigate = useNavigate();
   const activeItem = location.pathname.replace("/", "") || "home";
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
+  const [skipIntroPref] = useLocalStorage("skipIntro", false);
+  const [showIntro, setShowIntro] = useState(() => !skipIntroPref);
   const [introProgress, setIntroProgress] = useState(0);
-  const [isSkipped, setIsSkipped] = useState(false);
+  const [isSkipped, setIsSkipped] = useState(() => skipIntroPref);
   const [autoHideSidebar] = useLocalStorage("autoHideSidebar", true);
   const [particles] = useLocalStorage("particles", true);
   const [bgMode] = useLocalStorage("bgMode", "solid");
   const [bgValue] = useLocalStorage("bgValue", "#050312");
   const [autoCapSessions] = useLocalStorage("autoCapSessions", true);
   const [screenCap, setScreenCap] = useState(getScreenCap);
-  const maxSessions = autoCapSessions ? Math.min(screenCap, MAX_SESSIONS) : MAX_SESSIONS;
+  const maxSessions = autoCapSessions ? Math.min(screenCap, maxSessionsLimit) : maxSessionsLimit;
 
   useEffect(() => {
     if (!autoCapSessions) return;
@@ -144,7 +145,7 @@ const App = () => {
     for (const s of sessions) {
       const iframe = root.querySelector<HTMLIFrameElement>(`iframe[data-session-uid="${s.id}"]`);
       if (!iframe) continue;
-      const targetSrc = s.url || NEWTAB_URL;
+      const targetSrc = s.url || newTabUrl;
       if (iframe.getAttribute("src") !== targetSrc) {
         iframe.src = targetSrc;
       }
@@ -253,7 +254,7 @@ const App = () => {
 
     const activeSessionData = rawSessions.current.find((s) => s.id === activeSession);
     if (!activeSessionData?.url) {
-      iframe.src = NEWTAB_URL;
+      iframe.src = newTabUrl;
       return;
     }
 
@@ -280,12 +281,6 @@ const App = () => {
           animate={{
             scale: isPage ? 0.94 : switching ? 0.85 : 1,
             opacity: isPage ? 0 : switching ? 0.7 : 1,
-            // Note: no `filter` here. When `isPage` is true the carousel
-            // is already opacity 0 (page overlay covers it), so blurring an
-            // invisible element has no visible effect. Keeping a permanent
-            // `filter: blur(0px)` in the animate map creates a filter
-            // rendering context that re-rasterizes the nested iframes every
-            // frame of the scale animation — visible as side-to-side jitter.
             y: isPage ? -20 : 0,
           }}
           transition={{
@@ -298,8 +293,6 @@ const App = () => {
           style={{
             pointerEvents: isPage ? "none" : "auto",
             borderRadius: 12,
-            // Promote to its own GPU layer so the nested iframe scales on a
-            // composited texture instead of re-rasterizing each frame.
             willChange: "transform, opacity",
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -321,9 +314,6 @@ const App = () => {
               height: "100%",
               display: "flex",
               width: `${sessions.length * 100}%`,
-              // Put the carousel on its own layer too so the percentage-based
-              // translate doesn't fight sub-pixel rounding when the ancestor
-              // scale animates.
               willChange: "transform",
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -348,7 +338,7 @@ const App = () => {
                   }}
                 >
                   <iframe
-                    src={s.url || NEWTAB_URL}
+                    src={s.url || newTabUrl}
                     data-session-id={index}
                     data-session-uid={s.id}
                     className="w-full h-full"

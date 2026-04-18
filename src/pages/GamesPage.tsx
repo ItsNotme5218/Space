@@ -37,7 +37,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const spaceGames = new SpaceGames();
 
-const CATEGORY_CONFIG: { tag: string; label: string }[] = [
+const categoryConfig: { tag: string; label: string }[] = [
   { tag: "popular", label: "Popular" },
   { tag: "multiplayer", label: "Multiplayer" },
   { tag: "horror", label: "Horror" },
@@ -359,7 +359,7 @@ export const GamesPage = () => {
       }
     }
 
-		return CATEGORY_CONFIG
+		return categoryConfig
 			.map((config, index) => {
 				// Deduplicate items within each category by ID
 				const items = tagMap[config.tag] || [];

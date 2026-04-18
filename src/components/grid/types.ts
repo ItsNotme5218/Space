@@ -9,7 +9,7 @@ export interface GridConfig {
   staggerDelay: number;
 }
 
-export const DEFAULT_GRID_CONFIG: GridConfig = {
+export const defaultGridConfig: GridConfig = {
   cols: 4,
   rows: 5,
   staggerDelay: 0.1,

@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-export function ErrorBoundaryRoute() {
+export const ErrorBoundaryRoute = () => {
   const error = useRouteError();
 
   return (
@@ -83,6 +83,6 @@ export function ErrorBoundaryRoute() {
       </div>
     </div>
   );
-}
+};
 
 export default ErrorBoundary;

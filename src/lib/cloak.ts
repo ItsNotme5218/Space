@@ -6,7 +6,7 @@ export interface CloakPreset {
   redirect: string;
 }
 
-export const CLOAK_PRESETS: Record<string, CloakPreset> = {
+export const cloakPresets: Record<string, CloakPreset> = {
   None: {
     title: "space",
     favicon: "/favicon.ico",
@@ -34,7 +34,7 @@ export const CLOAK_PRESETS: Record<string, CloakPreset> = {
   },
 };
 
-const URL_RE = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
+const urlRe = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
 
 export const normalizeUrl = (raw: string): string =>
   /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
@@ -55,13 +55,13 @@ export const resolveCloak = async (
       const rawTitle = await readLocal("customCloakTitle");
 
       let favicon = "/favicon.ico";
-      if (rawFavicon && URL_RE.test(rawFavicon)) {
+      if (rawFavicon && urlRe.test(rawFavicon)) {
         favicon = normalizeUrl(rawFavicon);
       }
 
       let title = "space";
       if (rawTitle) {
-        title = URL_RE.test(rawTitle)
+        title = urlRe.test(rawTitle)
           ? (() => {
               try {
                 return new URL(normalizeUrl(rawTitle)).hostname;
@@ -76,7 +76,7 @@ export const resolveCloak = async (
     }
 
     default:
-      return CLOAK_PRESETS[preset] || null;
+      return cloakPresets[preset] || null;
   }
 };
 

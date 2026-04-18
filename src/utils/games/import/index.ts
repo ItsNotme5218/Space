@@ -10,27 +10,10 @@ import { VaporGames } from "./vapor";
 import { DogeUBGames } from "./dogeub";
 import { PokiGames } from "./poki";
 
-/**
- * Fetch helper for importers.
- *
- * Strategy: try native fetch FIRST with a short timeout. Most public
- * CDN / GitHub URLs (cdn.jsdelivr.net, raw.githubusercontent.com) resolve
- * instantly this way and never need the proxy. Only when native fetch
- * fails (CORS block, network error, non-2xx) do we fall back to the
- * App-level proxy (window.proxy) to bypass CORS.
- *
- * This matters because BareMux/wisp can hang indefinitely if the wisp
- * server or service worker isn't healthy. Proxy-first would stall every
- * importer — including the CDN ones that don't need it — until the outer
- * 15s timeout kills them, which is why the user was seeing "only 275
- * games" (the local JSON, no imports at all) when baremux was broken.
- * Native-first ensures we always get the "easy" sources even when the
- * proxy is down.
- */
-async function importerFetch(url: string, params?: any): Promise<string> {
-  const NATIVE_TIMEOUT_MS = 5000;
-  const PROXY_TIMEOUT_MS = 9000;
-  const PROXY_WAIT_MS = 4000;
+const importerFetch = async (url: string, params?: any): Promise<string> => {
+  const nativeTimeoutMs = 5000;
+  const proxyTimeoutMs = 9000;
+  const proxyWaitMs = 4000;
 
   const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
     Promise.race([
@@ -40,22 +23,18 @@ async function importerFetch(url: string, params?: any): Promise<string> {
       ),
     ]);
 
-  // 1) Native fetch — fast path for CDNs and anything with permissive CORS.
   try {
     const res = await withTimeout(
       params ? fetch(url, params) : fetch(url),
-      NATIVE_TIMEOUT_MS,
+      nativeTimeoutMs,
       "native",
     );
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     return await res.text();
-  } catch {
-    // fall through to proxy
-  }
+  } catch {}
 
-  // 2) Proxy fallback — wait briefly for window.proxy to become available.
   const proxyStart = Date.now();
-  while (Date.now() - proxyStart < PROXY_WAIT_MS) {
+  while (Date.now() - proxyStart < proxyWaitMs) {
     if (typeof window !== "undefined" && window.proxy) {
       try {
         await window.proxy.ready;
@@ -69,7 +48,7 @@ async function importerFetch(url: string, params?: any): Promise<string> {
 
   if (typeof window !== "undefined" && window.proxy) {
     try {
-      return await withTimeout(window.proxy.fetch(url, params), PROXY_TIMEOUT_MS, "proxy");
+      return await withTimeout(window.proxy.fetch(url, params), proxyTimeoutMs, "proxy");
     } catch (proxyErr) {
       throw new Error(
         `[importerFetch] native and proxy both failed for ${url}: ${(proxyErr as Error).message}`,
@@ -78,23 +57,15 @@ async function importerFetch(url: string, params?: any): Promise<string> {
   }
 
   throw new Error(`[importerFetch] no proxy available and native fetch failed for ${url}`);
-}
+};
 
-/**
- * Generate a unique ID from a game name
- * - Converts to lowercase
- * - Replaces spaces with underscores
- * - Removes special characters (keeps alphanumeric and underscores)
- * - Collapses multiple underscores into one
- */
-function generateGameId(name: string): string {
-  return name
+const generateGameId = (name: string): string =>
+  name
     .toLowerCase()
-    .replace(/\s+/g, "_") // spaces -> underscores
-    .replace(/[^a-z0-9_]/g, "") // remove special chars
-    .replace(/_+/g, "_") // collapse multiple underscores
-    .replace(/^_|_$/g, ""); // trim leading/trailing underscores
-}
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
 
 class ImportedGames {
   truffled: TruffledGames;
@@ -138,15 +109,14 @@ class ImportedGames {
             { name: "poki", importer: this.poki },
         ];
 
-        // Must exceed native (5s) + proxy wait (4s) + proxy (9s) = 18s worst case.
-        const IMPORTER_TIMEOUT_MS = 20000;
+        const importerTimeoutMs = 20000;
         const withTimeout = <T,>(p: Promise<T>, name: string): Promise<T> =>
             Promise.race([
                 p,
                 new Promise<T>((_, reject) =>
                     setTimeout(
-                        () => reject(new Error(`[ImportedGames] "${name}" timed out after ${IMPORTER_TIMEOUT_MS}ms`)),
-                        IMPORTER_TIMEOUT_MS,
+                        () => reject(new Error(`[ImportedGames] "${name}" timed out after ${importerTimeoutMs}ms`)),
+                        importerTimeoutMs,
                     ),
                 ),
             ]);
@@ -168,7 +138,6 @@ class ImportedGames {
             id: generateGameId(game.name)
         }));
 
-    // Deduplicate by ID (keep first occurrence)
     const seen = new Set<string>();
     const uniqueGames = gamesWithIds.filter((game) => {
       if (seen.has(game.id)) return false;

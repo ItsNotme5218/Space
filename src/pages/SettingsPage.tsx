@@ -228,7 +228,7 @@ const Row = ({ label, desc, children }: { label: string; desc?: string; children
   </div>
 );
 
-const URL_RE = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
+const urlRe = /^(https?:\/\/)?[^\s/$.?#].[^\s]*\.[^\s]{2,}$/i;
 
 const CustomCloakInputs = () => {
   const [faviconUrl, setFaviconUrl] = useLocalStorage("customCloakFavicon", "");
@@ -278,9 +278,9 @@ const CustomCloakInputs = () => {
   }, []);
 
   const faviconPreview =
-    localFavicon && URL_RE.test(localFavicon) ? normalizeUrl(localFavicon) : null;
+    localFavicon && urlRe.test(localFavicon) ? normalizeUrl(localFavicon) : null;
 
-  const resolvedTitle = URL_RE.test(localTitle)
+  const resolvedTitle = urlRe.test(localTitle)
     ? (() => {
         try {
           return new URL(normalizeUrl(localTitle)).hostname;
@@ -492,7 +492,7 @@ const CloakPanel = () => {
   );
 };
 
-const PRESET_COLORS = [
+const presetColors = [
   "#050312",
   "#0a0a1a",
   "#1a0a2e",
@@ -579,7 +579,7 @@ const BackgroundSelector = () => {
             Solid Colors
           </label>
           <div className="flex flex-wrap gap-2.5">
-            {PRESET_COLORS.map((c) => (
+            {presetColors.map((c) => (
               <button
                 key={c}
                 onClick={() => {
@@ -772,12 +772,16 @@ const AppearPanel = () => {
   const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage("autoHideSidebar", true);
   const [clock12h, setClock12h] = useLocalStorage("clock12h", false);
   const [clockLock, setClockLock] = useLocalStorage("clockLock", false);
+  const [skipIntro, setSkipIntro] = useLocalStorage("skipIntro", false);
 
   return (
     <div className="flex flex-col gap-12">
       <Section title="Layout" delay={0.0}>
         <Row label="Auto-hide Sidebar" desc="Sidebar slides away when not hovered">
           <Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
+        </Row>
+        <Row label="Skip Intro Animation" desc="Don't play the galaxy intro on startup">
+          <Toggle on={skipIntro} set={setSkipIntro} />
         </Row>
       </Section>
 
@@ -850,17 +854,17 @@ const PerfPanel = () => {
   );
 };
 
-const PROXY_KEY_MAP: Record<string, string> = {
+const proxyKeyMap: Record<string, string> = {
   Scramjet: "sj",
   Ultraviolet: "uv",
 };
 
-const TRANSPORT_KEY_MAP: Record<string, string> = {
+const transportKeyMap: Record<string, string> = {
   Libcurl: "libcurl",
   Epoxy: "epoxy",
 };
 
-const SEARCH_ENGINE_URLS: Record<string, string> = {
+const searchEngineUrls: Record<string, string> = {
   DuckDuckGo: "https://www.duckduckgo.com/?q=%s",
   Google: "https://www.google.com/search?q=%s",
   Bing: "https://www.bing.com/search?q=%s",
@@ -875,7 +879,7 @@ const ProxyPanel = () => {
 
   const handleProxyChange = (v: string) => {
     setProxy(v);
-    const mapped = PROXY_KEY_MAP[v];
+    const mapped = proxyKeyMap[v];
     if (mapped) {
       writeSetting("proxy", mapped);
       if (window.proxy) window.proxy.proxySetting = mapped;
@@ -884,7 +888,7 @@ const ProxyPanel = () => {
 
   const handleTransportChange = (v: string) => {
     setTransport(v);
-    const mapped = TRANSPORT_KEY_MAP[v];
+    const mapped = transportKeyMap[v];
     if (mapped) {
       writeSetting("transports", mapped);
       if (window.proxy) {
@@ -896,7 +900,7 @@ const ProxyPanel = () => {
 
   const handleEngineChange = (v: string) => {
     setEngine(v);
-    const url = SEARCH_ENGINE_URLS[v];
+    const url = searchEngineUrls[v];
     if (url) {
       writeSetting("search", url);
       if (window.proxy) window.proxy.searchVar = url;

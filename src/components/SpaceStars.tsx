@@ -9,21 +9,21 @@ export interface SpaceStarsProps {
   className?: string;
 }
 
-const STATE = {
-  SWIRLING: "swirling",
-  PRE_IMPLODING: "preImploding",
-  FORMING: "forming",
-  PRE_EXPLODING: "preExploding",
-  WAITING: "waiting",
-  IMPLODING: "imploding",
-  EXPLODING: "exploding",
-  RETURNING: "returning",
-  BACKGROUND: "background",
+const states = {
+  swirling: "swirling",
+  preImploding: "preImploding",
+  forming: "forming",
+  preExploding: "preExploding",
+  waiting: "waiting",
+  imploding: "imploding",
+  exploding: "exploding",
+  returning: "returning",
+  background: "background",
 } as const;
 
-type StateValue = (typeof STATE)[keyof typeof STATE];
+type StateValue = (typeof states)[keyof typeof states];
 
-const CONFIG = {
+const config = {
   totalStars: 550,
   minStars: 0,
   maxStars: 2500,
@@ -182,7 +182,7 @@ const easeInExpo = (t: number) => (t === 0 ? 0 : Math.pow(2, 10 * t - 10));
 const easeInOutQuad = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 const getRevealFraction = (progress: number): number => {
-  const T = CONFIG.timing;
+  const T = config.timing;
   const totalDuration =
     T.swirlDuration +
     T.swirlDecelerateDuration +
@@ -194,7 +194,7 @@ const getRevealFraction = (progress: number): number => {
     T.explodeDuration;
   const formingStart =
     (T.swirlDuration + T.swirlDecelerateDuration + T.preImplodeDuration) / totalDuration;
-  const R = CONFIG.starReveal;
+  const R = config.starReveal;
   if (progress <= 0) return R.startFraction;
   if (progress >= 1) return 1;
   if (progress <= formingStart) {
@@ -301,7 +301,7 @@ const getStarSprite = (size: number, cache: Map<number, HTMLCanvasElement>): HTM
   const rOuter = normalized * 2.2,
     rInner = normalized * 0.55;
   g.fillStyle = "rgba(255,255,255,.95)";
-  g.shadowBlur = normalized * 3 * CONFIG.starStyle.galaxy.glowBlurMul;
+  g.shadowBlur = normalized * 3 * config.starStyle.galaxy.glowBlurMul;
   g.shadowColor = "rgba(210,180,255,.55)";
   g.beginPath();
   for (let i = 0; i < 8; i++) {
@@ -332,11 +332,11 @@ const updateStarPosition = (
   const a = star.initialAngle + rotation * star.orbitSpeedFactor;
   const rr = star.radius * (1 + star.eccentricity * Math.cos(a - star.eccentricityAngle));
   const chaosX = Math.sin(time * 3 + star.chaosPhase) * 0.035 * star.radius;
-  const chaosY = Math.cos(time * 4 + star.chaosPhase) * CONFIG.chaosAmount * star.radius;
+  const chaosY = Math.cos(time * 4 + star.chaosPhase) * config.chaosAmount * star.radius;
   const x = Math.cos(a) * rr + chaosX;
   const y = Math.sin(a) * rr + chaosY;
-  star.x = centerX + x * CONFIG.galaxyTiltX;
-  star.y = centerY + y * CONFIG.galaxyTiltY;
+  star.x = centerX + x * config.galaxyTiltX;
+  star.y = centerY + y * config.galaxyTiltY;
   star.z = star.zOffset + y * 0.25;
 };
 
@@ -349,7 +349,7 @@ const createStar = (
   globalRotation: number,
   spriteCache: Map<number, HTMLCanvasElement>,
 ): StarData => {
-  const D = CONFIG.starStyle.drift;
+  const D = config.starStyle.drift;
   const star: StarData = {
     isBackground,
     x: 0,
@@ -395,24 +395,24 @@ const createStar = (
     star.y = Math.random() * height;
     star.homeX = star.x;
     star.homeY = star.y;
-    star.radius = Math.random() * CONFIG.galaxyRadius * 1.5;
+    star.radius = Math.random() * config.galaxyRadius * 1.5;
     star.initialAngle = Math.random() * Math.PI * 2;
     star.z = -300;
     star.orbitSpeedFactor = 0.5;
   } else {
     const t = Math.pow(Math.random(), 0.7);
-    star.radius = t * CONFIG.galaxyRadius;
-    const inCore = t < CONFIG.coreSize;
+    star.radius = t * config.galaxyRadius;
+    const inCore = t < config.coreSize;
     const spread = inCore
-      ? CONFIG.coreSpread
-      : 1 + (CONFIG.edgeSpread - CONFIG.coreSpread) * ((t - CONFIG.coreSize) / 0.75);
-    const arm = Math.floor(Math.random() * CONFIG.spiralArms);
-    const armAngle = (arm / CONFIG.spiralArms) * Math.PI * 2;
-    const spiral = (star.radius / CONFIG.galaxyRadius) * Math.PI * CONFIG.spiralTightness;
-    const scatter = (Math.random() - 0.5) * ((Math.PI * 2) / CONFIG.spiralArms) * spread;
+      ? config.coreSpread
+      : 1 + (config.edgeSpread - config.coreSpread) * ((t - config.coreSize) / 0.75);
+    const arm = Math.floor(Math.random() * config.spiralArms);
+    const armAngle = (arm / config.spiralArms) * Math.PI * 2;
+    const spiral = (star.radius / config.galaxyRadius) * Math.PI * config.spiralTightness;
+    const scatter = (Math.random() - 0.5) * ((Math.PI * 2) / config.spiralArms) * spread;
     star.initialAngle = armAngle + spiral + scatter;
-    star.orbitSpeedFactor = 1 + (1 - t) * CONFIG.differentialRotation;
-    star.eccentricity = Math.random() * CONFIG.orbitEccentricity;
+    star.orbitSpeedFactor = 1 + (1 - t) * config.differentialRotation;
+    star.eccentricity = Math.random() * config.orbitEccentricity;
     star.eccentricityAngle = Math.random() * Math.PI * 2;
     star.zOffset = (Math.random() - 0.5) * 60 * (1 - t * 0.5);
 
@@ -450,7 +450,7 @@ const drawStar = (
   breathePhase: number,
 ) => {
   const time = now * 0.001;
-  const TW = CONFIG.starStyle.twinkle;
+  const TW = config.starStyle.twinkle;
   const tw = TW.enabled
     ? TW.base +
       Math.sin(now * 0.005 * star.twinkleSpeed * TW.speedMul + star.twinkleOffset) * TW.amp
@@ -459,11 +459,11 @@ const drawStar = (
   let scale = 1;
 
   if (star.isBackground) {
-    const S = CONFIG.starStyle.galaxyBackground;
+    const S = config.starStyle.galaxyBackground;
     alpha *= star.brightness * S.alphaMul * S.brightnessMul;
     scale = 0.95 * S.sizeMul;
   } else {
-    const S = CONFIG.starStyle.galaxy;
+    const S = config.starStyle.galaxy;
     const depthT = clamp((star.z + 100) / 200, 0, 1);
     const depthAlpha = lerp(S.depthAlphaMin, S.depthAlphaMax, depthT);
     const depthScale = lerp(S.depthScaleMin, S.depthScaleMax, depthT);
@@ -471,7 +471,7 @@ const drawStar = (
     scale = depthScale * S.sizeMul;
   }
 
-  if (currentState === STATE.WAITING) {
+  if (currentState === states.waiting) {
     alpha *= 0.9 + Math.sin(breathePhase) * 0.1;
   }
 
@@ -498,15 +498,15 @@ const generateTextPoints = (width: number, height: number): { x: number; y: numb
   const g = tmp.getContext("2d")!;
   g.clearRect(0, 0, width, height);
   g.fillStyle = "#fff";
-  g.font = `${CONFIG.text.weight} ${CONFIG.text.sizePx}px ${CONFIG.text.fontFamily}`;
+  g.font = `${config.text.weight} ${config.text.sizePx}px ${config.text.fontFamily}`;
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.fillText(CONFIG.text.value, width / 2, height / 2);
+  g.fillText(config.text.value, width / 2, height / 2);
   const img = g.getImageData(0, 0, width, height);
   const data = img.data;
   const points: { x: number; y: number }[] = [];
-  const step = CONFIG.text.sampleStep;
-  const threshold = CONFIG.text.alphaThreshold;
+  const step = config.text.sampleStep;
+  const threshold = config.text.alphaThreshold;
   for (let y = 0; y < height; y += step) {
     for (let x = 0; x < width; x += step) {
       const i = (y * width + x) * 4;
@@ -624,7 +624,7 @@ export const SpaceStars = ({
     if (!ctx) return;
 
     const isIntro = mode === "intro";
-    const nebulaCfg = isIntro ? CONFIG.nebula : CONFIG.nebulaDark;
+    const nebulaCfg = isIntro ? config.nebula : config.nebulaDark;
 
     let width = 0,
       height = 0,
@@ -638,7 +638,7 @@ export const SpaceStars = ({
     let nebulaBlobs: NebulaBlob[] = [];
     const spriteCache = new Map<number, HTMLCanvasElement>();
 
-    let currentState: StateValue = STATE.SWIRLING;
+    let currentState: StateValue = states.swirling;
     let stateTimer = 0;
     let breathePhase = 0;
     let introProgress = 0;
@@ -656,7 +656,7 @@ export const SpaceStars = ({
       const elapsed = now - lastFpsTime;
       if (elapsed >= 500) {
         const currentFps = (frameCount / elapsed) * 1000;
-        if (currentFps < 15 && CONFIG.render.dprCap > 1) {
+        if (currentFps < 15 && config.render.dprCap > 1) {
           dpr = Math.max(1, dpr - 1);
           setCanvasSize();
         }
@@ -666,7 +666,7 @@ export const SpaceStars = ({
     };
 
     const setCanvasSize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, CONFIG.render.dprCap);
+      dpr = Math.min(window.devicePixelRatio || 1, config.render.dprCap);
       width = canvas!.clientWidth;
       height = canvas!.clientHeight;
       canvas!.width = Math.floor(width * dpr);
@@ -753,12 +753,12 @@ export const SpaceStars = ({
     };
 
     const drawVignette = () => {
-      if (!CONFIG.background.vignette) return;
+      if (!config.background.vignette) return;
       ctx!.save();
       const r = Math.max(width, height) * 0.85;
       const g = ctx!.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
       g.addColorStop(0, "rgba(0,0,0,0)");
-      g.addColorStop(1, `rgba(0,0,0,${CONFIG.background.vignetteStrength})`);
+      g.addColorStop(1, `rgba(0,0,0,${config.background.vignetteStrength})`);
       ctx!.fillStyle = g;
       ctx!.fillRect(0, 0, width, height);
       ctx!.restore();
@@ -767,7 +767,7 @@ export const SpaceStars = ({
     const updateStateIntro = (dt: number) => {
       stateTimer += dt;
       const time = performance.now() * 0.001;
-      const T = CONFIG.timing;
+      const T = config.timing;
 
       const totalDuration =
         T.swirlDuration +
@@ -779,25 +779,25 @@ export const SpaceStars = ({
         T.implodeDuration +
         T.explodeDuration;
       const stateOffsets: Record<string, number> = {
-        [STATE.SWIRLING]: 0,
-        [STATE.PRE_IMPLODING]: T.swirlDuration + T.swirlDecelerateDuration,
-        [STATE.FORMING]: T.swirlDuration + T.swirlDecelerateDuration + T.preImplodeDuration,
-        [STATE.PRE_EXPLODING]:
+        [states.swirling]: 0,
+        [states.preImploding]: T.swirlDuration + T.swirlDecelerateDuration,
+        [states.forming]: T.swirlDuration + T.swirlDecelerateDuration + T.preImplodeDuration,
+        [states.preExploding]:
           T.swirlDuration + T.swirlDecelerateDuration + T.preImplodeDuration + T.formDuration,
-        [STATE.WAITING]:
+        [states.waiting]:
           T.swirlDuration +
           T.swirlDecelerateDuration +
           T.preImplodeDuration +
           T.formDuration +
           T.preExplodeDuration,
-        [STATE.IMPLODING]:
+        [states.imploding]:
           T.swirlDuration +
           T.swirlDecelerateDuration +
           T.preImplodeDuration +
           T.formDuration +
           T.preExplodeDuration +
           T.waitDuration,
-        [STATE.EXPLODING]:
+        [states.exploding]:
           T.swirlDuration +
           T.swirlDecelerateDuration +
           T.preImplodeDuration +
@@ -805,17 +805,17 @@ export const SpaceStars = ({
           T.preExplodeDuration +
           T.waitDuration +
           T.implodeDuration,
-        [STATE.RETURNING]: totalDuration,
+        [states.returning]: totalDuration,
       };
       const stateDurations: Record<string, number> = {
-        [STATE.SWIRLING]: T.swirlDuration + T.swirlDecelerateDuration,
-        [STATE.PRE_IMPLODING]: T.preImplodeDuration,
-        [STATE.FORMING]: T.formDuration,
-        [STATE.PRE_EXPLODING]: T.preExplodeDuration,
-        [STATE.WAITING]: T.waitDuration,
-        [STATE.IMPLODING]: T.implodeDuration,
-        [STATE.EXPLODING]: T.explodeDuration,
-        [STATE.RETURNING]: T.returnDuration,
+        [states.swirling]: T.swirlDuration + T.swirlDecelerateDuration,
+        [states.preImploding]: T.preImplodeDuration,
+        [states.forming]: T.formDuration,
+        [states.preExploding]: T.preExplodeDuration,
+        [states.waiting]: T.waitDuration,
+        [states.imploding]: T.implodeDuration,
+        [states.exploding]: T.explodeDuration,
+        [states.returning]: T.returnDuration,
       };
       const offset = stateOffsets[currentState] ?? 0;
       const dur = stateDurations[currentState] ?? 1;
@@ -823,13 +823,13 @@ export const SpaceStars = ({
       introProgress = progress;
       onProgressRef.current?.(progress);
 
-      if (currentState === STATE.SWIRLING) {
+      if (currentState === states.swirling) {
         const total = T.swirlDuration + T.swirlDecelerateDuration;
-        globalRotation += CONFIG.rotationSpeed * dt;
+        globalRotation += config.rotationSpeed * dt;
         for (const s of stars)
           if (!s.isBackground) updateStarPosition(s, centerX, centerY, globalRotation, time);
         if (stateTimer >= total) {
-          currentState = STATE.PRE_IMPLODING;
+          currentState = states.preImploding;
           stateTimer = 0;
           for (const s of stars) {
             s.startX = s.x;
@@ -840,11 +840,11 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.PRE_IMPLODING) {
+      if (currentState === states.preImploding) {
         const t = clamp(stateTimer / T.preImplodeDuration, 0, 1);
         const e = easeInExpo(t);
 
-        globalRotation += CONFIG.rotationSpeed * dt * (1 + e * 5);
+        globalRotation += config.rotationSpeed * dt * (1 + e * 5);
 
         for (const s of stars) {
           if (s.isBackground) continue;
@@ -854,18 +854,18 @@ export const SpaceStars = ({
           const rr = currentRadius * (1 + s.eccentricity * Math.cos(a - s.eccentricityAngle));
 
           const chaosX = Math.sin(time * 3 + s.chaosPhase) * 0.035 * currentRadius;
-          const chaosY = Math.cos(time * 4 + s.chaosPhase) * CONFIG.chaosAmount * currentRadius;
+          const chaosY = Math.cos(time * 4 + s.chaosPhase) * config.chaosAmount * currentRadius;
 
           const x = Math.cos(a) * rr + chaosX;
           const y = Math.sin(a) * rr + chaosY;
 
-          s.x = centerX + x * CONFIG.galaxyTiltX;
-          s.y = centerY + y * CONFIG.galaxyTiltY;
+          s.x = centerX + x * config.galaxyTiltX;
+          s.y = centerY + y * config.galaxyTiltY;
           s.z = (s.zOffset + y * 0.25) * (1 - e);
         }
 
         if (stateTimer >= T.preImplodeDuration) {
-          currentState = STATE.FORMING;
+          currentState = states.forming;
           stateTimer = 0;
           for (const s of stars) {
             s.startX = s.x;
@@ -880,7 +880,7 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.FORMING) {
+      if (currentState === states.forming) {
         const t = clamp(stateTimer / T.formDuration, 0, 1);
         const e = easeOutExpo(t);
         for (const s of stars) {
@@ -889,7 +889,7 @@ export const SpaceStars = ({
           s.z *= 1 - e * 0.2;
         }
         if (stateTimer >= T.formDuration) {
-          currentState = STATE.PRE_EXPLODING;
+          currentState = states.preExploding;
           stateTimer = 0;
           for (const s of stars) {
             s.startX = s.x;
@@ -899,7 +899,7 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.PRE_EXPLODING) {
+      if (currentState === states.preExploding) {
         const t = clamp(stateTimer / T.preExplodeDuration, 0, 1);
         const e = easeOutExpo(t);
         for (const s of stars) {
@@ -908,7 +908,7 @@ export const SpaceStars = ({
           s.z *= 1 - e * 0.2;
         }
         if (stateTimer >= T.preExplodeDuration) {
-          currentState = STATE.WAITING;
+          currentState = states.waiting;
           stateTimer = 0;
           breathePhase = 0;
           if (!callbackFired.current) {
@@ -919,13 +919,13 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.WAITING) {
+      if (currentState === states.waiting) {
         breathePhase += dt * 0.002;
         for (const s of stars) {
           if (s.textPointIndex >= 0) {
-            const breath = Math.sin(breathePhase) * CONFIG.text.breatheStrength;
+            const breath = Math.sin(breathePhase) * config.text.breatheStrength;
             const wobble = Math.sin(time * 4.5 + s.textPointIndex) * 0.25;
-            const j = CONFIG.text.jitter;
+            const j = config.text.jitter;
             s.x =
               s.targetX +
               Math.sin(breathePhase + s.textPointIndex * 0.1) * breath * 0.22 * j +
@@ -938,9 +938,9 @@ export const SpaceStars = ({
             updateStarPosition(s, centerX, centerY, globalRotation, time);
           }
         }
-        globalRotation += CONFIG.rotationSpeed * dt * 0.1;
+        globalRotation += config.rotationSpeed * dt * 0.1;
         if (stateTimer >= T.waitDuration) {
-          currentState = STATE.IMPLODING;
+          currentState = states.imploding;
           stateTimer = 0;
           for (const s of stars) {
             s.startX = s.x;
@@ -956,7 +956,7 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.IMPLODING) {
+      if (currentState === states.imploding) {
         const t = clamp(stateTimer / T.implodeDuration, 0, 1);
         const e = easeInExpo(t);
         for (const s of stars) {
@@ -964,7 +964,7 @@ export const SpaceStars = ({
           s.y = lerp(s.startY, s.targetY, e);
         }
         if (stateTimer >= T.implodeDuration) {
-          currentState = STATE.EXPLODING;
+          currentState = states.exploding;
           stateTimer = 0;
           for (const s of stars) {
             s.startX = s.x;
@@ -978,7 +978,7 @@ export const SpaceStars = ({
         return;
       }
 
-      if (currentState === STATE.EXPLODING) {
+      if (currentState === states.exploding) {
         const t = clamp(stateTimer / T.explodeDuration, 0, 1);
         const e = 1 - Math.pow(1 - t, 4);
         for (const s of stars) {
@@ -994,36 +994,31 @@ export const SpaceStars = ({
             introCompleted = true;
             onIntroCompleteRef.current?.();
           }
-          currentState = STATE.BACKGROUND;
+          currentState = states.background;
           stateTimer = 0;
-          // Match the skip path: keep background stars + flagged keepers,
-          // and restore background stars to their home positions since
-          // IMPLODING/EXPLODING moved them to scattered targets.
-          stars = stars.filter((s) => s.isBackground || s.keepAfterExplosion);
+          stars = stars.filter((s) => s.isBackground);
           for (const s of stars) {
-            if (s.isBackground) {
-              s.x = s.homeX;
-              s.y = s.homeY;
-              s.z = -300;
-              s.startX = s.x;
-              s.startY = s.y;
-              s.startZ = s.z;
-              s.fadeAlpha = 1;
-            }
+            s.x = s.homeX;
+            s.y = s.homeY;
+            s.z = -300;
+            s.startX = s.x;
+            s.startY = s.y;
+            s.startZ = s.z;
+            s.fadeAlpha = 1;
           }
         }
         return;
       }
 
-      if (currentState === STATE.BACKGROUND) {
+      if (currentState === states.background) {
         breathePhase += dt * 0.002;
         return;
       }
 
-      if (currentState === STATE.RETURNING) {
+      if (currentState === states.returning) {
         const t = clamp(stateTimer / T.returnDuration, 0, 1);
         const e = easeInOutQuad(t);
-        globalRotation += CONFIG.rotationSpeed * dt;
+        globalRotation += config.rotationSpeed * dt;
         for (const s of stars) {
           let tx: number, ty: number, tz: number;
           if (!s.isBackground) {
@@ -1031,8 +1026,8 @@ export const SpaceStars = ({
             const rr = s.radius * (1 + s.eccentricity * Math.cos(a - s.eccentricityAngle));
             const x = Math.cos(a) * rr;
             const y = Math.sin(a) * rr;
-            tx = centerX + x * CONFIG.galaxyTiltX;
-            ty = centerY + y * CONFIG.galaxyTiltY;
+            tx = centerX + x * config.galaxyTiltX;
+            ty = centerY + y * config.galaxyTiltY;
             tz = s.zOffset + y * 0.25;
           } else {
             tx = s.homeX;
@@ -1051,7 +1046,7 @@ export const SpaceStars = ({
             }
           }
           globalRotation = 0;
-          currentState = STATE.SWIRLING;
+          currentState = states.swirling;
           stateTimer = 0;
         }
       }
@@ -1063,20 +1058,20 @@ export const SpaceStars = ({
         textPoints = generateTextPoints(width, height);
       }
       bgDistant = initBgLayer(
-        CONFIG.background.distantStars | 0,
-        CONFIG.background.distantSizeMin,
-        CONFIG.background.distantSizeMax,
-        CONFIG.background.distantDriftSpeed,
-        CONFIG.background.distantTwinkle,
+        config.background.distantStars | 0,
+        config.background.distantSizeMin,
+        config.background.distantSizeMax,
+        config.background.distantDriftSpeed,
+        config.background.distantTwinkle,
         width,
         height,
       );
       bgFar = initBgLayer(
-        CONFIG.background.farStars | 0,
-        CONFIG.background.farSizeMin,
-        CONFIG.background.farSizeMax,
-        CONFIG.background.farDriftSpeed,
-        CONFIG.background.farTwinkle,
+        config.background.farStars | 0,
+        config.background.farSizeMin,
+        config.background.farSizeMax,
+        config.background.farDriftSpeed,
+        config.background.farTwinkle,
         width,
         height,
       );
@@ -1088,8 +1083,8 @@ export const SpaceStars = ({
       frameCount = 0;
 
       if (isIntro) {
-        const bgCount = Math.min(CONFIG.backgroundStars | 0, CONFIG.totalStars | 0);
-        const fgCount = CONFIG.maxStars | 0;
+        const bgCount = Math.min(config.backgroundStars | 0, config.totalStars | 0);
+        const fgCount = config.maxStars | 0;
         for (let i = 0; i < bgCount; i++) {
           const s = createStar(true, width, height, centerX, centerY, globalRotation, spriteCache);
           stars.push(s);
@@ -1105,13 +1100,22 @@ export const SpaceStars = ({
 
     const animate = (now: number) => {
       if (stopped) return;
-      const dt = Math.min(now - lastTime, CONFIG.render.maxDt);
+      const dt = Math.min(now - lastTime, config.render.maxDt);
       lastTime = now;
 
-      if (isIntro && currentState !== STATE.BACKGROUND) {
+      if (isIntro && currentState !== states.background) {
         if (skipRef.current) {
-          currentState = STATE.BACKGROUND;
-          stars = stars.filter((s) => s.isBackground || s.keepAfterExplosion);
+          currentState = states.background;
+          stars = stars.filter((s) => s.isBackground);
+          for (const s of stars) {
+            s.x = s.homeX;
+            s.y = s.homeY;
+            s.z = -300;
+            s.startX = s.x;
+            s.startY = s.y;
+            s.startZ = s.z;
+            s.fadeAlpha = 1;
+          }
           onIntroCompleteRef.current?.();
         } else {
           checkPerformance(now);
@@ -1121,38 +1125,38 @@ export const SpaceStars = ({
       ctx!.globalAlpha = 1;
       ctx!.filter = "none";
 
-      if (CONFIG.render.motionBlurStrength > 0) {
-        ctx!.globalAlpha = 1 - CONFIG.render.motionBlurStrength;
-        ctx!.fillStyle = CONFIG.background.fill;
+      if (config.render.motionBlurStrength > 0) {
+        ctx!.globalAlpha = 1 - config.render.motionBlurStrength;
+        ctx!.fillStyle = config.background.fill;
         ctx!.fillRect(0, 0, width, height);
       } else {
-        ctx!.fillStyle = CONFIG.background.fill;
+        ctx!.fillStyle = config.background.fill;
         ctx!.fillRect(0, 0, width, height);
       }
       ctx!.globalAlpha = 1;
 
       drawBgLayer(
         bgDistant,
-        CONFIG.background.distantAlpha,
+        config.background.distantAlpha,
         now,
         dt,
         0.8,
-        CONFIG.background.distantTwinkleAmp,
+        config.background.distantTwinkleAmp,
       );
       drawBgLayer(
         bgFar,
-        CONFIG.background.farAlpha,
+        config.background.farAlpha,
         now,
         dt,
         1.25,
-        CONFIG.background.farTwinkleAmp,
+        config.background.farTwinkleAmp,
       );
 
-      if (CONFIG.background.grade?.enabled) {
-        const r = Math.max(width, height) * (CONFIG.background.grade.radiusMul ?? 0.95);
+      if (config.background.grade?.enabled) {
+        const r = Math.max(width, height) * (config.background.grade.radiusMul ?? 0.95);
         const g = ctx!.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
-        g.addColorStop(0, `rgba(130,90,255,${CONFIG.background.grade.alpha})`);
-        g.addColorStop(0.55, `rgba(40,20,90,${CONFIG.background.grade.alpha * 0.7})`);
+        g.addColorStop(0, `rgba(130,90,255,${config.background.grade.alpha})`);
+        g.addColorStop(0.55, `rgba(40,20,90,${config.background.grade.alpha * 0.7})`);
         g.addColorStop(1, "rgba(0,0,0,0)");
         ctx!.save();
         ctx!.globalCompositeOperation = "screen";
@@ -1167,7 +1171,7 @@ export const SpaceStars = ({
         updateStateIntro(dt);
 
         const targetFraction = getRevealFraction(introProgress);
-        const fadeRate = 1 / Math.max(1, CONFIG.starReveal.fadeInDuration);
+        const fadeRate = 1 / Math.max(1, config.starReveal.fadeInDuration);
         for (const s of stars) {
           if (s.revealOrder <= targetFraction && s.fadeAlpha < 1) {
             s.fadeAlpha = Math.min(1, s.fadeAlpha + dt * fadeRate);
@@ -1175,8 +1179,8 @@ export const SpaceStars = ({
         }
 
         if (
-          CONFIG.render.sortByDepth &&
-          frameIndex++ % (CONFIG.render.sortEveryNFrames | 0 || 1) === 0
+          config.render.sortByDepth &&
+          frameIndex++ % (config.render.sortEveryNFrames | 0 || 1) === 0
         ) {
           stars.sort((a, b) => (a.z || 0) - (b.z || 0));
         }
@@ -1186,7 +1190,7 @@ export const SpaceStars = ({
         }
       } else {
         for (const s of stars) {
-          drawStar(s, ctx!, now, STATE.WAITING, breathePhase);
+          drawStar(s, ctx!, now, states.waiting, breathePhase);
         }
       }
 

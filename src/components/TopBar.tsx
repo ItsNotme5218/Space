@@ -12,12 +12,12 @@ import {
 } from "lucide-react";
 import { useLocalStorage, writeSetting } from "../hooks/useLocalStorage";
 import { useClickOutside } from "../hooks/useClickOutside";
-import { SPC_PROTOCOL } from "../utils/internal-pages";
+import { spcProtocol } from "../utils/internal-pages";
 import type { Session } from "../App";
 
-const ENGINE_ORDER = ["DuckDuckGo", "Google", "Bing", "Brave", "Yahoo!"] as const;
+const engineOrder = ["DuckDuckGo", "Google", "Bing", "Brave", "Yahoo!"] as const;
 
-const SEARCH_ENGINES: Record<
+const searchEngines: Record<
   string,
   { label: string; short: string; color: string; letterColors?: string[] }
 > = {
@@ -76,7 +76,7 @@ export const TopBar = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
 
-  const engine = SEARCH_ENGINES[searchEngine] || SEARCH_ENGINES.DuckDuckGo;
+  const engine = searchEngines[searchEngine] || searchEngines.DuckDuckGo;
 
   const hexToGlowRgb = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -115,16 +115,14 @@ export const TopBar = ({
     const sjPrefix = window.proxy?.scramConfig?.prefix || "/s/res/";
 
     try {
-      let encoded: string | null = null;
-
-      if (path.startsWith(uvPrefix)) {
-        encoded = path.slice(uvPrefix.length);
-      } else if (path.startsWith(sjPrefix)) {
-        encoded = path.slice(sjPrefix.length);
+      if (path.startsWith(uvPrefix) && window.__uv$config?.decodeUrl) {
+        return window.__uv$config.decodeUrl(path.slice(uvPrefix.length));
       }
-
-      if (encoded !== null && window.__uv$config?.decodeUrl) {
-        return window.__uv$config.decodeUrl(encoded);
+      if (path.startsWith(sjPrefix)) {
+        const sjDecode = window.proxy?.scramConfig?.codec?.decode;
+        if (typeof sjDecode === "function") {
+          return sjDecode(path.slice(sjPrefix.length));
+        }
       }
     } catch {}
     return proxyUrl;
@@ -237,7 +235,7 @@ export const TopBar = ({
     setDisplayUrl("");
   };
 
-  const SEARCH_ENGINE_URLS: Record<string, string> = {
+  const searchEngineUrls: Record<string, string> = {
     DuckDuckGo: "https://www.duckduckgo.com/?q=%s",
     Google: "https://www.google.com/search?q=%s",
     Bing: "https://www.bing.com/search?q=%s",
@@ -246,10 +244,10 @@ export const TopBar = ({
   };
 
   const cycleEngine = () => {
-    const idx = ENGINE_ORDER.indexOf(searchEngine as (typeof ENGINE_ORDER)[number]);
-    const next = ENGINE_ORDER[(idx + 1) % ENGINE_ORDER.length];
+    const idx = engineOrder.indexOf(searchEngine as (typeof engineOrder)[number]);
+    const next = engineOrder[(idx + 1) % engineOrder.length];
     setSearchEngine(next);
-    const url = SEARCH_ENGINE_URLS[next];
+    const url = searchEngineUrls[next];
     if (url) {
       writeSetting("search", url);
       if (window.proxy) window.proxy.searchVar = url;
@@ -303,7 +301,7 @@ export const TopBar = ({
   };
 
   const getProtocolDisplay = (): string => {
-    if (isOnNewTab) return SPC_PROTOCOL;
+    if (isOnNewTab) return spcProtocol;
     if (displayUrl.startsWith("https://")) return "https://";
     if (displayUrl.startsWith("http://")) return "http://";
     return "https://";
@@ -552,11 +550,9 @@ export const TopBar = ({
 
       <motion.div
         whileHover={{
-          scale: 1.01,
-          y: -1,
           boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)`,
         }}
-        transition={{ type: "spring", stiffness: 340, damping: 24 }}
+        transition={{ duration: 0.15 }}
         className="flex items-center gap-0.5 h-10 rounded-full p-2! relative"
         style={pillStyle}
         ref={menuRef}
@@ -599,21 +595,14 @@ export const TopBar = ({
               {["Settings", "Extensions", "History", "Downloads"].map((item, i) => (
                 <motion.button
                   key={item}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    delay: i * 0.05 + 0.1,
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 25,
-                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 + 0.05, duration: 0.15 }}
                   whileHover={{
-                    scale: 1.02,
-                    x: 4,
                     background: "rgba(203, 166, 247, 0.15)",
                     boxShadow: "inset 0 0 8px rgba(203, 166, 247, 0.2)",
                   }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.97 }}
                   className="px-3 py-2 text-sm text-left text-white/80 hover:text-white rounded-xl transition-colors cursor-pointer"
                 >
                   {item}

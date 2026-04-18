@@ -4,4 +4,4 @@ export { ExpandedMosaic } from "./ExpandedMosaic";
 export { CollapsedCard } from "./CollapsedCard";
 export { Pagination } from "./Pagination";
 export type { GridItem, GridConfig } from "./types";
-export { DEFAULT_GRID_CONFIG } from "./types";
+export { defaultGridConfig } from "./types";

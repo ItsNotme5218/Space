@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search } from "lucide-react";
 import { readSetting, writeSetting, cache, subscribe } from "../hooks/useLocalStorage";
 
-const SPRING = { type: "spring" as const, stiffness: 300, damping: 28 };
-const SPRING_SOFT = { type: "spring" as const, stiffness: 200, damping: 22 };
+const spring = { type: "spring" as const, stiffness: 520, damping: 34 };
+const springSoft = { type: "spring" as const, stiffness: 420, damping: 30 };
 
-const FONT = "'DM Sans', 'Inter', system-ui, sans-serif";
+const font = "'DM Sans', 'Inter', system-ui, sans-serif";
 
 const shortcuts = [
   { name: "YouTube", url: "https://youtube.com", color: "#FF0000", letter: "Y" },
@@ -70,7 +70,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
       const [h12, lock] = await Promise.all([
         readSetting("clock12h", false),
         readSetting("clockLock", false),
-      ]); // yo, check chat for liveshare
+      ]);
       if (cancelled) return;
       setHour12(h12);
       setLockFormat(lock);
@@ -138,7 +138,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
       <motion.div
         initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        transition={{ ...SPRING_SOFT, delay: 0 }}
+        transition={{ ...springSoft, delay: 0 }}
         className="flex flex-col items-center mb-8 select-none"
       >
         <motion.div
@@ -150,7 +150,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
           <motion.span
             className="text-[56px] font-extralight tracking-tight leading-none"
             style={{
-              fontFamily: FONT,
+              fontFamily: font,
               color: "rgba(255, 255, 255, 0.85)",
               textShadow: "0 0 40px rgba(139, 92, 246, 0.15)",
             }}
@@ -167,7 +167,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
                 transition={{ duration: 0.2 }}
                 className="absolute text-[18px] font-light tracking-wide"
                 style={{
-                  fontFamily: FONT,
+                  fontFamily: font,
                   color: "rgba(255, 255, 255, 0.25)",
                   right: 0,
                   bottom: 0,
@@ -182,10 +182,10 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
+          transition={{ delay: 0.08, duration: 0.22 }}
           className="text-sm font-medium tracking-wide mt-1.5"
           style={{
-            fontFamily: FONT,
+            fontFamily: font,
             color: "rgba(255, 255, 255, 0.3)",
             letterSpacing: "0.08em",
           }}
@@ -197,7 +197,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ ...SPRING_SOFT, delay: 0.08 }}
+        transition={{ ...springSoft, delay: 0.04 }}
         className="w-full px-6"
         style={{ maxWidth: 520 }}
       >
@@ -237,7 +237,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
               className="flex-1 bg-transparent border-none outline-none"
               style={{
                 fontSize: 14,
-                fontFamily: FONT,
+                fontFamily: font,
                 letterSpacing: "0.01em",
                 color: "rgba(255, 255, 255, 0.75)",
                 caretColor: "#8b5cf6",
@@ -272,7 +272,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ ...SPRING_SOFT, delay: 0.16 }}
+        transition={{ ...springSoft, delay: 0.08 }}
         className="mt-8 px-6"
       >
         <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
@@ -283,7 +283,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
               onClick={(e) => handleShortcutClick(e, shortcut.url)}
               initial={{ opacity: 0, scale: 0.85, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ ...SPRING, delay: 0.22 + i * 0.035 }}
+              transition={{ ...spring, delay: 0.1 + i * 0.018 }}
               whileHover={{ scale: 1.06, y: -2 }}
               whileTap={{ scale: 0.95 }}
               className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer group"
@@ -312,7 +312,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
                   className="text-sm font-bold relative z-10"
                   style={{
                     color: shortcut.color,
-                    fontFamily: FONT,
+                    fontFamily: font,
                     opacity: 0.85,
                   }}
                 >
@@ -322,7 +322,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
               <span
                 className="text-[11px] leading-none opacity-35 group-hover:opacity-50 transition-opacity duration-200"
                 style={{
-                  fontFamily: FONT,
+                  fontFamily: font,
                   color: "white",
                   letterSpacing: "0.02em",
                 }}

@@ -262,14 +262,27 @@ class Proxy implements ProxyInterface {
 
     switch (swConfigSettings.type) {
       case "sw": {
-        let encodedUrl: string;
-        encodedUrl =
-          swConfigSettings.config.prefix + window.__uv$config.encodeUrl(this.search(url));
+        const encoder = this.getEncoderFor(swConfigSettings);
+        const encodedUrl = swConfigSettings.config.prefix + encoder(this.search(url));
         console.log("[Proxy] Redirecting iframe to:", encodedUrl);
         activeIframe.src = encodedUrl;
         break;
       }
     }
+  }
+
+  private getEncoderFor(swConfigSettings: Record<any, any>): (url: string) => string {
+    const cfg = swConfigSettings?.config;
+    if (cfg?.codec?.encode && typeof cfg.codec.encode === "function") {
+      return cfg.codec.encode.bind(cfg.codec);
+    }
+    if (cfg?.encodeUrl && typeof cfg.encodeUrl === "function") {
+      return cfg.encodeUrl.bind(cfg);
+    }
+    if (window.__uv$config?.encodeUrl) {
+      return window.__uv$config.encodeUrl.bind(window.__uv$config);
+    }
+    throw new Error("[Proxy] No URL encoder found for active proxy backend");
   }
 
   async convertURL(swConfig: Record<any, any>, proxySetting: string, url: string) {
@@ -285,8 +298,8 @@ class Proxy implements ProxyInterface {
     await this.registerSW(swConfigSettings);
     await this.setTransports();
 
-    let encodedUrl: string =
-      swConfigSettings.config.prefix + window.__uv$config.encodeUrl(this.search(url));
+    const encoder = this.getEncoderFor(swConfigSettings);
+    const encodedUrl = swConfigSettings.config.prefix + encoder(this.search(url));
     console.log("[Proxy] Converted URL to:", encodedUrl);
     return encodedUrl;
   }
