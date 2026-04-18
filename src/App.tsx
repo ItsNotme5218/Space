@@ -29,6 +29,11 @@ export interface Session {
 	url: string;
 }
 
+interface SpaceNavigateDetail {
+	url?: string;
+	target?: 'active' | 'new';
+}
+
 const App = () => {
 	useTabCloak();
 	const location = useLocation();
@@ -63,61 +68,133 @@ const App = () => {
 	const [proxyReady, setProxyReady] = useState(false);
 	const proxyRef = useRef<Proxy | null>(null);
 
+	const initializeProxy = useCallback(async (proxy: Proxy) => {
+		const activateProxy = async (proxyKey: string) => {
+			const proxyConfig = proxy.config[proxyKey];
+
+			switch (typeof proxyConfig?.func) {
+				case 'function':
+					await proxyConfig.func();
+					break;
+				default:
+					break;
+			}
+
+			await proxy.registerSW(proxyConfig);
+			await proxy.setTransports();
+
+			const transport = await proxy.connection.getTransport();
+			switch (transport === null) {
+				case true:
+					await proxy.setTransports();
+					break;
+				default:
+					break;
+			}
+		};
+
+		try {
+			await activateProxy(proxy.proxySetting);
+		} catch (error) {
+			switch (proxy.proxySetting) {
+				case 'sj':
+					proxy.proxySetting = 'uv';
+					await activateProxy('uv');
+					break;
+				default:
+					throw error;
+			}
+		}
+	}, []);
+
 	useEffect(() => {
 		const proxy = new Proxy();
 		proxyRef.current = proxy;
 		window.proxy = proxy;
 
-		proxy.ready.then(async () => {
-			const swConfig = proxy.config;
-			const proxySetting = proxy.proxySetting;
-
-			if (
-				proxySetting === 'sj' &&
-				swConfig[proxySetting] &&
-				typeof swConfig[proxySetting].func === 'function'
-			) {
-				await swConfig[proxySetting].func();
-			}
-
-			console.log(swConfig[proxySetting]);
-
-			await proxy.registerSW(swConfig[proxySetting]);
-			await proxy.setTransports();
-
-			const transport = await proxy.connection.getTransport();
-			if (transport == null) {
-				await proxy.setTransports();
-			}
-
-			setProxyReady(true);
-			console.log('[App] Proxy initialized and ready');
-		});
-	}, []);
+		proxy.ready
+			.then(() => initializeProxy(proxy))
+			.then(() => {
+				setProxyReady(true);
+				console.log('[App] Proxy initialized and ready');
+			})
+			.catch(error => {
+				console.error('[App] Proxy initialization failed', error);
+			});
+	}, [initializeProxy]);
 
 	const navigateSession = useCallback(
 		async (sessionId: number, input: string) => {
 			const proxy = proxyRef.current;
-			if (!proxy || !proxyReady) return;
+			switch (true) {
+				case !proxy:
+					return;
+				default:
+					break;
+			}
 
-			const encodedUrl = await proxy.convertURL(
-				proxy.config,
-				proxy.proxySetting,
-				input
-			);
+			try {
+				await proxy.ready;
+				const encodedUrl = await proxy.convertURL(
+					proxy.config,
+					proxy.proxySetting,
+					input
+				);
+				const idx = rawSessions.current.findIndex(
+					session => session.id === sessionId
+				);
 
-			const idx = rawSessions.current.findIndex(s => s.id === sessionId);
-			if (idx !== -1) {
-				rawSessions.current[idx].url = encodedUrl;
-				setSessions([...rawSessions.current]);
+				switch (idx !== -1) {
+					case true:
+						rawSessions.current[idx].url = encodedUrl;
+						setSessions([...rawSessions.current]);
+						break;
+					default:
+						break;
+				}
+			} catch (error) {
+				console.error('[App] Session navigation failed', error);
 			}
 		},
-		[proxyReady]
+		[]
 	);
 
 	useEffect(() => {
 		rawSessions.current = sessions;
 	}, [sessions]);
+
+	const navigateFromGamesPage = useCallback(
+		(detail: SpaceNavigateDetail) => {
+			const nextUrl = detail.url?.trim();
+
+			switch (true) {
+				case !nextUrl:
+					return;
+				default:
+					break;
+			}
+
+			const openInNewSession =
+				detail.target === 'new' &&
+				rawSessions.current.length < maxSessions;
+
+			switch (openInNewSession) {
+				case true: {
+					const nextId = nextIdRef.current++;
+					rawSessions.current.push({ id: nextId, url: '' });
+					setSessions([...rawSessions.current]);
+					setActiveSession(nextId);
+					navigate('/');
+					void navigateSession(nextId, nextUrl);
+					return;
+				}
+				default:
+					navigate('/');
+					void navigateSession(activeSession, nextUrl);
+			}
+		},
+		[activeSession, maxSessions, navigate, navigateSession]
+	);
 
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
@@ -146,6 +223,24 @@ const App = () => {
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
 	}, [navigateSession, activeSession]);
+
+	useEffect(() => {
+		const handleSpaceNavigate = (event: Event) => {
+			navigateFromGamesPage(
+				(event as CustomEvent<SpaceNavigateDetail>).detail ?? {}
+			);
+		};
+
+		window.addEventListener(
+			'space:navigate',
+			handleSpaceNavigate as EventListener
+		);
+		return () =>
+			window.removeEventListener(
+				'space:navigate',
+				handleSpaceNavigate as EventListener
+			);
+	}, [navigateFromGamesPage]);
 
 	useEffect(() => {
 		const root = carouselRef.current;
@@ -178,7 +273,12 @@ const App = () => {
 
 	const handleCloseSession = (id: number) => {
 		const idx = rawSessions.current.findIndex(s => s.id === id);
-		if (idx === -1) return;
+		switch (idx === -1) {
+			case true:
+				return;
+			default:
+				break;
+		}
 		rawSessions.current.splice(idx, 1);
 
 		if (rawSessions.current.length === 0) {
@@ -198,6 +298,13 @@ const App = () => {
 		}
 
 		setSessions([...rawSessions.current]);
+		switch (isSpecialPage && activeSession === id) {
+			case true:
+				navigate('/');
+				break;
+			default:
+				break;
+		}
 	};
 
 	const isSpecialPage =
@@ -222,11 +329,23 @@ const App = () => {
 	}, []);
 
 	const handleSessionSwitch = (id: number) => {
-		if (id === activeSession) return;
+		switch (id === activeSession) {
+			case true:
+				return;
+			default:
+				break;
+		}
 		setSwitching(true);
 		setSiblingsOpaque(true);
 		setSiblingsVisible(true);
 		setActiveSession(id);
+		switch (isSpecialPage) {
+			case true:
+				navigate('/');
+				break;
+			default:
+				break;
+		}
 		if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
 		if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
 		if (hideTimerRef.current) clearTimeout(hideTimerRef.current);

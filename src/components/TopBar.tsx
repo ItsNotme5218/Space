@@ -117,30 +117,68 @@ export const TopBar = ({
 	const isOnNewTab = !activeSessionData?.url;
 
 	const decodeProxyUrl = useCallback((proxyUrl: string): string => {
-		if (!proxyUrl) return '';
+		switch (Boolean(proxyUrl)) {
+			case false:
+				return '';
+			default:
+				break;
+		}
+
+		const decodeCandidate = (
+			value: string,
+			prefix: string,
+			decoder?: (input: string) => string
+		) => {
+			switch (true) {
+				case !value.startsWith(prefix):
+				case typeof decoder !== 'function':
+					return null;
+				default:
+					try {
+						return decoder(value.slice(prefix.length));
+					} catch {
+						return null;
+					}
+			}
+		};
 
 		let path = proxyUrl;
+
 		try {
-			const u = new URL(proxyUrl, window.location.origin);
-			path = u.pathname + u.search + u.hash;
+			const targetUrl = new URL(proxyUrl, window.location.origin);
+			path = targetUrl.pathname + targetUrl.search + targetUrl.hash;
 		} catch {}
 
 		const uvPrefix = window.__uv$config?.prefix || '/u/res/';
-		const sjPrefix = window.proxy?.scramConfig?.prefix || '/s/res/';
+		const scramjetPrefix =
+			window.__scramjet$config?.prefix ||
+			window.proxy?.scramConfig?.prefix ||
+			'/s/res/';
+		const uvDecode = window.__uv$config?.decodeUrl as
+			| ((input: string) => string)
+			| undefined;
+		const scramjetDecode = window.__scramjet$config?.codec?.decode as
+			| ((input: string) => string)
+			| undefined;
+		const candidates = [
+			path,
+			path.replace(window.location.origin, ''),
+			proxyUrl.replace(window.location.origin, '')
+		];
 
-		try {
-			if (path.startsWith(uvPrefix) && window.__uv$config?.decodeUrl) {
-				return window.__uv$config.decodeUrl(
-					path.slice(uvPrefix.length)
-				);
+		for (const candidate of candidates) {
+			const decodedUrl =
+				decodeCandidate(candidate, scramjetPrefix, scramjetDecode) ||
+				decodeCandidate(candidate, uvPrefix, uvDecode);
+
+			switch (Boolean(decodedUrl)) {
+				case true:
+					return decodedUrl!;
+				default:
+					break;
 			}
-			if (path.startsWith(sjPrefix)) {
-				const sjDecode = window.proxy?.scramConfig?.codec?.decode;
-				if (typeof sjDecode === 'function') {
-					return sjDecode(path.slice(sjPrefix.length));
-				}
-			}
-		} catch {}
+		}
+
 		return proxyUrl;
 	}, []);
 
@@ -325,11 +363,6 @@ export const TopBar = ({
 		e.preventDefault();
 		const query = inputValue.trim();
 		if (!query) return;
-
-		if (!proxyReady) {
-			console.warn('[TopBar] Proxy not ready yet');
-			return;
-		}
 
 		onNavigate(query);
 		inputRef.current?.blur();
@@ -594,7 +627,9 @@ export const TopBar = ({
 						placeholder={
 							inputFocused
 								? `Search with ${engine.label} or enter URL`
-								: 'Search or enter URL'
+								: proxyReady
+									? 'Search or enter URL'
+									: 'Proxy starting...'
 						}
 						spellCheck={false}
 						className="flex-1 bg-transparent border-none outline-none min-w-0"

@@ -116,15 +116,29 @@ class Proxy implements ProxyInterface {
 					file: '/sw.js',
 					config: this.scramConfig,
 					func: async () => {
-						// @ts-ignore
-						const { ScramjetController } =
-							$scramjetLoadController();
+						const loadController = (
+							globalThis as typeof globalThis & {
+								$scramjetLoadController?: () => {
+									ScramjetController: typeof ScramjetController;
+								};
+							}
+						).$scramjetLoadController;
+
+						switch (typeof loadController) {
+							case 'function':
+								break;
+							default:
+								throw new Error(
+									'Scramjet controller loader is unavailable'
+								);
+						}
+
+						const { ScramjetController } = loadController();
 						const scramjet = new ScramjetController(
 							this.scramConfig
 						);
-						scramjet.init().then(async () => {
-							await this.setTransports();
-						});
+						await scramjet.init();
+						await this.setTransports();
 						console.log('Scramjet Service Worker registered.');
 					}
 				}
@@ -229,33 +243,37 @@ class Proxy implements ProxyInterface {
 		);
 		switch (swConfig.type) {
 			case 'sw':
-				if ('serviceWorker' in navigator) {
-					const scpe: string =
-						swConfig.config.prefix.match(/^\/[^/]+\//)?.[0] || '';
-					console.log(
-						'[Proxy] Registering service worker with scope:',
-						scpe
-					);
-					await navigator.serviceWorker.register(swConfig.file, {
-						scope: scpe
-					});
-
-					navigator.serviceWorker.ready.then(async () => {
+				switch ('serviceWorker' in navigator) {
+					case true: {
+						const scope = '/';
 						console.log(
-							'[Proxy] Service worker ready, setting up transports'
+							'[Proxy] Registering service worker with scope:',
+							scope
 						);
-						await this.setTransports().then(async () => {
-							const transport =
-								await this.connection.getTransport();
-							if (transport == null) {
-								console.log(
-									'[Proxy] Transport null, retrying setTransports'
-								);
-								this.setTransports();
-							}
+						await navigator.serviceWorker.register(swConfig.file, {
+							scope
 						});
-						this.updateSW();
-					});
+
+						navigator.serviceWorker.ready.then(async () => {
+							console.log(
+								'[Proxy] Service worker ready, setting up transports'
+							);
+							await this.setTransports().then(async () => {
+								const transport =
+									await this.connection.getTransport();
+								if (transport == null) {
+									console.log(
+										'[Proxy] Transport null, retrying setTransports'
+									);
+									this.setTransports();
+								}
+							});
+							this.updateSW();
+						});
+						break;
+					}
+					default:
+						break;
 				}
 				break;
 			case 'iframe':

@@ -43,7 +43,7 @@ const boot = async () => {
 		}
 	}
 
-	initShadowApp();
+	await initShadowApp();
 };
 
 const originalDocumentOpen = document.open.bind(document);
@@ -53,6 +53,54 @@ const originalDocumentClose = document.close.bind(document);
 
 let shadowRoot: ShadowRoot | null = null;
 let shadowDocument: Document | null = null;
+
+const runtimeScriptSources = ['/u/config.js', '/s/config.js', '/s/all.js'];
+
+const loadRuntimeScript = (src: string) =>
+	new Promise<void>((resolve, reject) => {
+		const selector = `script[data-runtime-src="${src}"]`;
+		const existing =
+			document.head.querySelector<HTMLScriptElement>(selector);
+		const handleLoad = (script: HTMLScriptElement) => {
+			script.dataset.runtimeReady = 'true';
+			resolve();
+		};
+		const handleError = () => {
+			reject(new Error(`Failed to load runtime script: ${src}`));
+		};
+		const attachListeners = (script: HTMLScriptElement) => {
+			script.addEventListener('load', () => handleLoad(script), {
+				once: true
+			});
+			script.addEventListener('error', handleError, { once: true });
+		};
+
+		switch (true) {
+			case existing?.dataset.runtimeReady === 'true':
+				resolve();
+				return;
+			case Boolean(existing):
+				attachListeners(existing as HTMLScriptElement);
+				return;
+			default: {
+				const script = document.createElement('script');
+				script.src = src;
+				script.dataset.runtimeSrc = src;
+				attachListeners(script);
+				document.head.appendChild(script);
+			}
+		}
+	});
+
+const prepareRuntimeScripts = async () => {
+	for (const src of runtimeScriptSources) {
+		try {
+			await loadRuntimeScript(src);
+		} catch (error) {
+			console.error('[runtime] script load failed', src, error);
+		}
+	}
+};
 
 const patchDocument = () => {
 	Object.defineProperty(document, 'open', {
@@ -110,7 +158,7 @@ const patchDocument = () => {
 	});
 };
 
-const initShadowApp = () => {
+const initShadowApp = async () => {
 	const staticShell = document.getElementById('static-shell');
 	if (staticShell) {
 		staticShell.style.display = 'none';
@@ -123,18 +171,7 @@ const initShadowApp = () => {
 	styleSheet.textContent = indexStyles;
 	shadowRoot.appendChild(styleSheet);
 
-	const uConfig = document.createElement('script');
-	uConfig.src = '/u/config.js';
-
-	document.head.appendChild(uConfig);
-	const sConfig = document.createElement('script');
-	sConfig.src = '/s/config.js';
-
-	document.head.appendChild(sConfig);
-	const sBundle = document.createElement('script');
-	sBundle.src = '/s/all.js';
-
-	document.head.appendChild(sBundle);
+	await prepareRuntimeScripts();
 
 	const root = document.createElement('div');
 	root.id = 'root';

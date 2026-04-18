@@ -3,6 +3,10 @@
 	"version": "2.0.0",
 	"type": "module",
 	"scripts": {
+		"predev": "node scripts/sync-runtime-assets.mjs",
+		"prebuild": "node scripts/sync-runtime-assets.mjs",
+		"prepreview": "node scripts/sync-runtime-assets.mjs",
+		"prestart": "node scripts/sync-runtime-assets.mjs",
 		"dev": "vp dev & tsx index.ts",
 		"build": "vp build",
 		"lint": "vp check",
