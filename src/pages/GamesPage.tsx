@@ -13,8 +13,8 @@ import {
 	ArrowLeft,
 	ChevronLeft,
 	ChevronRight,
+	Flag,
 	Play,
-	Plus,
 	Search,
 	X
 } from 'lucide-react';
@@ -100,6 +100,7 @@ const primaryButtonStyle = {
 	boxShadow: '0 0 16px rgba(139,92,246,0.15)',
 	color: '#c4b5fd'
 };
+const reportIssueUrl = 'https://github.com/crllect/space-v2/issues/new';
 
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(max, Math.max(min, value));
@@ -138,43 +139,100 @@ const categoryConfig = [
 	}
 ] as const;
 
-const getPosterTone = (title: string) => {
-	const value = [...title].reduce(
-		(total, letter) => total + letter.charCodeAt(0),
-		0
-	);
-
-	switch (value % 5) {
-		case 0:
-			return 'linear-gradient(135deg, rgba(99,102,241,0.36), rgba(17,24,39,0.94))';
-		case 1:
-			return 'linear-gradient(135deg, rgba(236,72,153,0.3), rgba(17,24,39,0.94))';
-		case 2:
-			return 'linear-gradient(135deg, rgba(45,212,191,0.28), rgba(15,23,42,0.94))';
-		case 3:
-			return 'linear-gradient(135deg, rgba(250,204,21,0.28), rgba(23,23,23,0.94))';
-		default:
-			return 'linear-gradient(135deg, rgba(248,113,113,0.28), rgba(24,24,27,0.94))';
-	}
-};
-
 const normalizeImage = (image?: string) => {
 	switch (true) {
 		case !image:
 			return '';
-		case image.startsWith('//'):
+		case image!.startsWith('//'):
 			return `https:${image}`;
 		default:
-			return image;
+			return image!;
 	}
 };
 
+const normalizeTagValue = (tag: string) => {
+	const value = tag.trim().toLowerCase();
+
+	switch (true) {
+		case value.includes('featured'):
+		case value.includes('trending'):
+		case value.includes('popular'):
+		case value.includes('top rated'):
+		case value.includes('top-rated'):
+		case value === 'hot':
+			return 'popular';
+		case value.includes('multiplayer'):
+		case value.includes('multi-player'):
+		case value.includes('multi player'):
+		case value.includes('co-op'):
+		case value.includes('coop'):
+		case value.includes('versus'):
+		case value.includes('2 player'):
+		case value.includes('two player'):
+		case value.includes('.io'):
+			return 'multiplayer';
+		case value.includes('horror'):
+		case value.includes('scary'):
+		case value.includes('spooky'):
+		case value.includes('creepy'):
+		case value.includes('haunted'):
+		case value.includes('zombie'):
+			return 'horror';
+		case value.includes('emulator'):
+		case value.includes('emulation'):
+		case value.includes('retro'):
+		case value.includes('arcade'):
+		case value.includes('game boy'):
+		case value.includes('gameboy'):
+		case value.includes('nintendo'):
+		case value.includes('nes'):
+		case value.includes('snes'):
+		case value.includes('n64'):
+		case value.includes('gba'):
+		case value.includes('gbc'):
+		case value.includes('sega'):
+		case value.includes('playstation'):
+		case value.includes('ps1'):
+			return 'emulator';
+		default:
+			return value;
+	}
+};
+
+const inferGameTags = (game: RawGame) => {
+	const sourceValues = [game.name ?? '', game.url ?? '', ...(game.tags ?? [])];
+	const nextTags: string[] = [];
+
+	for (const value of sourceValues) {
+		const normalizedValue = normalizeTagValue(value);
+
+		switch (normalizedValue) {
+			case 'popular':
+			case 'multiplayer':
+			case 'horror':
+			case 'emulator':
+				nextTags.push(normalizedValue);
+				break;
+			default:
+				break;
+		}
+	}
+
+	return Array.from(new Set(nextTags));
+};
+
 const normalizeTags = (tags?: string[]) =>
-	Array.from(new Set(['all', ...(tags ?? [])].filter(Boolean)));
+	Array.from(
+		new Set(
+			['all', ...(tags ?? [])]
+				.filter(Boolean)
+				.map(tag => normalizeTagValue(tag))
+		)
+	);
 
 const mapGame = (game: RawGame, source: GameSource): GameItem => {
 	const url = game.url ?? '';
-	const tags = normalizeTags(game.tags);
+	const tags = normalizeTags([...(game.tags ?? []), ...inferGameTags(game)]);
 	const hostLabel = getHostLabel(url);
 
 	return {
@@ -357,6 +415,7 @@ const dispatchGameLaunch = (url: string, target: 'active' | 'new') => {
 
 const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 	const [imageFailed, setImageFailed] = useState(false);
+	const hasLoadedImage = Boolean(image) && !imageFailed;
 
 	useEffect(() => {
 		setImageFailed(false);
@@ -365,12 +424,8 @@ const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 	return (
 		<div
 			className={`relative overflow-hidden ${className}`}
-			style={{
-				background: getPosterTone(title),
-				border: '1px solid rgba(255,255,255,0.08)'
-			}}
 		>
-			{image && !imageFailed ? (
+			{hasLoadedImage ? (
 				<img
 					src={image}
 					alt={title}
@@ -380,16 +435,12 @@ const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 					onError={() => setImageFailed(true)}
 					className="absolute inset-0 h-full w-full object-cover"
 				/>
-			) : null}
+			) : (
+				<div className="absolute inset-0 animate-pulse bg-white/6" />
+			)}
 
 			<div
 				className="absolute inset-0 flex flex-col items-start justify-end p-4"
-				style={{
-					background:
-						image && !imageFailed
-							? 'linear-gradient(180deg, rgba(5,3,18,0.02), rgba(5,3,18,0.5) 70%, rgba(5,3,18,0.86))'
-							: 'linear-gradient(180deg, rgba(5,3,18,0.18), rgba(5,3,18,0.9))'
-				}}
 			>
 				<div className="mt-2 max-w-full truncate text-sm font-semibold text-white/92">
 					{title}
@@ -601,7 +652,7 @@ const CategoryRow = memo(
 
 		return (
 			<motion.section
-				initial={{ opacity: 0, y: 24 }}
+				initial={false}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.35 }}
 				className="space-y-4"
@@ -658,17 +709,17 @@ const CategoryRow = memo(
 					</div>
 				</div>
 
-				<div className="-mx-2 px-2">
+				<div className="-mx-16 px-8">
 					<div
 						ref={scrollerRef}
-						className="overflow-x-auto pb-2"
+						className="overflow-x-auto pb-2 px-8"
 						style={{
 							scrollbarWidth: 'none',
 							msOverflowStyle: 'none',
 							WebkitMaskImage:
-								'linear-gradient(to right, transparent 0, black 72px, black calc(100% - 72px), transparent 100%)',
+								'linear-gradient(to right, transparent 0, black 64px, black calc(100% - 64px), transparent 100%)',
 							maskImage:
-								'linear-gradient(to right, transparent 0, black 72px, black calc(100% - 72px), transparent 100%)'
+								'linear-gradient(to right, transparent 0, black 64px, black calc(100% - 64px), transparent 100%)'
 						}}
 					>
 						<div ref={trackRef} className="flex w-max gap-4 py-2">
@@ -728,6 +779,7 @@ export const GamesPage = () => {
 	const deferredSearchValue = useDeferredValue(
 		searchValue.trim().toLowerCase()
 	);
+	const isInitialLibraryLoading = isLoading && localGames.length === 0;
 
 	useEffect(() => {
 		let cancelled = false;
@@ -801,25 +853,27 @@ export const GamesPage = () => {
 
 	const totalGameCount = localGames.length + importedGames.length;
 
-	const localCategoryMap = useMemo(() => {
+	const categoryMap = useMemo(() => {
 		const nextMap: Record<string, GameItem[]> = {};
 
-		for (const game of localGames) {
-			for (const tag of game.tags) {
-				switch (Boolean(nextMap[tag])) {
-					case false:
-						nextMap[tag] = [];
-						break;
-					default:
-						break;
-				}
+		for (const gameList of [localGames, importedGames]) {
+			for (const game of gameList) {
+				for (const tag of game.tags) {
+					switch (Boolean(nextMap[tag])) {
+						case false:
+							nextMap[tag] = [];
+							break;
+						default:
+							break;
+					}
 
-				nextMap[tag].push(game);
+					nextMap[tag].push(game);
+				}
 			}
 		}
 
 		return nextMap;
-	}, [localGames]);
+	}, [importedGames, localGames]);
 
 	const allPreviewItems = useMemo(
 		() => getAllPreviewItems(localGames, importedGames),
@@ -850,20 +904,20 @@ export const GamesPage = () => {
 		(categoryId: string) => {
 			switch (categoryId) {
 				case 'popular':
-					return localCategoryMap.popular ?? [];
+					return categoryMap.popular ?? [];
 				case 'multiplayer':
-					return localCategoryMap.multiplayer ?? [];
+					return categoryMap.multiplayer ?? [];
 				case 'horror':
-					return localCategoryMap.horror ?? [];
+					return categoryMap.horror ?? [];
 				case 'emulator':
-					return localCategoryMap.emulator ?? [];
+					return categoryMap.emulator ?? [];
 				case 'all':
 					return mergedGames;
 				default:
 					return [];
 			}
 		},
-		[localCategoryMap, mergedGames]
+		[categoryMap, mergedGames]
 	);
 
 	const rowCategories = useMemo(() => {
@@ -879,7 +933,7 @@ export const GamesPage = () => {
 							items: allPreviewItems
 						} satisfies GameCategory;
 					default: {
-						const sourceItems = localCategoryMap[config.id] ?? [];
+						const sourceItems = categoryMap[config.id] ?? [];
 
 						return {
 							id: config.id,
@@ -892,7 +946,7 @@ export const GamesPage = () => {
 				}
 			})
 			.filter(category => category.totalItems > 0);
-	}, [allPreviewItems, localCategoryMap, totalGameCount]);
+	}, [allPreviewItems, categoryMap, totalGameCount]);
 
 	const activeCategory = useMemo(() => {
 		switch (true) {
@@ -1109,18 +1163,33 @@ export const GamesPage = () => {
 			case false:
 				return;
 			default:
-				dispatchGameLaunch(activeViewerGame!.url, 'active');
+				dispatchGameLaunch(activeViewerGame!.url, 'new');
 				setViewer(null);
 		}
 	}, [activeViewerGame]);
 
-	const handleOpenInNewTab = useCallback(() => {
+	const handleReportBrokenGame = useCallback(() => {
 		switch (Boolean(activeViewerGame)) {
 			case false:
 				return;
-			default:
-				dispatchGameLaunch(activeViewerGame!.url, 'new');
+			default: {
+				const title = `Broken game: ${activeViewerGame!.title}`;
+				const body = [
+					`Game: ${activeViewerGame!.title}`,
+					`URL: ${activeViewerGame!.url}`,
+					`Source: ${activeViewerGame!.source}`,
+					`Tags: ${activeViewerGame!.tags.join(', ')}`,
+					'',
+					'What is broken?'
+				].join('\n');
+				const query = new URLSearchParams({
+					title,
+					body
+				});
+
+				window.open(`${reportIssueUrl}?${query.toString()}`, '_blank');
 				setViewer(null);
+			}
 		}
 	}, [activeViewerGame]);
 
@@ -1158,19 +1227,12 @@ export const GamesPage = () => {
 		};
 	}, [closeViewer, goViewerNext, goViewerPrev, viewer]);
 
-	switch (isLoading) {
-		case true:
-			return <Loading />;
-		default:
-			break;
-	}
-
 	return (
 		<div className="h-full w-full overflow-y-auto">
 			<div className="min-h-full px-10 pt-16 pb-24">
 				<div className="mx-auto max-w-[1500px] space-y-8">
 					<motion.header
-						initial={{ opacity: 0, y: -18, filter: 'blur(10px)' }}
+						initial={false}
 						animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
 						transition={{ duration: 0.25 }}
 						className="space-y-6"
@@ -1252,7 +1314,16 @@ export const GamesPage = () => {
 						</div>
 					</motion.header>
 
-					{activeCategory ? (
+					{isInitialLibraryLoading ? (
+						<div
+							className="relative overflow-hidden rounded-3xl px-6 py-20"
+							style={glassStyle}
+						>
+							<div className="relative h-20">
+								<Loading />
+							</div>
+						</div>
+					) : activeCategory ? (
 						<section className="space-y-5">
 							<div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 								<div className="space-y-2">
@@ -1351,13 +1422,14 @@ export const GamesPage = () => {
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							className="fixed inset-0 z-[80]"
+							className="fixed inset-0 z-80"
 						>
 							<div
 								className="absolute inset-0"
 								onClick={closeViewer}
 								style={{
 									background: 'rgba(5, 3, 18, 0.92)',
+                  filter: 'blur(100px)',
 									backdropFilter: 'blur(10px)',
 									WebkitBackdropFilter: 'blur(10px)'
 								}}
@@ -1477,7 +1549,9 @@ export const GamesPage = () => {
 													Play Now
 												</motion.button>
 												<motion.button
-													onClick={handleOpenInNewTab}
+													onClick={
+														handleReportBrokenGame
+													}
 													whileHover={{
 														scale: 1.02,
 														y: -1
@@ -1486,8 +1560,8 @@ export const GamesPage = () => {
 													className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white/88"
 													style={buttonStyle}
 												>
-													<Plus className="h-4 w-4" />
-													Open in New Tab
+													<Flag className="h-4 w-4" />
+													Report Broken Game
 												</motion.button>
 											</div>
 										</div>
