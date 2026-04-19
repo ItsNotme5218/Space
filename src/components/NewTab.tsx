@@ -158,7 +158,7 @@ const PinTile = ({
 				)}
 			</motion.button>
 			<span
-				className="text-[10px] leading-none truncate max-w-[72px] text-center uppercase"
+				className="text-[10px] leading-none truncate max-w-18 text-center uppercase"
 				style={{
 					fontFamily: font,
 					color: 'rgba(255, 255, 255, 0.55)',
@@ -351,11 +351,8 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 
 		const input = window.prompt('Enter a site URL to pin', 'https://');
 
-		switch (input === null) {
-			case true:
-				return;
-			default:
-				break;
+		if (input === null) {
+			return;
 		}
 
 		const trimmed = input.trim();

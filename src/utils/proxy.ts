@@ -1,6 +1,19 @@
 import * as BareMux from '@mercuryworkshop/bare-mux';
 import { SettingsAPI } from '@utils/settings';
 
+type ScramjetControllerInstance = {
+	init(path?: string): Promise<void>;
+	encodeUrl(term: string): string;
+};
+
+type ScramjetControllerConstructor = new (
+	opts: SJConfig
+) => ScramjetControllerInstance;
+
+type ScramjetLoader = () => {
+	ScramjetController: ScramjetControllerConstructor;
+};
+
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
 	searchVar: string;
@@ -116,11 +129,9 @@ class Proxy implements ProxyInterface {
 					file: '/sw.js',
 					config: this.scramConfig,
 					func: async () => {
-						const loadController = (
+						const loadController: ScramjetLoader | undefined = (
 							globalThis as typeof globalThis & {
-								$scramjetLoadController?: () => {
-									ScramjetController: typeof ScramjetController;
-								};
+								$scramjetLoadController?: ScramjetLoader;
 							}
 						).$scramjetLoadController;
 
@@ -133,8 +144,9 @@ class Proxy implements ProxyInterface {
 								);
 						}
 
-						const { ScramjetController } = loadController();
-						const scramjet = new ScramjetController(
+						const { ScramjetController: LoadedScramjetController } =
+							loadController();
+						const scramjet = new LoadedScramjetController(
 							this.scramConfig
 						);
 						await scramjet.init();
@@ -198,9 +210,11 @@ class Proxy implements ProxyInterface {
 			{ ...transportOptions }
 		]);
 
-		/*await this.connection.setTransport(transportFile, [
-	  { ...transportOptions },
-	]);*/ // debug function
+		/*
+		await this.connection.setTransport(transportFile, [
+			{ ...transportOptions },
+		]);
+		*/ // debug function
 
 		console.log('[Proxy] Transport set with options:', transportOptions);
 	}

@@ -71,9 +71,7 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		rolldownOptions: {
-			exclude: ['@mercuryworkshop/bare-mux']
-		}
+		exclude: ['@mercuryworkshop/bare-mux']
 	},
 	server: {
 		allowedHosts: allowedHosts,

@@ -437,12 +437,15 @@ const dispatchGameLaunch = (game: GameItem, target: 'active' | 'new') => {
 };
 
 const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
+	const [imageKey, setImageKey] = useState(image);
 	const [imageFailed, setImageFailed] = useState(false);
-	const hasLoadedImage = Boolean(image) && !imageFailed;
 
-	useEffect(() => {
+	if (imageKey !== image) {
+		setImageKey(image);
 		setImageFailed(false);
-	}, [image]);
+	}
+
+	const hasLoadedImage = Boolean(image) && !imageFailed;
 
 	return (
 		<div className={`relative overflow-hidden ${className}`}>
@@ -1123,7 +1126,10 @@ export const GamesPage = () => {
 		}
 	}, [activeCategory, getCategoryItems, viewer]);
 
-	const viewerItems = viewerCategory?.items ?? [];
+	const viewerItems = useMemo(
+		() => viewerCategory?.items ?? [],
+		[viewerCategory]
+	);
 
 	const activeViewerGame = useMemo(() => {
 		switch (Boolean(viewer && viewerItems.length > 0)) {
@@ -1329,7 +1335,7 @@ export const GamesPage = () => {
 	return (
 		<div className="h-full w-full overflow-y-auto">
 			<div className="min-h-full px-10 pt-6 pb-24">
-				<div className="mx-auto max-w-[1500px] space-y-8">
+				<div className="mx-auto max-w-375 space-y-8">
 					<motion.header
 						initial={false}
 						animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1575,7 +1581,7 @@ export const GamesPage = () => {
 										<GamePoster
 											title={activeViewerGame.title}
 											image={activeViewerGame.image}
-											className="h-full min-h-[320px] w-full rounded-2xl"
+											className="h-full min-h-80 w-full rounded-2xl"
 										/>
 									</div>
 
