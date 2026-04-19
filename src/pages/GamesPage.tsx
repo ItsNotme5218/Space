@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState
 } from 'react';
+import localforage from 'localforage';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
 	ArrowLeft,
@@ -123,6 +124,18 @@ let cachedLocalGames: GameItem[] | null = null;
 let cachedImportedGames: GameItem[] | null = null;
 let localGamesPromise: Promise<GameItem[]> | null = null;
 let importedGamesPromise: Promise<GameItem[]> | null = null;
+let importedGamesCachePromise: Promise<GameItem[] | null> | null = null;
+
+const importedGamesCacheStore = localforage.createInstance({
+	name: 'space-games-cache',
+	storeName: 'imported-games'
+});
+const importedGamesCacheKey = 'mapped-imported-games-v1';
+
+interface ImportedGamesCachePayload {
+	items: GameItem[];
+	updatedAt: number;
+}
 
 const categoryConfig = [
 	{
@@ -279,6 +292,67 @@ const waitForIdle = () =>
 		}
 	});
 
+const filterImportedGames = (
+	games: GameItem[],
+	existingIds: Set<string>
+) => games.filter(game => !existingIds.has(game.id));
+
+const readMappedImportedGamesCache = (existingIds: Set<string>) => {
+	switch (Boolean(cachedImportedGames)) {
+		case true:
+			return Promise.resolve(
+				filterImportedGames(cachedImportedGames!, existingIds)
+			);
+		default:
+			break;
+	}
+
+	switch (Boolean(importedGamesCachePromise)) {
+		case true:
+			return importedGamesCachePromise!.then(games =>
+				games ? filterImportedGames(games, existingIds) : null
+			);
+		default:
+			break;
+	}
+
+	importedGamesCachePromise = importedGamesCacheStore
+		.getItem<ImportedGamesCachePayload>(importedGamesCacheKey)
+		.then(payload => {
+			importedGamesCachePromise = null;
+
+			switch (Array.isArray(payload?.items)) {
+				case true:
+					cachedImportedGames = payload!.items;
+					return cachedImportedGames;
+				default:
+					return null;
+			}
+		})
+		.catch(error => {
+			importedGamesCachePromise = null;
+			console.warn('[GamesPage] imported games cache read failed', error);
+			return null;
+		});
+
+	return importedGamesCachePromise.then(games =>
+		games ? filterImportedGames(games, existingIds) : null
+	);
+};
+
+const writeMappedImportedGamesCache = (games: GameItem[]) => {
+	const payload: ImportedGamesCachePayload = {
+		items: games,
+		updatedAt: Date.now()
+	};
+
+	return importedGamesCacheStore
+		.setItem(importedGamesCacheKey, payload)
+		.catch(error => {
+			console.warn('[GamesPage] imported games cache write failed', error);
+		});
+};
+
 const fetchMappedLocalGames = () => {
 	switch (Boolean(cachedLocalGames)) {
 		case true:
@@ -308,10 +382,15 @@ const fetchMappedLocalGames = () => {
 	return localGamesPromise;
 };
 
-const fetchMappedImportedGames = (existingIds: Set<string>) => {
-	switch (Boolean(cachedImportedGames)) {
+const fetchMappedImportedGames = (
+	existingIds: Set<string>,
+	options: { forceRefresh?: boolean } = {}
+) => {
+	switch (Boolean(cachedImportedGames) && !options.forceRefresh) {
 		case true:
-			return Promise.resolve(cachedImportedGames!);
+			return Promise.resolve(
+				filterImportedGames(cachedImportedGames!, existingIds)
+			);
 		default:
 			break;
 	}
@@ -342,10 +421,14 @@ const fetchMappedImportedGames = (existingIds: Set<string>) => {
 		}
 
 		cachedImportedGames = nextImportedGames;
-		return cachedImportedGames;
+		void writeMappedImportedGamesCache(nextImportedGames);
+		return filterImportedGames(nextImportedGames, existingIds);
 	})().catch(error => {
 		importedGamesPromise = null;
 		throw error;
+	}).then(games => {
+		importedGamesPromise = null;
+		return games;
 	});
 
 	return importedGamesPromise;
@@ -462,12 +545,6 @@ const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 			) : (
 				<div className="absolute inset-0 animate-pulse bg-white/6" />
 			)}
-
-			<div className="absolute inset-0 flex flex-col items-start justify-end p-4">
-				<div className="mt-2 max-w-full truncate text-sm font-semibold text-white/92">
-					{title}
-				</div>
-			</div>
 		</div>
 	);
 });
@@ -857,25 +934,44 @@ export const GamesPage = () => {
 				setLocalGames(nextLocalGames);
 				setIsLoading(false);
 
-				switch (Boolean(cachedImportedGames)) {
-					case true:
-						setImportedGames(cachedImportedGames!);
-						setIsImportedLoading(false);
-						return;
-					default:
-						setIsImportedLoading(true);
-				}
-
 				const localIds = new Set(nextLocalGames.map(game => game.id));
+				readMappedImportedGamesCache(localIds)
+					.then(cachedImported => {
+						switch (cancelled) {
+							case true:
+								return null;
+							default:
+								break;
+						}
 
-				fetchMappedImportedGames(localIds)
+						switch (cachedImported !== null) {
+							case true:
+								startTransition(() => {
+									setImportedGames(cachedImported!);
+								});
+								setIsImportedLoading(false);
+								break;
+							default:
+								setIsImportedLoading(true);
+						}
+
+						return fetchMappedImportedGames(localIds, {
+							forceRefresh: cachedImported !== null
+						});
+					})
 					.then(nextImportedGames => {
 						switch (cancelled) {
 							case true:
 								return;
 							default:
+								switch (Boolean(nextImportedGames)) {
+									case false:
+										return;
+									default:
+										break;
+								}
 								startTransition(() => {
-									setImportedGames(nextImportedGames);
+									setImportedGames(nextImportedGames!);
 								});
 								setIsImportedLoading(false);
 						}
@@ -1513,17 +1609,20 @@ export const GamesPage = () => {
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							className="fixed inset-0 z-80"
+							style={{ isolation: 'isolate',
+								backdropFilter: 'blur(10px)',
+								WebkitBackdropFilter: 'blur(10px)'
+							}}
 						>
 							<div
-								className="absolute inset-0"
+								className="fixed inset-0"
 								onClick={closeViewer}
 								style={{
 									background: 'rgba(5, 3, 18, 0.92)',
-									filter: 'blur(100px)',
-									backdropFilter: 'blur(10px)',
-									WebkitBackdropFilter: 'blur(10px)'
+									filter: 'blur(100px)'
 								}}
 							/>
+
 
 							<motion.div
 								initial={{ opacity: 0, scale: 0.985, y: 16 }}
@@ -1656,71 +1755,82 @@ export const GamesPage = () => {
 											</div>
 										</div>
 
-										<div className="mt-6 min-h-0 flex-1 overflow-hidden">
+										<div className="mt-6 flex min-h-0 flex-1 flex-col overflow-hidden">
 											<div className="mb-3 text-[11px] uppercase tracking-[0.22em] text-white/38">
 												More in {viewerCategory.label}
 											</div>
-											<div className="grid max-h-full gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-												{viewerPreviewItems.map(
-													game => {
-														const itemIndex =
-															viewerItems.findIndex(
-																item =>
-																	item.id ===
-																	game.id
-															);
+											<div
+												className="min-h-0 flex-1 overflow-y-auto pr-2"
+												style={{
+													scrollbarWidth: 'thin',
+													scrollbarColor:
+														'rgba(139,92,246,0.55) rgba(255,255,255,0.06)',
+													overscrollBehavior: 'contain'
+												}}
+											>
+												<div className="grid content-start gap-3 sm:grid-cols-2">
+													{viewerPreviewItems.map(
+														game => {
+															const itemIndex =
+																viewerItems.findIndex(
+																	item =>
+																		item.id ===
+																		game.id
+																);
 
-														return (
-															<motion.button
-																key={`viewer-item-${game.id}`}
-																onClick={() =>
-																	openViewer(
-																		viewerCategory.id,
-																		itemIndex
-																	)
-																}
-																whileHover={{
-																	y: -2,
-																	scale: 1.01
-																}}
-																whileTap={{
-																	scale: 0.99
-																}}
-																className="overflow-hidden rounded-2xl p-3 text-left"
-																style={{
-																	background:
-																		itemIndex ===
-																		viewer?.itemIndex
-																			? 'rgba(139,92,246,0.12)'
-																			: 'rgba(255,255,255,0.05)',
-																	border:
-																		itemIndex ===
-																		viewer?.itemIndex
-																			? '1px solid rgba(139,92,246,0.24)'
-																			: '1px solid rgba(255,255,255,0.08)'
-																}}
-															>
-																<GamePoster
-																	title={
-																		game.title
+															return (
+																<motion.button
+																	key={`viewer-item-${game.id}`}
+																	onClick={() =>
+																		openViewer(
+																			viewerCategory.id,
+																			itemIndex
+																		)
 																	}
-																	image={
-																		game.image
-																	}
-																	className="h-24 w-full rounded-xl"
-																/>
-																<div className="mt-3 truncate text-sm font-semibold text-white/90">
-																	{game.title}
-																</div>
-																<div className="mt-1 truncate text-[11px] uppercase tracking-[0.2em] text-white/34">
-																	{
-																		game.hostLabel
-																	}
-																</div>
-															</motion.button>
-														);
-													}
-												)}
+
+																	whileHover={{
+																		cursor: 'pointer',
+																		scale: 0.95
+																	}}
+																	whileTap={{
+																		scale: 0.9
+																	}}
+																	className="overflow-hidden rounded-2xl p-3 text-left"
+																	style={{
+																		background:
+																			itemIndex ===
+																			viewer?.itemIndex
+																				? 'rgba(139,92,246,0.12)'
+																				: 'rgba(255,255,255,0.05)',
+																		border:
+																			itemIndex ===
+																			viewer?.itemIndex
+																				? '1px solid rgba(139,92,246,0.24)'
+																				: '1px solid rgba(255,255,255,0.08)'
+																	}}
+																>
+																	<GamePoster
+																		title={
+																			game.title
+																		}
+																		image={
+																			game.image
+																		}
+																		className="h-24 w-full rounded-xl"
+																	/>
+																	<div className="mt-3 truncate text-sm font-semibold text-white/90">
+																		{game.title}
+																	</div>
+																	<div className="mt-1 truncate text-[11px] uppercase tracking-[0.2em] text-white/34">
+																		{
+																			game.hostLabel
+																		}
+																	</div>
+																</motion.button>
+															);
+														}
+													)}
+												</div>
 											</div>
 										</div>
 									</div>
