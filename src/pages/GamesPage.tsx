@@ -19,9 +19,14 @@ import {
 	X
 } from 'lucide-react';
 import { Loading } from '../components/Loading';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SpaceGames } from '../utils/games';
+import {
+	emptySavedGamesState,
+	normalizeComparableUrl
+} from '../utils/playback';
 
-type GameSource = 'local' | 'imported';
+type GameSource = 'local' | 'imported' | 'saved';
 
 interface GameItem {
 	id: string;
@@ -397,16 +402,22 @@ const getSummaryText = (game: GameItem, categoryLabel: string) => {
 	}
 };
 
-const dispatchGameLaunch = (url: string, target: 'active' | 'new') => {
-	switch (Boolean(url)) {
+const dispatchGameLaunch = (game: GameItem, target: 'active' | 'new') => {
+	switch (Boolean(game.url)) {
 		case false:
 			return;
 		default:
 			window.dispatchEvent(
 				new CustomEvent('space:navigate', {
 					detail: {
-						url,
-						target
+						url: game.url,
+						target,
+						title: game.title,
+						image: game.image,
+						tags: game.tags,
+						kind: 'game',
+						librarySource:
+							game.source === 'saved' ? 'custom' : 'default'
 					}
 				})
 			);
@@ -455,7 +466,9 @@ const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
 	const hoverBorderColor =
 		game.source === 'imported'
 			? 'rgba(190,147,255,0.3)'
-			: 'rgba(255,255,255,0.15)';
+			: game.source === 'saved'
+				? 'rgba(125,211,252,0.28)'
+				: 'rgba(255,255,255,0.15)';
 
 	return (
 		<motion.button
@@ -474,6 +487,8 @@ const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
 				border: `1px solid ${
 					game.source === 'imported'
 						? 'rgba(168,85,247,0.22)'
+						: game.source === 'saved'
+							? 'rgba(56,189,248,0.2)'
 						: 'rgba(255,255,255,0.1)'
 				}`
 			}}
@@ -504,10 +519,14 @@ const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
 								background:
 									game.source === 'imported'
 										? 'rgba(168,85,247,0.14)'
+										: game.source === 'saved'
+											? 'rgba(56,189,248,0.14)'
 										: 'rgba(255,255,255,0.08)',
 								color:
 									game.source === 'imported'
 										? 'rgba(233,213,255,0.92)'
+										: game.source === 'saved'
+											? 'rgba(186,230,253,0.92)'
 										: 'rgba(255,255,255,0.54)'
 							}}
 						>
@@ -775,11 +794,42 @@ export const GamesPage = () => {
 	const [viewer, setViewer] = useState<ViewerState | null>(null);
 	const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
 	const [visibleItemCount, setVisibleItemCount] = useState(activePageSize);
+	const [savedGamesState] = useLocalStorage(
+		'savedGamesState',
+		emptySavedGamesState
+	);
 
 	const deferredSearchValue = useDeferredValue(
 		searchValue.trim().toLowerCase()
 	);
 	const isInitialLibraryLoading = isLoading && localGames.length === 0;
+	const removedGameUrls = useMemo(
+		() =>
+			new Set(
+				savedGamesState.removedGameUrls.map(url =>
+					normalizeComparableUrl(url)
+				)
+			),
+		[savedGamesState.removedGameUrls]
+	);
+	const savedGames = useMemo(
+		() =>
+			savedGamesState.customGames
+				.filter(game => game.url)
+				.map(game =>
+					mapGame(
+						{
+							id: game.id,
+							name: game.name,
+							image: game.image,
+							url: game.url,
+							tags: game.tags
+						},
+						'saved'
+					)
+				),
+		[savedGamesState.customGames]
+	);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -851,12 +901,40 @@ export const GamesPage = () => {
 		};
 	}, []);
 
-	const totalGameCount = localGames.length + importedGames.length;
+	const visibleLocalGames = useMemo(
+		() =>
+			localGames.filter(
+				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
+			),
+		[localGames, removedGameUrls]
+	);
+	const visibleImportedGames = useMemo(
+		() =>
+			importedGames.filter(
+				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
+			),
+		[importedGames, removedGameUrls]
+	);
+	const visibleSavedGames = useMemo(
+		() =>
+			savedGames.filter(
+				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
+			),
+		[removedGameUrls, savedGames]
+	);
+	const totalGameCount =
+		visibleLocalGames.length +
+		visibleImportedGames.length +
+		visibleSavedGames.length;
 
 	const categoryMap = useMemo(() => {
 		const nextMap: Record<string, GameItem[]> = {};
 
-		for (const gameList of [localGames, importedGames]) {
+		for (const gameList of [
+			visibleLocalGames,
+			visibleSavedGames,
+			visibleImportedGames
+		]) {
 			for (const game of gameList) {
 				for (const tag of game.tags) {
 					switch (Boolean(nextMap[tag])) {
@@ -873,11 +951,15 @@ export const GamesPage = () => {
 		}
 
 		return nextMap;
-	}, [importedGames, localGames]);
+	}, [visibleImportedGames, visibleLocalGames, visibleSavedGames]);
 
 	const allPreviewItems = useMemo(
-		() => getAllPreviewItems(localGames, importedGames),
-		[importedGames, localGames]
+		() =>
+			getAllPreviewItems(
+				[...visibleLocalGames, ...visibleSavedGames],
+				visibleImportedGames
+			),
+		[visibleImportedGames, visibleLocalGames, visibleSavedGames]
 	);
 
 	const needsMergedGames = useMemo(() => {
@@ -894,11 +976,20 @@ export const GamesPage = () => {
 	const mergedGames = useMemo(() => {
 		switch (needsMergedGames) {
 			case true:
-				return [...localGames, ...importedGames];
+				return [
+					...visibleLocalGames,
+					...visibleSavedGames,
+					...visibleImportedGames
+				];
 			default:
 				return [];
 		}
-	}, [importedGames, localGames, needsMergedGames]);
+	}, [
+		needsMergedGames,
+		visibleImportedGames,
+		visibleLocalGames,
+		visibleSavedGames
+	]);
 
 	const getCategoryItems = useCallback(
 		(categoryId: string) => {
@@ -1163,7 +1254,7 @@ export const GamesPage = () => {
 			case false:
 				return;
 			default:
-				dispatchGameLaunch(activeViewerGame!.url, 'new');
+				dispatchGameLaunch(activeViewerGame!, 'new');
 				setViewer(null);
 		}
 	}, [activeViewerGame]);
@@ -1259,7 +1350,7 @@ export const GamesPage = () => {
 									Local
 								</div>
 								<div className="mt-2 text-2xl font-semibold text-white/92">
-									{localGames.length.toLocaleString()}
+									{visibleLocalGames.length.toLocaleString()}
 								</div>
 							</div>
 							<div
@@ -1270,7 +1361,7 @@ export const GamesPage = () => {
 									Imported
 								</div>
 								<div className="mt-2 text-2xl font-semibold text-white/92">
-									{importedGames.length.toLocaleString()}
+									{visibleImportedGames.length.toLocaleString()}
 								</div>
 							</div>
 							<div

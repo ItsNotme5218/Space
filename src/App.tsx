@@ -9,6 +9,28 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useTabCloak } from './hooks/useTabCloak';
 import { Proxy } from './utils/proxy';
 import { getDefaultPagePath } from './utils/internal-pages';
+import {
+	buildSavedGameRecord,
+	createInitialSessionHistory,
+	createSessionHistoryEntry,
+	emptyPlaybackState,
+	emptySavedGamesState,
+	findSavedGameByUrl,
+	getGameLibraryStatus,
+	getHostLabel,
+	isLikelyUrlInput,
+	isRemovedGameUrl,
+	moveSessionHistoryIndex,
+	normalizeComparableUrl,
+	pushPlaybackMediaEntry,
+	pushPlaybackSearchEntry,
+	pushSessionHistoryEntry,
+	syncPlaybackMediaEntry,
+	syncSessionHistoryEntry,
+	type NavigationMeta,
+	type PlaybackKind,
+	type SessionHistoryState
+} from './utils/playback';
 
 const maxSessionsLimit = 9;
 
@@ -32,6 +54,16 @@ export interface Session {
 interface SpaceNavigateDetail {
 	url?: string;
 	target?: 'active' | 'new';
+	title?: string;
+	image?: string;
+	tags?: string[];
+	kind?: PlaybackKind;
+	librarySource?: 'default' | 'custom' | null;
+}
+
+interface NavigateSessionOptions extends NavigationMeta {
+	historyMode?: 'push' | 'sync';
+	recordSearch?: boolean;
 }
 
 const App = () => {
@@ -49,6 +81,14 @@ const App = () => {
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
 	const [bgValue] = useLocalStorage('bgValue', '#050312');
 	const [autoCapSessions] = useLocalStorage('autoCapSessions', true);
+	const [savedGamesState, setSavedGamesState] = useLocalStorage(
+		'savedGamesState',
+		emptySavedGamesState
+	);
+	const [, setPlaybackState] = useLocalStorage(
+		'playbackState',
+		emptyPlaybackState
+	);
 	const [screenCap, setScreenCap] = useState(getScreenCap);
 	const maxSessions = autoCapSessions
 		? Math.min(screenCap, maxSessionsLimit)
@@ -65,6 +105,11 @@ const App = () => {
 	const rawSessions = useRef<Session[]>([{ id: 0, url: '' }]);
 	const [sessions, setSessions] = useState<Session[]>([{ id: 0, url: '' }]);
 	const [activeSession, setActiveSession] = useState(0);
+	const [sessionHistoryMap, setSessionHistoryMap] = useState<
+		Record<number, SessionHistoryState>
+	>(() => ({
+		0: createInitialSessionHistory()
+	}));
 	const [proxyReady, setProxyReady] = useState(false);
 	const proxyRef = useRef<Proxy | null>(null);
 
@@ -123,23 +168,88 @@ const App = () => {
 			});
 	}, [initializeProxy]);
 
+	const recordSessionVisit = useCallback(
+		(entry: ReturnType<typeof createSessionHistoryEntry>) => {
+			switch (entry.kind) {
+				case 'game':
+					setPlaybackState(previousState => ({
+						...previousState,
+						games: pushPlaybackMediaEntry(previousState.games, entry)
+					}));
+					return;
+				case 'app':
+					setPlaybackState(previousState => ({
+						...previousState,
+						apps: pushPlaybackMediaEntry(previousState.apps, entry)
+					}));
+					return;
+				default:
+					return;
+			}
+		},
+		[setPlaybackState]
+	);
+
+	const syncSessionVisit = useCallback(
+		(entry: ReturnType<typeof createSessionHistoryEntry>) => {
+			switch (entry.kind) {
+				case 'game':
+					setPlaybackState(previousState => ({
+						...previousState,
+						games: syncPlaybackMediaEntry(previousState.games, entry)
+					}));
+					return;
+				case 'app':
+					setPlaybackState(previousState => ({
+						...previousState,
+						apps: syncPlaybackMediaEntry(previousState.apps, entry)
+					}));
+					return;
+				default:
+					return;
+			}
+		},
+		[setPlaybackState]
+	);
+
 	const navigateSession = useCallback(
-		async (sessionId: number, input: string) => {
+		async (
+			sessionId: number,
+			input: string,
+			options: NavigateSessionOptions = {}
+		) => {
 			const proxy = proxyRef.current;
+			const nextInput = input.trim();
+			const historyMode = options.historyMode ?? 'push';
+			const isInternalTarget = nextInput.length === 0;
+
 			switch (true) {
-				case !proxy:
+				case !proxy && !isInternalTarget:
 					return;
 				default:
 					break;
 			}
 
 			try {
-				await proxy.ready;
-				const encodedUrl = await proxy.convertURL(
-					proxy.config,
-					proxy.proxySetting,
-					input
-				);
+				let encodedUrl = '';
+				let resolvedUrl = '';
+				let isSearch = false;
+
+				switch (isInternalTarget) {
+					case true:
+						break;
+					default: {
+						await proxy!.ready;
+						resolvedUrl = proxy!.search(nextInput);
+						isSearch = !isLikelyUrlInput(nextInput);
+						encodedUrl = await proxy!.convertURL(
+							proxy!.config,
+							proxy!.proxySetting,
+							nextInput
+						);
+					}
+				}
+
 				const idx = rawSessions.current.findIndex(
 					session => session.id === sessionId
 				);
@@ -152,11 +262,70 @@ const App = () => {
 					default:
 						break;
 				}
+
+				const customSavedGame = findSavedGameByUrl(
+					savedGamesState,
+					resolvedUrl
+				);
+				const nextEntry = createSessionHistoryEntry(
+					isInternalTarget ? newTabUrl : resolvedUrl,
+					{
+						...options,
+						kind: isInternalTarget
+							? 'internal'
+							: options.kind ?? (isSearch ? 'search' : 'app'),
+						librarySource: customSavedGame
+							? 'custom'
+							: options.librarySource ?? null
+					}
+				);
+
+				setSessionHistoryMap(previousState => {
+					const currentState =
+						previousState[sessionId] ?? createInitialSessionHistory();
+					const nextState =
+						historyMode === 'sync'
+							? syncSessionHistoryEntry(currentState, nextEntry)
+							: pushSessionHistoryEntry(currentState, nextEntry);
+
+					return {
+						...previousState,
+						[sessionId]: nextState
+					};
+				});
+
+				switch (isSearch && Boolean(options.recordSearch)) {
+					case true:
+						setPlaybackState(previousState => ({
+							...previousState,
+							searches: pushPlaybackSearchEntry(
+								previousState.searches,
+								nextInput,
+								resolvedUrl
+							)
+						}));
+						break;
+					default:
+						break;
+				}
+
+				switch (nextEntry.kind) {
+					case 'game':
+					case 'app':
+						recordSessionVisit(nextEntry);
+						break;
+					default:
+						break;
+				}
 			} catch (error) {
 				console.error('[App] Session navigation failed', error);
 			}
 		},
-		[]
+		[
+			recordSessionVisit,
+			savedGamesState,
+			setPlaybackState
+		]
 	);
 
 	useEffect(() => {
@@ -183,17 +352,116 @@ const App = () => {
 					const nextId = nextIdRef.current++;
 					rawSessions.current.push({ id: nextId, url: '' });
 					setSessions([...rawSessions.current]);
+					setSessionHistoryMap(previousState => ({
+						...previousState,
+						[nextId]: createInitialSessionHistory()
+					}));
 					setActiveSession(nextId);
 					navigate('/');
-					void navigateSession(nextId, nextUrl);
+					void navigateSession(nextId, nextUrl, {
+						title: detail.title,
+						image: detail.image,
+						tags: detail.tags,
+						kind: detail.kind,
+						librarySource: detail.librarySource
+					});
 					return;
 				}
 				default:
 					navigate('/');
-					void navigateSession(activeSession, nextUrl);
+					void navigateSession(activeSession, nextUrl, {
+						title: detail.title,
+						image: detail.image,
+						tags: detail.tags,
+						kind: detail.kind,
+						librarySource: detail.librarySource
+					});
 			}
 		},
 		[activeSession, maxSessions, navigate, navigateSession]
+	);
+
+	const handleSessionLocationChange = useCallback(
+		(sessionId: number, url: string, title: string) => {
+			const nextUrl = url.trim();
+
+			switch (nextUrl.length === 0) {
+				case true:
+					return;
+				default:
+					break;
+			}
+
+			const currentState =
+				sessionHistoryMap[sessionId] ?? createInitialSessionHistory();
+			const currentEntry =
+				currentState.entries[currentState.index] ??
+				createSessionHistoryEntry(newTabUrl, { kind: 'internal' });
+			const currentHost = getHostLabel(currentEntry.url);
+			const nextHost = getHostLabel(nextUrl);
+			const customSavedGame = findSavedGameByUrl(savedGamesState, nextUrl);
+			const keepGameState =
+				currentEntry.kind === 'game' &&
+				currentHost === nextHost &&
+				!isRemovedGameUrl(savedGamesState, nextUrl);
+			const keepSearchState =
+				currentEntry.kind === 'search' && currentHost === nextHost;
+			const nextEntry = createSessionHistoryEntry(nextUrl, {
+				title,
+				image: keepGameState ? currentEntry.image : undefined,
+				tags: keepGameState ? currentEntry.tags : [],
+				kind: customSavedGame
+					? 'game'
+					: keepGameState
+						? 'game'
+						: keepSearchState
+							? 'search'
+							: 'app',
+				librarySource: customSavedGame
+					? 'custom'
+					: keepGameState
+						? currentEntry.librarySource
+						: null
+			});
+
+			switch (currentEntry.normalizedUrl === nextEntry.normalizedUrl) {
+				case true:
+					setSessionHistoryMap(previousState => ({
+						...previousState,
+						[sessionId]: syncSessionHistoryEntry(
+							previousState[sessionId] ??
+								createInitialSessionHistory(),
+							nextEntry
+						)
+					}));
+					syncSessionVisit(nextEntry);
+					return;
+				default:
+					setSessionHistoryMap(previousState => ({
+						...previousState,
+						[sessionId]: pushSessionHistoryEntry(
+							previousState[sessionId] ??
+								createInitialSessionHistory(),
+							nextEntry
+						)
+					}));
+
+					switch (nextEntry.kind) {
+						case 'game':
+						case 'app':
+							recordSessionVisit(nextEntry);
+							return;
+						default:
+							return;
+					}
+			}
+		},
+		[
+			recordSessionVisit,
+			savedGamesState,
+			sessionHistoryMap,
+			syncSessionVisit
+		]
 	);
 
 	useEffect(() => {
@@ -211,13 +479,17 @@ const App = () => {
 				if (iframe.contentWindow === event.source) {
 					const sessionUid = Number(iframe.dataset.sessionUid);
 					if (!isNaN(sessionUid)) {
-						navigateSession(sessionUid, url);
+						navigateSession(sessionUid, url, {
+							recordSearch: true
+						});
 					}
 					return;
 				}
 			}
 
-			navigateSession(activeSession, url);
+			navigateSession(activeSession, url, {
+				recordSearch: true
+			});
 		};
 
 		window.addEventListener('message', handleMessage);
@@ -262,11 +534,21 @@ const App = () => {
 	};
 
 	const handleAddSession = () => {
-		if (rawSessions.current.length >= maxSessions) return;
+		switch (rawSessions.current.length >= maxSessions) {
+			case true:
+				return;
+			default:
+				break;
+		}
+
 		const newId = nextIdRef.current++;
 		const entry: Session = { id: newId, url: '' };
 		rawSessions.current.push(entry);
 		setSessions([...rawSessions.current]);
+		setSessionHistoryMap(previousState => ({
+			...previousState,
+			[newId]: createInitialSessionHistory()
+		}));
 		setActiveSession(newId);
 		navigate('/');
 	};
@@ -298,6 +580,24 @@ const App = () => {
 		}
 
 		setSessions([...rawSessions.current]);
+		setSessionHistoryMap(previousState => {
+			const nextState = { ...previousState };
+			delete nextState[id];
+
+			switch (rawSessions.current.length === 1) {
+				case true: {
+					const fallbackSession = rawSessions.current[0];
+					nextState[fallbackSession.id] =
+						nextState[fallbackSession.id] ??
+						createInitialSessionHistory();
+					break;
+				}
+				default:
+					break;
+			}
+
+			return nextState;
+		});
 		switch (isSpecialPage && activeSession === id) {
 			case true:
 				navigate('/');
@@ -312,6 +612,20 @@ const App = () => {
 		activeItem === 'apps' ||
 		activeItem === 'settings' ||
 		activeItem === 'playback';
+
+	const activeSessionHistory =
+		sessionHistoryMap[activeSession] ?? createInitialSessionHistory();
+	const activeHistoryEntry =
+		activeSessionHistory.entries[activeSessionHistory.index] ??
+		createSessionHistoryEntry(newTabUrl, { kind: 'internal' });
+	const canGoBack = activeSessionHistory.index > 0;
+	const canGoForward =
+		activeSessionHistory.index <
+		activeSessionHistory.entries.length - 1;
+	const gameLibraryStatus = getGameLibraryStatus(
+		activeHistoryEntry,
+		savedGamesState
+	);
 
 	const [switching, setSwitching] = useState(false);
 	const [siblingsOpaque, setSiblingsOpaque] = useState(false);
@@ -365,20 +679,72 @@ const App = () => {
 	}, [sessions, activeSession]);
 
 	const handleIframeBack = useCallback(() => {
-		const iframe = getActiveIframe();
-		if (!iframe?.contentWindow) return;
-		try {
-			iframe.contentWindow.history.back();
-		} catch {}
-	}, [getActiveIframe]);
+		switch (canGoBack) {
+			case false:
+				return;
+			default:
+				break;
+		}
+
+		const nextIndex = activeSessionHistory.index - 1;
+		const nextEntry = activeSessionHistory.entries[nextIndex];
+
+		switch (Boolean(nextEntry)) {
+			case false:
+				return;
+			default:
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: moveSessionHistoryIndex(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextIndex
+					)
+				}));
+				void navigateSession(activeSession, nextEntry!.url, {
+					title: nextEntry!.title,
+					image: nextEntry!.image,
+					tags: nextEntry!.tags,
+					kind: nextEntry!.kind,
+					librarySource: nextEntry!.librarySource,
+					historyMode: 'sync'
+				});
+		}
+	}, [activeSession, activeSessionHistory, canGoBack, navigateSession]);
 
 	const handleIframeForward = useCallback(() => {
-		const iframe = getActiveIframe();
-		if (!iframe?.contentWindow) return;
-		try {
-			iframe.contentWindow.history.forward();
-		} catch {}
-	}, [getActiveIframe]);
+		switch (canGoForward) {
+			case false:
+				return;
+			default:
+				break;
+		}
+
+		const nextIndex = activeSessionHistory.index + 1;
+		const nextEntry = activeSessionHistory.entries[nextIndex];
+
+		switch (Boolean(nextEntry)) {
+			case false:
+				return;
+			default:
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: moveSessionHistoryIndex(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextIndex
+					)
+				}));
+				void navigateSession(activeSession, nextEntry!.url, {
+					title: nextEntry!.title,
+					image: nextEntry!.image,
+					tags: nextEntry!.tags,
+					kind: nextEntry!.kind,
+					librarySource: nextEntry!.librarySource,
+					historyMode: 'sync'
+				});
+		}
+	}, [activeSession, activeSessionHistory, canGoForward, navigateSession]);
 
 	const handleIframeReload = useCallback(() => {
 		const iframe = getActiveIframe();
@@ -402,6 +768,113 @@ const App = () => {
 			}
 		}
 	}, [getActiveIframe, activeSession]);
+
+	const handleToggleSavedGame = useCallback(() => {
+		switch (gameLibraryStatus.canToggle) {
+			case false:
+				return;
+			default:
+				break;
+		}
+
+		const normalizedUrl = activeHistoryEntry.normalizedUrl;
+
+		switch (gameLibraryStatus.isSaved) {
+			case true: {
+				const nextEntry = createSessionHistoryEntry(activeHistoryEntry.url, {
+					...activeHistoryEntry,
+					kind: 'app',
+					librarySource: null
+				});
+
+				setSavedGamesState(previousState => {
+					const nextCustomGames = previousState.customGames.filter(
+						game =>
+							normalizeComparableUrl(game.url) !== normalizedUrl
+					);
+					const nextRemovedGameUrls =
+						gameLibraryStatus.librarySource === 'default'
+							? [
+									...previousState.removedGameUrls.filter(
+										url =>
+											normalizeComparableUrl(url) !==
+											normalizedUrl
+									),
+									activeHistoryEntry.url
+								]
+							: previousState.removedGameUrls.filter(
+									url =>
+										normalizeComparableUrl(url) !==
+										normalizedUrl
+								);
+
+					return {
+						customGames: nextCustomGames,
+						removedGameUrls: nextRemovedGameUrls
+					};
+				});
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: syncSessionHistoryEntry(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextEntry
+					)
+				}));
+				return;
+			}
+			default: {
+				const nextEntry = createSessionHistoryEntry(activeHistoryEntry.url, {
+					...activeHistoryEntry,
+					kind: 'game',
+					librarySource: 'custom'
+				});
+
+				setSavedGamesState(previousState => {
+					const nextCustomGame = buildSavedGameRecord(nextEntry);
+					const nextCustomGames = [
+						nextCustomGame,
+						...previousState.customGames.filter(
+							game =>
+								normalizeComparableUrl(game.url) !==
+								normalizedUrl
+						)
+					];
+
+					return {
+						customGames: nextCustomGames,
+						removedGameUrls: previousState.removedGameUrls.filter(
+							url =>
+								normalizeComparableUrl(url) !== normalizedUrl
+						)
+					};
+				});
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: syncSessionHistoryEntry(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextEntry
+					)
+				}));
+				recordSessionVisit(nextEntry);
+			}
+		}
+	}, [
+		activeHistoryEntry,
+		activeSession,
+		gameLibraryStatus,
+		recordSessionVisit,
+		setSavedGamesState
+	]);
+
+	const handleOpenSettingsPage = useCallback(() => {
+		navigate('/settings');
+	}, [navigate]);
+
+	const handleOpenHistoryPage = useCallback(() => {
+		navigate('/playback');
+	}, [navigate]);
 
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
@@ -487,18 +960,10 @@ const App = () => {
 										className="w-full h-full"
 										style={{
 											borderRadius: 12,
-											border: s.url
-												? '1px solid rgba(255,255,255,0.06)'
-												: 'none',
-											background: s.url
-												? 'rgba(24,20,28,0.65)'
-												: 'transparent',
-											backdropFilter: s.url
-												? 'blur(4px)'
-												: 'none',
-											WebkitBackdropFilter: s.url
-												? 'blur(4px)'
-												: 'none'
+											border: '1px solid rgba(255,255,255,0.06)',
+											background: 'radial-gradient(ellipse at center, transparent 60%, rgba(24,20,28,0.65) 100%)',
+											backdropFilter: 'blur(4px)',
+											WebkitBackdropFilter: 'blur(4px)'
 										}}
 									/>
 								</div>
@@ -615,20 +1080,24 @@ const App = () => {
 							carouselRef={carouselRef}
 							proxyReady={proxyReady}
 							onNavigate={url =>
-								navigateSession(activeSession, url)
+								navigateSession(activeSession, url, {
+									recordSearch: true
+								})
 							}
 							onBack={handleIframeBack}
 							onForward={handleIframeForward}
 							onReload={handleIframeReload}
 							onHome={() => {
-								const idx = rawSessions.current.findIndex(
-									s => s.id === activeSession
-								);
-								if (idx !== -1) {
-									rawSessions.current[idx].url = '';
-									setSessions([...rawSessions.current]);
-								}
+								void navigateSession(activeSession, '');
 							}}
+							canGoBack={canGoBack}
+							canGoForward={canGoForward}
+							onLocationChange={handleSessionLocationChange}
+							onOpenSettings={handleOpenSettingsPage}
+							onOpenHistory={handleOpenHistoryPage}
+							onToggleSavedGame={handleToggleSavedGame}
+							canToggleSavedGame={gameLibraryStatus.canToggle}
+							isSavedGame={gameLibraryStatus.isSaved}
 						/>
 					</>
 				)}

@@ -59,6 +59,14 @@ interface TopBarProps {
 	onForward: () => void;
 	onReload: () => void;
 	onHome: () => void;
+	canGoBack: boolean;
+	canGoForward: boolean;
+	onLocationChange: (sessionId: number, url: string, title: string) => void;
+	onOpenSettings: () => void;
+	onOpenHistory: () => void;
+	onToggleSavedGame: () => void;
+	canToggleSavedGame: boolean;
+	isSavedGame: boolean;
 }
 
 export const TopBar = ({
@@ -70,7 +78,15 @@ export const TopBar = ({
 	onBack,
 	onForward,
 	onReload,
-	onHome
+	onHome,
+	canGoBack,
+	canGoForward,
+	onLocationChange,
+	onOpenSettings,
+	onOpenHistory,
+	onToggleSavedGame,
+	canToggleSavedGame,
+	isSavedGame
 }: TopBarProps) => {
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [inputFocused, setInputFocused] = useState(false);
@@ -202,12 +218,20 @@ export const TopBar = ({
 		timer = window.setTimeout(() => {
 			setDisplayUrl(decoded);
 			if (!inputFocused) setInputValue(stripProtocol(decoded));
+			onLocationChange(activeSession, decoded, '');
 		}, 0);
 
 		return () => {
 			if (timer !== undefined) clearTimeout(timer);
 		};
-	}, [activeSessionData?.url, isOnNewTab, inputFocused, decodeProxyUrl]);
+	}, [
+		activeSession,
+		activeSessionData?.url,
+		isOnNewTab,
+		inputFocused,
+		decodeProxyUrl,
+		onLocationChange
+	]);
 
 	useEffect(() => {
 		let interval: ReturnType<typeof setInterval> | null = null;
@@ -234,11 +258,16 @@ export const TopBar = ({
 					const iframeSrc = iframe.contentWindow?.location.href;
 					if (iframeSrc && iframeSrc !== 'about:blank') {
 						const decoded = decodeProxyUrl(iframeSrc);
+						const title =
+							iframe.contentDocument?.title ||
+							iframe.contentWindow?.document?.title ||
+							'';
 						if (decoded !== displayUrl) {
 							setDisplayUrl(decoded);
 							if (!inputFocused)
 								setInputValue(stripProtocol(decoded));
 						}
+						onLocationChange(activeSession, decoded, title);
 					}
 				} catch {
 					const src = iframe.getAttribute('src') || '';
@@ -248,6 +277,7 @@ export const TopBar = ({
 						if (!inputFocused)
 							setInputValue(stripProtocol(decoded));
 					}
+					onLocationChange(activeSession, decoded, '');
 				}
 			}, 1000);
 		};
@@ -281,7 +311,8 @@ export const TopBar = ({
 		carouselRef,
 		displayUrl,
 		inputFocused,
-		decodeProxyUrl
+		decodeProxyUrl,
+		onLocationChange
 	]);
 
 	useEffect(() => {
@@ -422,10 +453,15 @@ export const TopBar = ({
 				style={pillStyle}
 			>
 				<motion.button
-					whileHover={{ scale: 1.08 }}
-					whileTap={{ scale: 0.94 }}
+					whileHover={canGoBack ? { scale: 1.08 } : {}}
+					whileTap={canGoBack ? { scale: 0.94 } : {}}
 					onClick={onBack}
-					className={iconButtonClass}
+					disabled={!canGoBack}
+					className={`${iconButtonClass} ${
+						canGoBack
+							? ''
+							: 'cursor-default text-zinc-600 hover:text-zinc-600'
+					}`}
 					title="Back"
 				>
 					<ArrowLeft className="w-4 h-4" />
@@ -442,10 +478,15 @@ export const TopBar = ({
 					</motion.div>
 				</motion.button>
 				<motion.button
-					whileHover={{ scale: 1.08 }}
-					whileTap={{ scale: 0.94 }}
+					whileHover={canGoForward ? { scale: 1.08 } : {}}
+					whileTap={canGoForward ? { scale: 0.94 } : {}}
 					onClick={onForward}
-					className={iconButtonClass}
+					disabled={!canGoForward}
+					className={`${iconButtonClass} ${
+						canGoForward
+							? ''
+							: 'cursor-default text-zinc-600 hover:text-zinc-600'
+					}`}
 					title="Forward"
 				>
 					<ArrowRight className="w-4 h-4" />
@@ -721,7 +762,7 @@ export const TopBar = ({
 								damping: 25,
 								mass: 1
 							}}
-							className="absolute right-0 top-full mt-3 w-48 rounded-2xl p-2 flex flex-col gap-1 z-50 pointer-events-auto"
+							className="absolute right-0 top-full mt-3 w-52 rounded-2xl p-2 flex flex-col gap-1 z-50 pointer-events-auto"
 							style={{
 								background: 'rgba(14, 14, 16, 0.75)',
 								border: '1px solid rgba(203, 166, 247, 0.3)',
@@ -733,28 +774,61 @@ export const TopBar = ({
 							}}
 						>
 							{[
-								'Settings',
-								'Extensions',
-								'History',
-								'Downloads'
+								{
+									label: isSavedGame
+										? 'Remove Game from Library'
+										: 'Save Game',
+									action: () => {
+										onToggleSavedGame();
+										setIsMenuOpen(false);
+									},
+									disabled: !canToggleSavedGame
+								},
+								{
+									label: 'History',
+									action: () => {
+										onOpenHistory();
+										setIsMenuOpen(false);
+									},
+									disabled: false
+								},
+								{
+									label: 'Settings',
+									action: () => {
+										onOpenSettings();
+										setIsMenuOpen(false);
+									},
+									disabled: false
+								}
 							].map((item, i) => (
 								<motion.button
-									key={item}
+									key={item.label}
 									initial={{ opacity: 0 }}
 									animate={{ opacity: 1 }}
 									transition={{
 										delay: i * 0.03 + 0.05,
 										duration: 0.15
 									}}
-									whileHover={{
-										background: 'rgba(203, 166, 247, 0.15)',
-										boxShadow:
-											'inset 0 0 8px rgba(203, 166, 247, 0.2)'
-									}}
-									whileTap={{ scale: 0.97 }}
-									className="px-3 py-2 text-sm text-left text-white/80 hover:text-white rounded-xl transition-colors cursor-pointer"
+									whileHover={
+										item.disabled
+											? {}
+											: {
+													background:
+														'rgba(203, 166, 247, 0.15)',
+													boxShadow:
+														'inset 0 0 8px rgba(203, 166, 247, 0.2)'
+												}
+									}
+									whileTap={item.disabled ? {} : { scale: 0.97 }}
+									onClick={item.action}
+									disabled={item.disabled}
+									className={`px-3 py-2 text-sm text-left rounded-xl transition-colors ${
+										item.disabled
+											? 'cursor-default text-white/28'
+											: 'cursor-pointer text-white/80 hover:text-white'
+									}`}
 								>
-									{item}
+									{item.label}
 								</motion.button>
 							))}
 						</motion.div>
