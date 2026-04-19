@@ -467,6 +467,7 @@ export const Sidebar = ({
 					sessions={sessions}
 					activeSession={activeSession}
 					maxSessions={maxSessions}
+					highlightActive={isHome}
 					onSessionChange={onSessionChange}
 					onAddSession={onAddSession}
 					onCloseSession={onCloseSession}

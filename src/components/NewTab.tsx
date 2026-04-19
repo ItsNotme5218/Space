@@ -115,7 +115,6 @@ const PinTile = ({
 	onRemove: (url: string) => void;
 }) => {
 	const [iconFailed, setIconFailed] = useState(false);
-	const hue = hashHue(pin.url);
 	const color = tileColor(pin.url);
 
 	return (
@@ -178,15 +177,12 @@ const PinTile = ({
 				}}
 				className="absolute cursor-pointer flex items-center justify-center"
 				style={{
-					top: 2,
+					top: -2,
 					right: 2,
 					width: 20,
 					height: 20,
 					borderRadius: 10,
-					background: 'rgba(10, 10, 12, 0.88)',
-					border: `1px solid hsla(${hue}, 45%, 60%, 0.5)`,
-					color: 'rgba(255, 255, 255, 0.9)',
-					boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)'
+					color: 'rgba(255, 255, 255, 0.9)'
 				}}
 				title={`Unpin ${pin.name}`}
 				aria-label={`Unpin ${pin.name}`}
@@ -194,8 +190,8 @@ const PinTile = ({
 				<span
 					aria-hidden="true"
 					style={{
-						fontSize: 14,
-						lineHeight: 1,
+						fontSize: 16,
+						lineHeight: 0.75,
 						fontWeight: 700,
 						transform: 'translateY(-1px)'
 					}}

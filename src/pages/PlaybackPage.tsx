@@ -19,9 +19,9 @@ const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
 
 const tabs = [
+	{ id: 'searches', label: 'Searches', icon: SearchIcon },
 	{ id: 'games', label: 'Games', icon: Gamepad2 },
-	{ id: 'apps', label: 'Apps', icon: LayoutGrid },
-	{ id: 'searches', label: 'Searches', icon: SearchIcon }
+	{ id: 'apps', label: 'Apps', icon: LayoutGrid }
 ] as const;
 
 type TabId = (typeof tabs)[number]['id'];
@@ -91,7 +91,7 @@ const openHistoryEntry = (
 		new CustomEvent('space:navigate', {
 			detail: {
 				url: entry.url,
-				target: 'active',
+				target: kind === 'search' ? 'new' : 'active',
 				title: entry.title,
 				image: 'image' in entry ? entry.image : undefined,
 				tags: 'tags' in entry ? entry.tags : [],
@@ -400,7 +400,7 @@ const SearchPanel = ({
 };
 
 export const PlaybackPage = () => {
-	const [active, setActive] = useState<TabId>('games');
+	const [active, setActive] = useState<TabId>('searches');
 	const [playbackState, setPlaybackState] = useLocalStorage(
 		'playbackState',
 		emptyPlaybackState
@@ -454,13 +454,6 @@ export const PlaybackPage = () => {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ ...soft, delay: 0.06 }}
 						className="flex gap-2 p-2.5 rounded-2xl"
-						style={{
-							background: 'rgba(12,10,18,0.5)',
-							border: '1px solid rgba(255,255,255,0.05)',
-							backdropFilter: 'blur(40px)',
-							WebkitBackdropFilter: 'blur(40px)',
-							boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)'
-						}}
 					>
 						{tabs.map(tab => {
 							const Icon = tab.icon;

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { SpaceStars } from './components/SpaceStars';
@@ -26,6 +26,7 @@ import {
 	pushPlaybackSearchEntry,
 	pushSessionHistoryEntry,
 	syncPlaybackMediaEntry,
+	syncPlaybackSearchEntry,
 	syncSessionHistoryEntry,
 	type NavigationMeta,
 	type PlaybackKind,
@@ -227,6 +228,44 @@ const App = () => {
 		[setPlaybackState]
 	);
 
+	const recordSearchVisit = useCallback(
+		(
+			entry: ReturnType<typeof createSessionHistoryEntry>,
+			query = entry.url || entry.title,
+			title = entry.title
+		) => {
+			setPlaybackState(previousState => ({
+				...previousState,
+				searches: pushPlaybackSearchEntry(
+					previousState.searches,
+					query,
+					entry.url,
+					title
+				)
+			}));
+		},
+		[setPlaybackState]
+	);
+
+	const syncSearchVisit = useCallback(
+		(
+			entry: ReturnType<typeof createSessionHistoryEntry>,
+			query: string | null = null,
+			title?: string
+		) => {
+			setPlaybackState(previousState => ({
+				...previousState,
+				searches: syncPlaybackSearchEntry(
+					previousState.searches,
+					query,
+					entry.url,
+					title
+				)
+			}));
+		},
+		[setPlaybackState]
+	);
+
 	const navigateSession = useCallback(
 		async (
 			sessionId: number,
@@ -288,7 +327,7 @@ const App = () => {
 						...options,
 						kind: isInternalTarget
 							? 'internal'
-							: (options.kind ?? (isSearch ? 'search' : 'app')),
+							: (options.kind ?? 'search'),
 						librarySource: customSavedGame
 							? 'custom'
 							: (options.librarySource ?? null)
@@ -310,25 +349,21 @@ const App = () => {
 					};
 				});
 
-				switch (isSearch && Boolean(options.recordSearch)) {
-					case true:
-						setPlaybackState(previousState => ({
-							...previousState,
-							searches: pushPlaybackSearchEntry(
-								previousState.searches,
-								nextInput,
-								resolvedUrl
-							)
-						}));
-						break;
-					default:
-						break;
-				}
-
 				switch (nextEntry.kind) {
 					case 'game':
 					case 'app':
 						recordSessionVisit(nextEntry);
+						break;
+					case 'search':
+						recordSearchVisit(
+							nextEntry,
+							isSearch && Boolean(options.recordSearch)
+								? nextInput
+								: undefined,
+							isSearch && Boolean(options.recordSearch)
+								? nextInput
+								: undefined
+						);
 						break;
 					default:
 						break;
@@ -337,7 +372,7 @@ const App = () => {
 				console.error('[App] Session navigation failed', error);
 			}
 		},
-		[recordSessionVisit, savedGamesState, setPlaybackState]
+		[recordSearchVisit, recordSessionVisit, savedGamesState]
 	);
 
 	useEffect(() => {
@@ -431,7 +466,7 @@ const App = () => {
 						? 'game'
 						: keepSearchState
 							? 'search'
-							: 'app',
+							: 'search',
 				librarySource: customSavedGame
 					? 'custom'
 					: keepGameState
@@ -449,8 +484,14 @@ const App = () => {
 							nextEntry
 						)
 					}));
-					syncSessionVisit(nextEntry);
-					return;
+					switch (nextEntry.kind) {
+						case 'search':
+							syncSearchVisit(nextEntry);
+							return;
+						default:
+							syncSessionVisit(nextEntry);
+							return;
+					}
 				default:
 					setSessionHistoryMap(previousState => ({
 						...previousState,
@@ -466,15 +507,20 @@ const App = () => {
 						case 'app':
 							recordSessionVisit(nextEntry);
 							return;
+						case 'search':
+							recordSearchVisit(nextEntry);
+							return;
 						default:
 							return;
 					}
 			}
 		},
 		[
+			recordSearchVisit,
 			recordSessionVisit,
 			savedGamesState,
 			sessionHistoryMap,
+			syncSearchVisit,
 			syncSessionVisit
 		]
 	);
@@ -665,6 +711,13 @@ const App = () => {
 	const handleSessionSwitch = (id: number) => {
 		switch (id === activeSession) {
 			case true:
+				switch (isSpecialPage) {
+					case true:
+						navigate('/');
+						break;
+					default:
+						break;
+				}
 				return;
 			default:
 				break;
@@ -805,7 +858,7 @@ const App = () => {
 					activeHistoryEntry.url,
 					{
 						...activeHistoryEntry,
-						kind: 'app',
+						kind: 'search',
 						librarySource: null
 					}
 				);
@@ -1009,41 +1062,33 @@ const App = () => {
 					</motion.div>
 				</motion.div>
 
-				<AnimatePresence mode="wait">
-					{isPage && (
-						<motion.div
-							key={location.pathname}
-							initial={{
-								opacity: 0,
-								scale: 0.92,
-								y: 15,
-								filter: 'blur(12px)'
-							}}
-							animate={{
-								opacity: 1,
-								scale: 1,
-								y: 0,
-								filter: 'blur(0px)'
-							}}
-							exit={{
-								opacity: 0,
-								scale: 1.05,
-								y: -15,
-								filter: 'blur(12px)'
-							}}
-							transition={{
-								type: 'spring',
-								stiffness: 280,
-								damping: 26,
-								mass: 1,
-								filter: { duration: 0.2 }
-							}}
-							className="absolute inset-0"
-						>
-							<Outlet />
-						</motion.div>
-					)}
-				</AnimatePresence>
+				{isPage && (
+					<motion.div
+						key={location.pathname}
+						initial={{
+							opacity: 0,
+							scale: 0.96,
+							y: 12,
+							filter: 'blur(10px)'
+						}}
+						animate={{
+							opacity: 1,
+							scale: 1,
+							y: 0,
+							filter: 'blur(0px)'
+						}}
+						transition={{
+							type: 'spring',
+							stiffness: 280,
+							damping: 26,
+							mass: 1,
+							filter: { duration: 0.2 }
+						}}
+						className="absolute inset-0"
+					>
+						<Outlet />
+					</motion.div>
+				)}
 			</div>
 		);
 	};

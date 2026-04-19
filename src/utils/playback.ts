@@ -438,6 +438,19 @@ const createPlaybackMediaEntry = (
 	librarySource: entry.librarySource
 });
 
+const createPlaybackSearchEntry = (
+	query: string,
+	url: string,
+	title?: string
+): PlaybackSearchEntry => ({
+	id: `${normalizeComparableUrl(url)}-${Date.now()}`,
+	title: title?.trim() || query,
+	query,
+	url,
+	timestamp: Date.now(),
+	hostLabel: getHostLabel(url)
+});
+
 export const pushPlaybackMediaEntry = (
 	items: PlaybackMediaEntry[],
 	entry: SessionHistoryEntry
@@ -474,23 +487,17 @@ export const syncPlaybackMediaEntry = (
 		}
 	});
 
-	return hasMatched ? nextItems : items;
+	return hasMatched ? nextItems : pushPlaybackMediaEntry(items, entry);
 };
 
 export const pushPlaybackSearchEntry = (
 	items: PlaybackSearchEntry[],
 	query: string,
-	url: string
+	url: string,
+	title?: string
 ) => {
 	const normalizedUrl = normalizeComparableUrl(url);
-	const nextEntry: PlaybackSearchEntry = {
-		id: `${query.toLowerCase()}-${Date.now()}`,
-		title: query,
-		query,
-		url,
-		timestamp: Date.now(),
-		hostLabel: getHostLabel(url)
-	};
+	const nextEntry = createPlaybackSearchEntry(query, url, title);
 	const filteredItems = items.filter(
 		item =>
 			item.query.toLowerCase() !== query.toLowerCase() &&
@@ -498,4 +505,38 @@ export const pushPlaybackSearchEntry = (
 	);
 
 	return [nextEntry, ...filteredItems].slice(0, maxPlaybackEntries);
+};
+
+export const syncPlaybackSearchEntry = (
+	items: PlaybackSearchEntry[],
+	query: string | null,
+	url: string,
+	title?: string
+) => {
+	const normalizedUrl = normalizeComparableUrl(url);
+	const normalizedQuery = query?.toLowerCase() ?? null;
+	let hasMatched = false;
+	const nextItems = items.map(item => {
+		switch (
+			normalizeComparableUrl(item.url) === normalizedUrl ||
+			(normalizedQuery !== null &&
+				item.query.toLowerCase() === normalizedQuery)
+		) {
+			case true:
+				hasMatched = true;
+				return {
+					...item,
+					title: title?.trim() || item.title,
+					query: query ?? item.query,
+					url,
+					hostLabel: getHostLabel(url)
+				};
+			default:
+				return item;
+		}
+	});
+
+	return hasMatched
+		? nextItems
+		: pushPlaybackSearchEntry(items, query ?? url, url, title);
 };

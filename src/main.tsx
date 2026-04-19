@@ -1,4 +1,4 @@
-import { StrictMode, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { Loading } from './components/Loading.tsx';
@@ -187,46 +187,44 @@ const initShadowApp = async () => {
 	window.doc = shadowRoot;
 
 	createRoot(root).render(
-		<StrictMode>
-			<MemoryRouter initialEntries={['/']}>
-				<Routes>
-					<Route path="/" element={<App />}>
-						<Route
-							path="apps"
-							element={
-								<Suspense fallback={<Loading />}>
-									<AppsPage />
-								</Suspense>
-							}
-						/>
-						<Route
-							path="games"
-							element={
-								<Suspense fallback={<Loading />}>
-									<GamesPage />
-								</Suspense>
-							}
-						/>
-						<Route
-							path="settings"
-							element={
-								<Suspense fallback={<Loading />}>
-									<SettingsPage />
-								</Suspense>
-							}
-						/>
-						<Route
-							path="playback"
-							element={
-								<Suspense fallback={<Loading />}>
-									<PlaybackPage />
-								</Suspense>
-							}
-						/>
-					</Route>
-				</Routes>
-			</MemoryRouter>
-		</StrictMode>
+		<MemoryRouter initialEntries={['/']}>
+			<Routes>
+				<Route path="/" element={<App />}>
+					<Route
+						path="apps"
+						element={
+							<Suspense fallback={<Loading />}>
+								<AppsPage />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="games"
+						element={
+							<Suspense fallback={<Loading />}>
+								<GamesPage />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="settings"
+						element={
+							<Suspense fallback={<Loading />}>
+								<SettingsPage />
+							</Suspense>
+						}
+					/>
+					<Route
+						path="playback"
+						element={
+							<Suspense fallback={<Loading />}>
+								<PlaybackPage />
+							</Suspense>
+						}
+					/>
+				</Route>
+			</Routes>
+		</MemoryRouter>
 	);
 };
 

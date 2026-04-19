@@ -1382,16 +1382,7 @@ export const GamesPage = () => {
 							}
 						>
 							<span
-								className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/70"
-								style={{
-									fontFamily:
-										"'DM Sans', 'Inter', system-ui, sans-serif"
-								}}
-							>
-								{totalGameCount.toLocaleString()}
-							</span>
-							<span
-								className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full"
+								className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full"
 								style={{
 									background: isImportedLoading
 										? '#fbbf24'
@@ -1401,6 +1392,15 @@ export const GamesPage = () => {
 										: '0 0 6px rgba(52,211,153,0.5)'
 								}}
 							/>
+							<span
+								className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/70"
+								style={{
+									fontFamily:
+										"'DM Sans', 'Inter', system-ui, sans-serif"
+								}}
+							>
+								{totalGameCount.toLocaleString()}
+							</span>
 						</div>
 					</motion.header>
 
