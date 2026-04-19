@@ -292,10 +292,8 @@ const waitForIdle = () =>
 		}
 	});
 
-const filterImportedGames = (
-	games: GameItem[],
-	existingIds: Set<string>
-) => games.filter(game => !existingIds.has(game.id));
+const filterImportedGames = (games: GameItem[], existingIds: Set<string>) =>
+	games.filter(game => !existingIds.has(game.id));
 
 const readMappedImportedGamesCache = (existingIds: Set<string>) => {
 	switch (Boolean(cachedImportedGames)) {
@@ -349,7 +347,10 @@ const writeMappedImportedGamesCache = (games: GameItem[]) => {
 	return importedGamesCacheStore
 		.setItem(importedGamesCacheKey, payload)
 		.catch(error => {
-			console.warn('[GamesPage] imported games cache write failed', error);
+			console.warn(
+				'[GamesPage] imported games cache write failed',
+				error
+			);
 		});
 };
 
@@ -423,13 +424,15 @@ const fetchMappedImportedGames = (
 		cachedImportedGames = nextImportedGames;
 		void writeMappedImportedGamesCache(nextImportedGames);
 		return filterImportedGames(nextImportedGames, existingIds);
-	})().catch(error => {
-		importedGamesPromise = null;
-		throw error;
-	}).then(games => {
-		importedGamesPromise = null;
-		return games;
-	});
+	})()
+		.catch(error => {
+			importedGamesPromise = null;
+			throw error;
+		})
+		.then(games => {
+			importedGamesPromise = null;
+			return games;
+		});
 
 	return importedGamesPromise;
 };
@@ -1609,7 +1612,8 @@ export const GamesPage = () => {
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							className="fixed inset-0 z-80"
-							style={{ isolation: 'isolate',
+							style={{
+								isolation: 'isolate',
 								backdropFilter: 'blur(10px)',
 								WebkitBackdropFilter: 'blur(10px)'
 							}}
@@ -1622,7 +1626,6 @@ export const GamesPage = () => {
 									filter: 'blur(100px)'
 								}}
 							/>
-
 
 							<motion.div
 								initial={{ opacity: 0, scale: 0.985, y: 16 }}
@@ -1765,7 +1768,8 @@ export const GamesPage = () => {
 													scrollbarWidth: 'thin',
 													scrollbarColor:
 														'rgba(139,92,246,0.55) rgba(255,255,255,0.06)',
-													overscrollBehavior: 'contain'
+													overscrollBehavior:
+														'contain'
 												}}
 											>
 												<div className="grid content-start gap-3 sm:grid-cols-2">
@@ -1787,7 +1791,6 @@ export const GamesPage = () => {
 																			itemIndex
 																		)
 																	}
-
 																	whileHover={{
 																		cursor: 'pointer',
 																		scale: 0.95
@@ -1819,7 +1822,9 @@ export const GamesPage = () => {
 																		className="h-24 w-full rounded-xl"
 																	/>
 																	<div className="mt-3 truncate text-sm font-semibold text-white/90">
-																		{game.title}
+																		{
+																			game.title
+																		}
 																	</div>
 																	<div className="mt-1 truncate text-[11px] uppercase tracking-[0.2em] text-white/34">
 																		{

@@ -115,6 +115,7 @@ const PinTile = ({
 	onRemove: (url: string) => void;
 }) => {
 	const [iconFailed, setIconFailed] = useState(false);
+	const [hovered, setHovered] = useState(false);
 	const color = tileColor(pin.url);
 
 	return (
@@ -124,16 +125,18 @@ const PinTile = ({
 			exit={{ opacity: 0, scale: 0.85, y: 8 }}
 			transition={{ ...spring, delay: 0.08 + index * 0.018 }}
 			className="relative flex flex-col items-center gap-2 py-2 rounded-xl group"
+			onMouseEnter={() => setHovered(true)}
+			onMouseLeave={() => setHovered(false)}
+			whileHover={{ scale: 1.05, y: -2 }}
 		>
 			<motion.button
-				whileHover={{ scale: 1.05, y: -2 }}
 				whileTap={{ scale: 0.95 }}
 				onClick={() => onOpen(pin.url)}
 				className="w-14 h-14 rounded-[14px] flex items-center justify-center relative overflow-hidden cursor-pointer"
 				style={{
 					border: `1px solid rgba(255, 255, 255, 0.06)`
 				}}
-				title={`${getPinHostname(pin.url)} — open shortcut`}
+				title={`${getPinHostname(pin.url)} - open shortcut`}
 			>
 				{iconFailed ? (
 					<span
@@ -169,6 +172,11 @@ const PinTile = ({
 			</span>
 
 			<motion.button
+				animate={{
+					opacity: hovered ? 1 : 0,
+					scale: hovered ? 1 : 0.6
+				}}
+				transition={{ duration: 0.15 }}
 				whileHover={{ scale: 1.12 }}
 				whileTap={{ scale: 0.92 }}
 				onClick={e => {
@@ -475,7 +483,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 						fontWeight: 400
 					}}
 				>
-					{greeting.toLowerCase()}
+					{greeting}
 				</motion.span>
 			</motion.div>
 
@@ -553,10 +561,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				style={{ maxWidth: 560 }}
 			>
 				<div
-					className="grid gap-1"
-					style={{
-						gridTemplateColumns: 'repeat(6, minmax(0, 1fr))'
-					}}
+					className="flex flex-wrap justify-center gap-4"
 				>
 					<AnimatePresence mode="popLayout">
 						{pins.map((pin, i) => (
