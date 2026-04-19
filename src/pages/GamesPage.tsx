@@ -91,6 +91,14 @@ const glassStyle = {
 	backdropFilter: 'blur(24px)',
 	WebkitBackdropFilter: 'blur(24px)'
 };
+const pillStyle = {
+	background: 'rgba(14, 14, 16, 0.65)',
+	border: '1px solid rgba(45, 45, 58, 0.5)',
+	boxShadow:
+		'0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
+	backdropFilter: 'blur(4px)',
+	WebkitBackdropFilter: 'blur(4px)'
+};
 const buttonStyle = {
 	background: 'rgba(12,10,18,0.5)',
 	border: '1px solid rgba(255,255,255,0.05)',
@@ -205,7 +213,11 @@ const normalizeTagValue = (tag: string) => {
 };
 
 const inferGameTags = (game: RawGame) => {
-	const sourceValues = [game.name ?? '', game.url ?? '', ...(game.tags ?? [])];
+	const sourceValues = [
+		game.name ?? '',
+		game.url ?? '',
+		...(game.tags ?? [])
+	];
 	const nextTags: string[] = [];
 
 	for (const value of sourceValues) {
@@ -433,9 +445,7 @@ const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 	}, [image]);
 
 	return (
-		<div
-			className={`relative overflow-hidden ${className}`}
-		>
+		<div className={`relative overflow-hidden ${className}`}>
 			{hasLoadedImage ? (
 				<img
 					src={image}
@@ -450,9 +460,7 @@ const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 				<div className="absolute inset-0 animate-pulse bg-white/6" />
 			)}
 
-			<div
-				className="absolute inset-0 flex flex-col items-start justify-end p-4"
-			>
+			<div className="absolute inset-0 flex flex-col items-start justify-end p-4">
 				<div className="mt-2 max-w-full truncate text-sm font-semibold text-white/92">
 					{title}
 				</div>
@@ -489,7 +497,7 @@ const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
 						? 'rgba(168,85,247,0.22)'
 						: game.source === 'saved'
 							? 'rgba(56,189,248,0.2)'
-						: 'rgba(255,255,255,0.1)'
+							: 'rgba(255,255,255,0.1)'
 				}`
 			}}
 		>
@@ -521,13 +529,13 @@ const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
 										? 'rgba(168,85,247,0.14)'
 										: game.source === 'saved'
 											? 'rgba(56,189,248,0.14)'
-										: 'rgba(255,255,255,0.08)',
+											: 'rgba(255,255,255,0.08)',
 								color:
 									game.source === 'imported'
 										? 'rgba(233,213,255,0.92)'
 										: game.source === 'saved'
 											? 'rgba(186,230,253,0.92)'
-										: 'rgba(255,255,255,0.54)'
+											: 'rgba(255,255,255,0.54)'
 							}}
 						>
 							{game.source}
@@ -1320,88 +1328,73 @@ export const GamesPage = () => {
 
 	return (
 		<div className="h-full w-full overflow-y-auto">
-			<div className="min-h-full px-10 pt-16 pb-24">
+			<div className="min-h-full px-10 pt-6 pb-24">
 				<div className="mx-auto max-w-[1500px] space-y-8">
 					<motion.header
 						initial={false}
 						animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
 						transition={{ duration: 0.25 }}
-						className="space-y-6"
+						className="mx-auto flex w-full max-w-2xl items-center gap-2"
 					>
-						<div className="space-y-3 text-center">
-							<h1 className="text-3xl font-bold tracking-tight text-white/94 md:text-4xl">
-								Games
-								<span className="ml-2 text-base font-normal text-white/40">
-									({totalGameCount.toLocaleString()})
-								</span>
-							</h1>
-							<p className="mx-auto max-w-2xl text-base text-white/25">
-								Search the library, skim the shelves, and launch
-								games directly into the browser tab.
-							</p>
-						</div>
-
-						<div className="mx-auto grid w-full max-w-3xl gap-3 sm:grid-cols-3">
-							<div
-								className="rounded-2xl px-4 py-3"
-								style={glassStyle}
-							>
-								<div className="text-[11px] uppercase tracking-[0.22em] text-white/34">
-									Local
-								</div>
-								<div className="mt-2 text-2xl font-semibold text-white/92">
-									{visibleLocalGames.length.toLocaleString()}
-								</div>
-							</div>
-							<div
-								className="rounded-2xl px-4 py-3"
-								style={glassStyle}
-							>
-								<div className="text-[11px] uppercase tracking-[0.22em] text-white/34">
-									Imported
-								</div>
-								<div className="mt-2 text-2xl font-semibold text-white/92">
-									{visibleImportedGames.length.toLocaleString()}
-								</div>
-							</div>
-							<div
-								className="rounded-2xl px-4 py-3"
-								style={glassStyle}
-							>
-								<div className="text-[11px] uppercase tracking-[0.22em] text-white/34">
-									Status
-								</div>
-								<div className="mt-2 text-sm font-medium text-white/74">
-									{isImportedLoading
-										? 'Loading imports'
-										: 'Ready'}
-								</div>
-							</div>
-						</div>
-
 						<div
-							className="mx-auto flex w-full max-w-3xl items-center gap-3 rounded-xl px-5 py-3"
-							style={glassStyle}
+							className="flex flex-1 items-center gap-3 rounded-full px-4 h-10"
+							style={pillStyle}
 						>
-							<Search className="h-4 w-4 text-white/42" />
+							<Search className="h-4 w-4 text-white/40" />
 							<input
 								value={searchValue}
 								onChange={event => {
 									setSearchValue(event.target.value);
 									setViewAllCategory(null);
 								}}
-								placeholder="Search titles, tags, source, or URL"
+								placeholder="Search games"
 								spellCheck={false}
-								className="w-full bg-transparent text-sm text-white/88 outline-none placeholder:text-white/34"
+								className="w-full bg-transparent text-[13px] text-white/85 outline-none placeholder:text-white/30"
+								style={{
+									fontFamily:
+										"'DM Sans', 'Inter', system-ui, sans-serif",
+									letterSpacing: '0.01em',
+									caretColor: '#8b5cf6'
+								}}
 							/>
 							{searchValue ? (
 								<button
 									onClick={() => setSearchValue('')}
-									className="flex h-8 w-8 items-center justify-center rounded-full text-white/46 transition-colors hover:text-white"
+									className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white"
 								>
-									<X className="h-4 w-4" />
+									<X className="h-3.5 w-3.5" />
 								</button>
 							) : null}
+						</div>
+						<div
+							className="flex h-10 items-center rounded-full px-4"
+							style={pillStyle}
+							title={
+								isImportedLoading
+									? 'Loading imported games'
+									: 'Library ready'
+							}
+						>
+							<span
+								className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/70"
+								style={{
+									fontFamily:
+										"'DM Sans', 'Inter', system-ui, sans-serif"
+								}}
+							>
+								{totalGameCount.toLocaleString()}
+							</span>
+							<span
+								className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full"
+								style={{
+									background: isImportedLoading
+										? '#fbbf24'
+										: '#34d399',
+									boxShadow: isImportedLoading
+										? '0 0 6px rgba(251,191,36,0.5)'
+										: '0 0 6px rgba(52,211,153,0.5)'
+								}}
+							/>
 						</div>
 					</motion.header>
 
@@ -1520,7 +1513,7 @@ export const GamesPage = () => {
 								onClick={closeViewer}
 								style={{
 									background: 'rgba(5, 3, 18, 0.92)',
-                  filter: 'blur(100px)',
+									filter: 'blur(100px)',
 									backdropFilter: 'blur(10px)',
 									WebkitBackdropFilter: 'blur(10px)'
 								}}

@@ -120,8 +120,7 @@ export const normalizeComparableUrl = (input: string) => {
 		}
 
 		targetUrl.hash = '';
-		targetUrl.pathname =
-			targetUrl.pathname.replace(/\/+$/, '') || '/';
+		targetUrl.pathname = targetUrl.pathname.replace(/\/+$/, '') || '/';
 
 		return targetUrl.toString();
 	} catch {
@@ -249,7 +248,9 @@ export const createSessionHistoryEntry = (
 };
 
 export const createInitialSessionHistory = (): SessionHistoryState => ({
-	entries: [createSessionHistoryEntry(getDefaultPagePath(), { kind: 'internal' })],
+	entries: [
+		createSessionHistoryEntry(getDefaultPagePath(), { kind: 'internal' })
+	],
 	index: 0
 });
 
@@ -257,18 +258,18 @@ export const mergeSessionHistoryEntry = (
 	currentEntry: SessionHistoryEntry,
 	nextEntry: SessionHistoryEntry
 ) => ({
-		...currentEntry,
-		...nextEntry,
-		url: nextEntry.url || currentEntry.url,
-		title: nextEntry.title || currentEntry.title,
-		image: nextEntry.image || currentEntry.image,
-		tags: nextEntry.tags.length > 0 ? nextEntry.tags : currentEntry.tags,
-		librarySource: nextEntry.librarySource ?? currentEntry.librarySource,
-		kind:
-			nextEntry.kind === 'app' && currentEntry.kind !== 'app'
-				? currentEntry.kind
-				: nextEntry.kind
-	});
+	...currentEntry,
+	...nextEntry,
+	url: nextEntry.url || currentEntry.url,
+	title: nextEntry.title || currentEntry.title,
+	image: nextEntry.image || currentEntry.image,
+	tags: nextEntry.tags.length > 0 ? nextEntry.tags : currentEntry.tags,
+	librarySource: nextEntry.librarySource ?? currentEntry.librarySource,
+	kind:
+		nextEntry.kind === 'app' && currentEntry.kind !== 'app'
+			? currentEntry.kind
+			: nextEntry.kind
+});
 
 export const pushSessionHistoryEntry = (
 	sessionHistory: SessionHistoryState,

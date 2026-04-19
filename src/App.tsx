@@ -31,6 +31,12 @@ import {
 	type PlaybackKind,
 	type SessionHistoryState
 } from './utils/playback';
+import {
+	defaultPins,
+	isPinned as isUrlPinned,
+	togglePin,
+	type PinnedShortcut
+} from './utils/pins';
 
 const maxSessionsLimit = 9;
 
@@ -89,6 +95,9 @@ const App = () => {
 		'playbackState',
 		emptyPlaybackState
 	);
+	const [pinnedShortcuts, setPinnedShortcuts] = useLocalStorage<
+		PinnedShortcut[]
+	>('pinnedShortcuts', defaultPins);
 	const [screenCap, setScreenCap] = useState(getScreenCap);
 	const maxSessions = autoCapSessions
 		? Math.min(screenCap, maxSessionsLimit)
@@ -174,7 +183,10 @@ const App = () => {
 				case 'game':
 					setPlaybackState(previousState => ({
 						...previousState,
-						games: pushPlaybackMediaEntry(previousState.games, entry)
+						games: pushPlaybackMediaEntry(
+							previousState.games,
+							entry
+						)
 					}));
 					return;
 				case 'app':
@@ -196,7 +208,10 @@ const App = () => {
 				case 'game':
 					setPlaybackState(previousState => ({
 						...previousState,
-						games: syncPlaybackMediaEntry(previousState.games, entry)
+						games: syncPlaybackMediaEntry(
+							previousState.games,
+							entry
+						)
 					}));
 					return;
 				case 'app':
@@ -273,16 +288,17 @@ const App = () => {
 						...options,
 						kind: isInternalTarget
 							? 'internal'
-							: options.kind ?? (isSearch ? 'search' : 'app'),
+							: (options.kind ?? (isSearch ? 'search' : 'app')),
 						librarySource: customSavedGame
 							? 'custom'
-							: options.librarySource ?? null
+							: (options.librarySource ?? null)
 					}
 				);
 
 				setSessionHistoryMap(previousState => {
 					const currentState =
-						previousState[sessionId] ?? createInitialSessionHistory();
+						previousState[sessionId] ??
+						createInitialSessionHistory();
 					const nextState =
 						historyMode === 'sync'
 							? syncSessionHistoryEntry(currentState, nextEntry)
@@ -321,11 +337,7 @@ const App = () => {
 				console.error('[App] Session navigation failed', error);
 			}
 		},
-		[
-			recordSessionVisit,
-			savedGamesState,
-			setPlaybackState
-		]
+		[recordSessionVisit, savedGamesState, setPlaybackState]
 	);
 
 	useEffect(() => {
@@ -399,7 +411,10 @@ const App = () => {
 				createSessionHistoryEntry(newTabUrl, { kind: 'internal' });
 			const currentHost = getHostLabel(currentEntry.url);
 			const nextHost = getHostLabel(nextUrl);
-			const customSavedGame = findSavedGameByUrl(savedGamesState, nextUrl);
+			const customSavedGame = findSavedGameByUrl(
+				savedGamesState,
+				nextUrl
+			);
 			const keepGameState =
 				currentEntry.kind === 'game' &&
 				currentHost === nextHost &&
@@ -620,12 +635,17 @@ const App = () => {
 		createSessionHistoryEntry(newTabUrl, { kind: 'internal' });
 	const canGoBack = activeSessionHistory.index > 0;
 	const canGoForward =
-		activeSessionHistory.index <
-		activeSessionHistory.entries.length - 1;
+		activeSessionHistory.index < activeSessionHistory.entries.length - 1;
 	const gameLibraryStatus = getGameLibraryStatus(
 		activeHistoryEntry,
 		savedGamesState
 	);
+	const isOnInternalPage = activeHistoryEntry.kind === 'internal';
+	const canTogglePin =
+		!isOnInternalPage && Boolean(activeHistoryEntry.url.trim());
+	const pinnedState = canTogglePin
+		? isUrlPinned(pinnedShortcuts, activeHistoryEntry.url)
+		: false;
 
 	const [switching, setSwitching] = useState(false);
 	const [siblingsOpaque, setSiblingsOpaque] = useState(false);
@@ -781,11 +801,14 @@ const App = () => {
 
 		switch (gameLibraryStatus.isSaved) {
 			case true: {
-				const nextEntry = createSessionHistoryEntry(activeHistoryEntry.url, {
-					...activeHistoryEntry,
-					kind: 'app',
-					librarySource: null
-				});
+				const nextEntry = createSessionHistoryEntry(
+					activeHistoryEntry.url,
+					{
+						...activeHistoryEntry,
+						kind: 'app',
+						librarySource: null
+					}
+				);
 
 				setSavedGamesState(previousState => {
 					const nextCustomGames = previousState.customGames.filter(
@@ -824,11 +847,14 @@ const App = () => {
 				return;
 			}
 			default: {
-				const nextEntry = createSessionHistoryEntry(activeHistoryEntry.url, {
-					...activeHistoryEntry,
-					kind: 'game',
-					librarySource: 'custom'
-				});
+				const nextEntry = createSessionHistoryEntry(
+					activeHistoryEntry.url,
+					{
+						...activeHistoryEntry,
+						kind: 'game',
+						librarySource: 'custom'
+					}
+				);
 
 				setSavedGamesState(previousState => {
 					const nextCustomGame = buildSavedGameRecord(nextEntry);
@@ -844,8 +870,7 @@ const App = () => {
 					return {
 						customGames: nextCustomGames,
 						removedGameUrls: previousState.removedGameUrls.filter(
-							url =>
-								normalizeComparableUrl(url) !== normalizedUrl
+							url => normalizeComparableUrl(url) !== normalizedUrl
 						)
 					};
 				});
@@ -868,13 +893,24 @@ const App = () => {
 		setSavedGamesState
 	]);
 
-	const handleOpenSettingsPage = useCallback(() => {
-		navigate('/settings');
-	}, [navigate]);
-
-	const handleOpenHistoryPage = useCallback(() => {
-		navigate('/playback');
-	}, [navigate]);
+	const handleTogglePin = useCallback(() => {
+		switch (canTogglePin) {
+			case false:
+				return;
+			default:
+				setPinnedShortcuts(previous =>
+					togglePin(previous, {
+						url: activeHistoryEntry.url,
+						name: activeHistoryEntry.title
+					})
+				);
+		}
+	}, [
+		activeHistoryEntry.title,
+		activeHistoryEntry.url,
+		canTogglePin,
+		setPinnedShortcuts
+	]);
 
 	const renderMainContent = () => {
 		const isPage = isSpecialPage;
@@ -961,7 +997,8 @@ const App = () => {
 										style={{
 											borderRadius: 12,
 											border: '1px solid rgba(255,255,255,0.06)',
-											background: 'radial-gradient(ellipse at center, transparent 60%, rgba(24,20,28,0.65) 100%)',
+											background:
+												'radial-gradient(ellipse at center, transparent 60%, rgba(24,20,28,0.65) 100%)',
 											backdropFilter: 'blur(4px)',
 											WebkitBackdropFilter: 'blur(4px)'
 										}}
@@ -1093,11 +1130,12 @@ const App = () => {
 							canGoBack={canGoBack}
 							canGoForward={canGoForward}
 							onLocationChange={handleSessionLocationChange}
-							onOpenSettings={handleOpenSettingsPage}
-							onOpenHistory={handleOpenHistoryPage}
 							onToggleSavedGame={handleToggleSavedGame}
 							canToggleSavedGame={gameLibraryStatus.canToggle}
 							isSavedGame={gameLibraryStatus.isSaved}
+							onTogglePin={handleTogglePin}
+							canTogglePin={canTogglePin}
+							isPinned={pinnedState}
 						/>
 					</>
 				)}

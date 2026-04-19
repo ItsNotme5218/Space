@@ -1,99 +1,256 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import {
 	readSetting,
 	writeSetting,
 	cache,
-	subscribe
+	subscribe,
+	useLocalStorage
 } from '../hooks/useLocalStorage';
+import {
+	defaultPins,
+	getPinHostname,
+	addPin,
+	removePin,
+	isPinned,
+	pinLimit,
+	type PinnedShortcut
+} from '../utils/pins';
 
 const spring = { type: 'spring' as const, stiffness: 520, damping: 34 };
 const springSoft = { type: 'spring' as const, stiffness: 420, damping: 30 };
 
 const font = "'DM Sans', 'Inter', system-ui, sans-serif";
 
-const shortcuts = [
-	{
-		name: 'YouTube',
-		url: 'https://youtube.com',
-		color: '#FF0000',
-		letter: 'Y'
-	},
-	{
-		name: 'Discord',
-		url: 'https://discord.com',
-		color: '#5865F2',
-		letter: 'D'
-	},
-	{
-		name: 'Reddit',
-		url: 'https://reddit.com',
-		color: '#FF4500',
-		letter: 'R'
-	},
-	{
-		name: 'GitHub',
-		url: 'https://github.com',
-		color: '#8b5cf6',
-		letter: 'G'
-	},
-	{ name: 'Twitch', url: 'https://twitch.tv', color: '#9146FF', letter: 'T' },
-	{ name: 'Twitter', url: 'https://x.com', color: '#1DA1F2', letter: 'X' },
-	{
-		name: 'Netflix',
-		url: 'https://netflix.com',
-		color: '#E50914',
-		letter: 'N'
-	},
-	{
-		name: 'Spotify',
-		url: 'https://spotify.com',
-		color: '#1DB954',
-		letter: 'S'
-	}
-];
+const accent = '#8b5cf6';
 
 const getGreeting = (): string => {
 	const hour = new Date().getHours();
-	if (hour < 5) return 'Good night';
-	if (hour < 12) return 'Good morning';
-	if (hour < 17) return 'Good afternoon';
-	if (hour < 21) return 'Good evening';
-	return 'Good night';
+	switch (true) {
+		case hour < 4:
+			return 'Good Night';
+		case hour < 12:
+			return 'Good Morning';
+		case hour < 17:
+			return 'Good Afternoon';
+		case hour < 21:
+			return 'Good Evening';
+		default:
+			return 'Good Night';
+	}
 };
 
 const readLS = (key: string, fallback: boolean): boolean => {
-	if (cache.has(key)) return cache.get(key) as boolean;
-	return fallback;
-};
-
-const writeLS = (key: string, value: boolean) => {
-	writeSetting(key, value);
+	switch (cache.has(key)) {
+		case true:
+			return cache.get(key) as boolean;
+		default:
+			return fallback;
+	}
 };
 
 const formatTime = (hour12: boolean): { time: string; period: string } => {
 	const now = new Date();
-	if (!hour12) {
-		return {
-			time: now.toLocaleTimeString([], {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			}),
-			period: ''
-		};
+	switch (hour12) {
+		case false:
+			return {
+				time: now.toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit',
+					hour12: false
+				}),
+				period: ''
+			};
+		default: {
+			const h = now.getHours();
+			const m = now.getMinutes();
+			const period = h >= 12 ? 'PM' : 'AM';
+			const h12 = h % 12 || 12;
+			return {
+				time: `${h12}:${m.toString().padStart(2, '0')}`,
+				period
+			};
+		}
 	}
-	const h = now.getHours();
-	const m = now.getMinutes();
-	const period = h >= 12 ? 'PM' : 'AM';
-	const h12 = h % 12 || 12;
-	return { time: `${h12}:${m.toString().padStart(2, '0')}`, period };
 };
+
+const formatDate = (): string => {
+	const now = new Date();
+	return now
+		.toLocaleDateString(undefined, {
+			weekday: 'long',
+			month: 'long',
+			day: 'numeric'
+		})
+		.toUpperCase();
+};
+
+const faviconUrl = (url: string): string =>
+	`https://www.google.com/s2/favicons?domain=${encodeURIComponent(getPinHostname(url))}&sz=64`;
+
+const hashHue = (input: string): number => {
+	let hash = 0;
+	for (let i = 0; i < input.length; i++) {
+		hash = (hash * 31 + input.charCodeAt(i)) | 0;
+	}
+	return Math.abs(hash) % 360;
+};
+
+const tileColor = (url: string): string => `hsl(${hashHue(url)}, 60%, 62%)`;
 
 interface NewTabProps {
 	onNavigate?: (url: string) => void;
 }
+
+const PinTile = ({
+	pin,
+	index,
+	onOpen,
+	onRemove
+}: {
+	pin: PinnedShortcut;
+	index: number;
+	onOpen: (url: string) => void;
+	onRemove: (url: string) => void;
+}) => {
+	const [iconFailed, setIconFailed] = useState(false);
+	const hue = hashHue(pin.url);
+	const color = tileColor(pin.url);
+
+	return (
+		<motion.div
+			initial={{ opacity: 0, scale: 0.85, y: 8 }}
+			animate={{ opacity: 1, scale: 1, y: 0 }}
+			exit={{ opacity: 0, scale: 0.85, y: 8 }}
+			transition={{ ...spring, delay: 0.08 + index * 0.018 }}
+			className="relative flex flex-col items-center gap-2 py-2 rounded-xl group"
+		>
+			<motion.button
+				whileHover={{ scale: 1.05, y: -2 }}
+				whileTap={{ scale: 0.95 }}
+				onClick={() => onOpen(pin.url)}
+				className="w-14 h-14 rounded-[14px] flex items-center justify-center relative overflow-hidden cursor-pointer"
+				style={{
+					border: `1px solid rgba(255, 255, 255, 0.06)`
+				}}
+				title={`${getPinHostname(pin.url)} — open shortcut`}
+			>
+				{iconFailed ? (
+					<span
+						className="text-base font-bold relative z-10"
+						style={{
+							color,
+							fontFamily: font,
+							letterSpacing: '-0.02em'
+						}}
+					>
+						{getPinHostname(pin.url).charAt(0).toUpperCase()}
+					</span>
+				) : (
+					<img
+						src={faviconUrl(pin.url)}
+						alt=""
+						onError={() => setIconFailed(true)}
+						className="relative z-10"
+						style={{ width: 24, height: 24, borderRadius: 5 }}
+					/>
+				)}
+			</motion.button>
+			<span
+				className="text-[10px] leading-none truncate max-w-[72px] text-center uppercase"
+				style={{
+					fontFamily: font,
+					color: 'rgba(255, 255, 255, 0.55)',
+					letterSpacing: '0.08em',
+					fontWeight: 500
+				}}
+			>
+				{pin.name}
+			</span>
+
+			<motion.button
+				whileHover={{ scale: 1.12 }}
+				whileTap={{ scale: 0.92 }}
+				onClick={e => {
+					e.stopPropagation();
+					onRemove(pin.url);
+				}}
+				className="absolute cursor-pointer flex items-center justify-center"
+				style={{
+					top: 2,
+					right: 2,
+					width: 20,
+					height: 20,
+					borderRadius: 10,
+					background: 'rgba(10, 10, 12, 0.88)',
+					border: `1px solid hsla(${hue}, 45%, 60%, 0.5)`,
+					color: 'rgba(255, 255, 255, 0.9)',
+					boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)'
+				}}
+				title={`Unpin ${pin.name}`}
+				aria-label={`Unpin ${pin.name}`}
+			>
+				<span
+					aria-hidden="true"
+					style={{
+						fontSize: 14,
+						lineHeight: 1,
+						fontWeight: 700,
+						transform: 'translateY(-1px)'
+					}}
+				>
+					×
+				</span>
+			</motion.button>
+		</motion.div>
+	);
+};
+
+const AddPinTile = ({ onAdd }: { onAdd: () => void }) => {
+	return (
+		<motion.div
+			initial={{ opacity: 0, scale: 0.85, y: 8 }}
+			animate={{ opacity: 1, scale: 1, y: 0 }}
+			transition={{ ...spring, delay: 0.12 }}
+			className="relative flex flex-col items-center gap-2 py-2 rounded-xl group"
+		>
+			<motion.button
+				type="button"
+				whileHover={{ scale: 1.05, y: -2 }}
+				whileTap={{ scale: 0.95 }}
+				onClick={onAdd}
+				className="w-14 h-14 rounded-[14px] flex items-center justify-center relative"
+				style={{
+					background: 'rgba(14, 14, 18, 0.35)',
+					border: '1px dashed rgba(255, 255, 255, 0.14)',
+					cursor: 'pointer'
+				}}
+				title="Pin a site"
+			>
+				<Plus
+					style={{
+						width: 18,
+						height: 18,
+						color: 'rgba(255, 255, 255, 0.55)'
+					}}
+					strokeWidth={2}
+				/>
+			</motion.button>
+			<span
+				className="text-[10px] leading-none uppercase"
+				style={{
+					fontFamily: font,
+					color: 'rgba(255, 255, 255, 0.4)',
+					letterSpacing: '0.08em',
+					fontWeight: 500
+				}}
+			>
+				Add
+			</span>
+		</motion.div>
+	);
+};
 
 export const NewTab = ({ onNavigate }: NewTabProps) => {
 	const [searchFocused, setSearchFocused] = useState(false);
@@ -104,6 +261,10 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 	);
 	const [timeParts, setTimeParts] = useState(() => formatTime(hour12));
 	const [greeting] = useState(getGreeting);
+	const [pins, setPins] = useLocalStorage<PinnedShortcut[]>(
+		'pinnedShortcuts',
+		defaultPins
+	);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -112,9 +273,13 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				readSetting('clock12h', false),
 				readSetting('clockLock', false)
 			]);
-			if (cancelled) return;
-			setHour12(h12);
-			setLockFormat(lock);
+			switch (cancelled) {
+				case true:
+					return;
+				default:
+					setHour12(h12);
+					setLockFormat(lock);
+			}
 		};
 		load();
 
@@ -141,23 +306,87 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 	}, [hour12]);
 
 	const handleClockClick = () => {
-		if (lockFormat) return;
-		const next = !hour12;
-		setHour12(next);
-		writeLS('clock12h', next);
-		setTimeParts(formatTime(next));
+		switch (lockFormat) {
+			case true:
+				return;
+			default: {
+				const next = !hour12;
+				setHour12(next);
+				writeSetting('clock12h', next);
+				setTimeParts(formatTime(next));
+			}
+		}
 	};
 
 	const handleSearchSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		const query = searchValue.trim();
-		if (!query || !onNavigate) return;
-		onNavigate(query);
+		switch (true) {
+			case query.length === 0:
+			case !onNavigate:
+				return;
+			default:
+				onNavigate!(query);
+		}
 	};
 
-	const handleShortcutClick = (e: React.MouseEvent, url: string) => {
-		e.preventDefault();
+	const handlePinOpen = (url: string) => {
 		onNavigate?.(url);
+	};
+
+	const handlePinRemove = (url: string) => {
+		setPins(previous => removePin(previous, url));
+	};
+
+	const handlePromptPin = () => {
+		switch (pins.length >= pinLimit) {
+			case true:
+				window.alert(
+					`Pin limit reached (${pinLimit}). Unpin a site first.`
+				);
+				return;
+			default:
+				break;
+		}
+
+		const input = window.prompt('Enter a site URL to pin', 'https://');
+
+		switch (input === null) {
+			case true:
+				return;
+			default:
+				break;
+		}
+
+		const trimmed = input.trim();
+
+		switch (trimmed.length === 0) {
+			case false:
+				break;
+			default:
+				window.alert('Enter a valid URL to pin.');
+				return;
+		}
+
+		switch (isPinned(pins, trimmed)) {
+			case true:
+				window.alert('That site is already pinned.');
+				return;
+			default:
+				break;
+		}
+
+		const next = addPin(pins, { url: trimmed });
+
+		switch (next.length > pins.length) {
+			case true:
+				setPins(next);
+				return;
+			default:
+				window.alert(
+					'Could not pin that site. Check the URL and try again.'
+				);
+		}
 	};
 
 	return (
@@ -165,26 +394,42 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 			className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
 			style={{ background: 'transparent' }}
 		>
-			<div
-				className="absolute pointer-events-none"
-				style={{
-					width: 600,
-					height: 600,
-					top: '50%',
-					left: '50%',
-					transform: 'translate(-50%, -55%)',
-					background:
-						'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.06) 0%, rgba(139, 92, 246, 0.02) 40%, transparent 70%)',
-					filter: 'blur(40px)'
-				}}
-			/>
-
 			<motion.div
 				initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
 				animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
 				transition={{ ...springSoft, delay: 0 }}
 				className="flex flex-col items-center mb-8 select-none"
 			>
+				<motion.span
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 0.02, duration: 0.22 }}
+					className="text-[10px] mb-3 flex items-center gap-2"
+					style={{
+						fontFamily: font,
+						color: 'rgba(255, 255, 255, 0.35)',
+						letterSpacing: '0.22em',
+						fontWeight: 500
+					}}
+				>
+					<span
+						style={{
+							display: 'inline-block',
+							width: 16,
+							height: 1,
+							background: 'rgba(139, 92, 246, 0.5)'
+						}}
+					/>
+					{formatDate()}
+					<span
+						style={{
+							display: 'inline-block',
+							width: 16,
+							height: 1,
+							background: 'rgba(139, 92, 246, 0.5)'
+						}}
+					/>
+				</motion.span>
 				<motion.div
 					className="relative"
 					onClick={handleClockClick}
@@ -192,11 +437,12 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 					style={{ cursor: lockFormat ? 'default' : 'pointer' }}
 				>
 					<motion.span
-						className="text-[56px] font-extralight tracking-tight leading-none"
+						className="text-[72px] font-light leading-none"
 						style={{
 							fontFamily: font,
-							color: 'rgba(255, 255, 255, 0.85)',
-							textShadow: '0 0 40px rgba(139, 92, 246, 0.15)'
+							color: 'rgba(255, 255, 255, 0.92)',
+							letterSpacing: '-0.04em',
+							fontVariantNumeric: 'tabular-nums'
 						}}
 					>
 						{timeParts.time}
@@ -209,14 +455,14 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 								animate={{ opacity: 1, filter: 'blur(0px)' }}
 								exit={{ opacity: 0, filter: 'blur(4px)' }}
 								transition={{ duration: 0.2 }}
-								className="absolute text-[18px] font-light tracking-wide"
+								className="absolute text-[14px] font-medium"
 								style={{
 									fontFamily: font,
-									color: 'rgba(255, 255, 255, 0.25)',
+									color: 'rgba(139, 92, 246, 0.7)',
+									letterSpacing: '0.1em',
 									right: 0,
-									bottom: 0,
-									transform:
-										'translate(calc(100% + 6px), -4px)'
+									top: 4,
+									transform: 'translate(calc(100% + 8px), 0)'
 								}}
 							>
 								{timeParts.period}
@@ -228,14 +474,15 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ delay: 0.08, duration: 0.22 }}
-					className="text-sm font-medium tracking-wide mt-1.5"
+					className="text-xs mt-3"
 					style={{
 						fontFamily: font,
-						color: 'rgba(255, 255, 255, 0.3)',
-						letterSpacing: '0.08em'
+						color: 'rgba(255, 255, 255, 0.45)',
+						letterSpacing: '0.14em',
+						fontWeight: 400
 					}}
 				>
-					{greeting}
+					{greeting.toLowerCase()}
 				</motion.span>
 			</motion.div>
 
@@ -250,32 +497,41 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 					<motion.div
 						animate={{
 							boxShadow: searchFocused
-								? '0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 24px rgba(139, 92, 246, 0.12), 0 4px 24px rgba(0, 0, 0, 0.4)'
-								: '0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
+								? '0 0 0 1px rgba(139, 92, 246, 0.45), 0 0 32px rgba(139, 92, 246, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5)'
+								: '0 0 0 1px rgba(255, 255, 255, 0.03), 0 8px 20px rgba(0, 0, 0, 0.35)',
 							borderColor: searchFocused
-								? 'rgba(139, 92, 246, 0.3)'
-								: 'rgba(27, 27, 27, 0.8)'
+								? 'rgba(139, 92, 246, 0.45)'
+								: 'rgba(40, 40, 50, 0.7)'
 						}}
 						transition={{ duration: 0.2 }}
-						className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+						className="flex items-center gap-3 pl-3 pr-2 py-2 rounded-xl"
 						style={{
-							background: 'rgba(14, 14, 16, 0.65)',
-							backdropFilter: 'blur(4px)',
-							WebkitBackdropFilter: 'blur(4px)',
-							border: '1px solid rgba(27, 27, 27, 0.8)'
+							background: 'rgba(12, 12, 16, 0.75)',
+							backdropFilter: 'blur(8px)',
+							WebkitBackdropFilter: 'blur(8px)',
+							border: '1px solid rgba(40, 40, 50, 0.7)'
 						}}
 					>
-						<Search
-							className="shrink-0"
+						<div
+							className="shrink-0 flex items-center justify-center"
 							style={{
-								width: 16,
-								height: 16,
-								color: searchFocused
-									? 'rgba(139, 92, 246, 0.6)'
-									: 'rgba(255, 255, 255, 0.2)',
-								transition: 'color 0.2s'
+								width: 28,
+								height: 28,
+								borderRadius: 8,
+								transition: 'all 0.2s'
 							}}
-						/>
+						>
+							<Search
+								style={{
+									width: 14,
+									height: 14,
+									color: searchFocused
+										? 'rgba(139, 92, 246, 0.9)'
+										: 'rgba(255, 255, 255, 0.35)',
+									transition: 'color 0.2s'
+								}}
+							/>
+						</div>
 						<input
 							type="text"
 							placeholder="Search or enter URL"
@@ -283,37 +539,15 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 							onChange={e => setSearchValue(e.target.value)}
 							onFocus={() => setSearchFocused(true)}
 							onBlur={() => setSearchFocused(false)}
-							className="flex-1 bg-transparent border-none outline-none"
+							className="flex-1 bg-transparent border-none outline-none py-1"
 							style={{
 								fontSize: 14,
 								fontFamily: font,
-								letterSpacing: '0.01em',
-								color: 'rgba(255, 255, 255, 0.75)',
-								caretColor: '#8b5cf6'
+								letterSpacing: '0.005em',
+								color: 'rgba(255, 255, 255, 0.88)',
+								caretColor: accent
 							}}
 						/>
-						<AnimatePresence>
-							{searchValue.trim() && (
-								<motion.button
-									type="submit"
-									initial={{ opacity: 0, scale: 0.8 }}
-									animate={{ opacity: 1, scale: 1 }}
-									exit={{ opacity: 0, scale: 0.8 }}
-									transition={{ duration: 0.12 }}
-									whileHover={{ scale: 1.1 }}
-									whileTap={{ scale: 0.9 }}
-									className="shrink-0 flex items-center justify-center cursor-pointer"
-								>
-									<Search
-										style={{
-											width: 15,
-											height: 15,
-											color: 'rgba(139, 92, 246, 0.7)'
-										}}
-									/>
-								</motion.button>
-							)}
-						</AnimatePresence>
 					</motion.div>
 				</form>
 			</motion.div>
@@ -322,67 +556,27 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				initial={{ opacity: 0, y: 12 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ ...springSoft, delay: 0.08 }}
-				className="mt-8 px-6"
+				className="mt-10 w-full px-6"
+				style={{ maxWidth: 560 }}
 			>
 				<div
-					className="grid gap-2.5"
-					style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
+					className="grid gap-1"
+					style={{
+						gridTemplateColumns: 'repeat(6, minmax(0, 1fr))'
+					}}
 				>
-					{shortcuts.map((shortcut, i) => (
-						<motion.a
-							key={shortcut.name}
-							href={shortcut.url}
-							onClick={e => handleShortcutClick(e, shortcut.url)}
-							initial={{ opacity: 0, scale: 0.85, y: 8 }}
-							animate={{ opacity: 1, scale: 1, y: 0 }}
-							transition={{ ...spring, delay: 0.1 + i * 0.018 }}
-							whileHover={{ scale: 1.06, y: -2 }}
-							whileTap={{ scale: 0.95 }}
-							className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl cursor-pointer group"
-							style={{ textDecoration: 'none' }}
-						>
-							<motion.div
-								className="w-11 h-11 rounded-xl flex items-center justify-center relative overflow-hidden"
-								style={{
-									background: 'rgba(14, 14, 16, 0.65)',
-									border: '1px solid rgba(27, 27, 27, 0.8)',
-									boxShadow:
-										'0 0 8px 1px rgba(255, 255, 255, 0.03), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset'
-								}}
-								whileHover={{
-									boxShadow: `0 0 12px ${shortcut.color}20, 0 0 8px 1px rgba(255, 255, 255, 0.03), 0 0 10px 1px rgba(27, 27, 27, 0.5) inset`
-								}}
-								transition={{ duration: 0.2 }}
-							>
-								<div
-									className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-									style={{
-										background: `radial-gradient(circle at center, ${shortcut.color}12 0%, transparent 70%)`
-									}}
-								/>
-								<span
-									className="text-sm font-bold relative z-10"
-									style={{
-										color: shortcut.color,
-										fontFamily: font,
-										opacity: 0.85
-									}}
-								>
-									{shortcut.letter}
-								</span>
-							</motion.div>
-							<span
-								className="text-[11px] leading-none opacity-35 group-hover:opacity-50 transition-opacity duration-200"
-								style={{
-									fontFamily: font,
-									color: 'white',
-									letterSpacing: '0.02em'
-								}}
-							>
-								{shortcut.name}
-							</span>
-						</motion.a>
-					))}
+					<AnimatePresence mode="popLayout">
+						{pins.map((pin, i) => (
+							<PinTile
+								key={pin.id}
+								pin={pin}
+								index={i}
+								onOpen={handlePinOpen}
+								onRemove={handlePinRemove}
+							/>
+						))}
+					</AnimatePresence>
+					<AddPinTile onAdd={handlePromptPin} />
 				</div>
 			</motion.div>
 		</div>

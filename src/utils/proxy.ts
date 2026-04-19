@@ -147,7 +147,7 @@ class Proxy implements ProxyInterface {
 
 			this.searchVar =
 				(await this.settings.getItem('search')) ||
-				'https://www.duckduckgo.com/?q=%s';
+				'https://search.brave.com/search?q=%s';
 			this.transportVar =
 				(await this.settings.getItem('transports')) || 'libcurl';
 			this.wispUrl =
@@ -213,7 +213,7 @@ class Proxy implements ProxyInterface {
 	search(input: string) {
 		input = input.trim();
 		const searchTemplate =
-			this.searchVar || 'https://www.duckduckgo.com/?q=%s';
+			this.searchVar || 'https://search.brave.com/search?q=%s';
 
 		if (input.includes('.') && input.includes(' ')) {
 			return searchTemplate.replace('%s', encodeURIComponent(input));

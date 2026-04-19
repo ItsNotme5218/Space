@@ -8,7 +8,12 @@ import {
 	Maximize2,
 	Minimize2,
 	MoreVertical,
-	Search
+	Search,
+	Pin,
+	PinOff,
+	Bookmark,
+	BookmarkMinus,
+	LayoutGrid
 } from 'lucide-react';
 import { useLocalStorage, writeSetting } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
@@ -16,10 +21,10 @@ import { spcProtocol } from '../utils/internal-pages';
 import type { Session } from '../App';
 
 const engineOrder = [
+	'Brave',
 	'DuckDuckGo',
 	'Google',
 	'Bing',
-	'Brave',
 	'Yahoo!'
 ] as const;
 
@@ -27,6 +32,7 @@ const searchEngines: Record<
 	string,
 	{ label: string; short: string; color: string; letterColors?: string[] }
 > = {
+	Brave: { label: 'Brave', short: 'brv', color: '#FB542B' },
 	DuckDuckGo: { label: 'DuckDuckGo', short: 'ddg', color: '#DE5833' },
 	Google: {
 		label: 'Google',
@@ -35,7 +41,6 @@ const searchEngines: Record<
 		letterColors: ['#EA4335', '#FBBC05', '#34A853']
 	},
 	Bing: { label: 'Bing', short: 'bng', color: '#00809D' },
-	Brave: { label: 'Brave', short: 'brv', color: '#FB542B' },
 	'Yahoo!': { label: 'Yahoo!', short: 'yho', color: '#A24EDE' }
 };
 
@@ -62,11 +67,12 @@ interface TopBarProps {
 	canGoBack: boolean;
 	canGoForward: boolean;
 	onLocationChange: (sessionId: number, url: string, title: string) => void;
-	onOpenSettings: () => void;
-	onOpenHistory: () => void;
 	onToggleSavedGame: () => void;
 	canToggleSavedGame: boolean;
 	isSavedGame: boolean;
+	onTogglePin: () => void;
+	canTogglePin: boolean;
+	isPinned: boolean;
 }
 
 export const TopBar = ({
@@ -82,11 +88,12 @@ export const TopBar = ({
 	canGoBack,
 	canGoForward,
 	onLocationChange,
-	onOpenSettings,
-	onOpenHistory,
 	onToggleSavedGame,
 	canToggleSavedGame,
-	isSavedGame
+	isSavedGame,
+	onTogglePin,
+	canTogglePin,
+	isPinned
 }: TopBarProps) => {
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [inputFocused, setInputFocused] = useState(false);
@@ -96,11 +103,60 @@ export const TopBar = ({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [searchEngine, setSearchEngine] = useLocalStorage(
 		'searchEngine',
-		'DuckDuckGo'
+		'Brave'
 	);
 	const reloadControls = useAnimation();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
+
+	useEffect(() => {
+		switch (isMenuOpen) {
+			case false:
+				return;
+			default:
+				break;
+		}
+
+		const closeMenu = () => {
+			setIsMenuOpen(false);
+		};
+		const handleWindowBlur = () => {
+			window.setTimeout(() => {
+				switch (document.activeElement instanceof HTMLIFrameElement) {
+					case true:
+						closeMenu();
+						break;
+					default:
+						break;
+				}
+			}, 0);
+		};
+		const root = carouselRef.current;
+		const iframes = Array.from(
+			root?.querySelectorAll<HTMLIFrameElement>('iframe') ??
+				document.querySelectorAll<HTMLIFrameElement>(
+					'.iframeContainer iframe'
+				)
+		);
+
+		for (const iframe of iframes) {
+			iframe.addEventListener('pointerdown', closeMenu);
+			iframe.addEventListener('mousedown', closeMenu);
+			iframe.addEventListener('focus', closeMenu);
+		}
+
+		window.addEventListener('blur', handleWindowBlur);
+
+		return () => {
+			window.removeEventListener('blur', handleWindowBlur);
+
+			for (const iframe of iframes) {
+				iframe.removeEventListener('pointerdown', closeMenu);
+				iframe.removeEventListener('mousedown', closeMenu);
+				iframe.removeEventListener('focus', closeMenu);
+			}
+		};
+	}, [carouselRef, isMenuOpen]);
 
 	const engine = searchEngines[searchEngine] || searchEngines.DuckDuckGo;
 
@@ -163,7 +219,9 @@ export const TopBar = ({
 		try {
 			const targetUrl = new URL(proxyUrl, window.location.origin);
 			path = targetUrl.pathname + targetUrl.search + targetUrl.hash;
-		} catch {}
+		} catch {
+			path = proxyUrl;
+		}
 
 		const uvPrefix = window.__uv$config?.prefix || '/u/res/';
 		const scramjetPrefix =
@@ -338,10 +396,10 @@ export const TopBar = ({
 	};
 
 	const searchEngineUrls: Record<string, string> = {
+		Brave: 'https://search.brave.com/search?q=%s',
 		DuckDuckGo: 'https://www.duckduckgo.com/?q=%s',
 		Google: 'https://www.google.com/search?q=%s',
 		Bing: 'https://www.bing.com/search?q=%s',
-		Brave: 'https://search.brave.com/search?q=%s',
 		'Yahoo!': 'https://search.yahoo.com/search?p=%s'
 	};
 
@@ -417,7 +475,9 @@ export const TopBar = ({
 
 	return (
 		<header
-			className="fixed top-0 left-2 right-2 h-10 flex items-center z-40 mt-2 gap-2 pointer-events-none"
+			className={`fixed top-0 left-2 right-2 h-10 flex items-center z-[80] mt-2 gap-2 ${
+				isMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'
+			}`}
 			style={{ position: 'fixed' }}
 		>
 			<motion.div
@@ -704,7 +764,7 @@ export const TopBar = ({
 					boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)`
 				}}
 				transition={{ duration: 0.15 }}
-				className="flex items-center gap-0.5 h-10 rounded-full p-2! relative"
+				className="flex items-center gap-0.5 h-10 rounded-full p-2! relative z-[90]"
 				style={pillStyle}
 				ref={menuRef}
 			>
@@ -734,104 +794,130 @@ export const TopBar = ({
 
 				<AnimatePresence>
 					{isMenuOpen && (
-						<motion.div
-							initial={{
-								opacity: 0,
-								scale: 0.8,
-								y: -15,
-								filter: 'blur(12px)',
-								rotateX: -15
-							}}
-							animate={{
-								opacity: 1,
-								scale: 1,
-								y: 0,
-								filter: 'blur(0px)',
-								rotateX: 0
-							}}
-							exit={{
-								opacity: 0,
-								scale: 0.8,
-								y: -10,
-								filter: 'blur(10px)',
-								rotateX: -10
-							}}
-							transition={{
-								type: 'spring',
-								stiffness: 450,
-								damping: 25,
-								mass: 1
-							}}
-							className="absolute right-0 top-full mt-3 w-52 rounded-2xl p-2 flex flex-col gap-1 z-50 pointer-events-auto"
-							style={{
-								background: 'rgba(14, 14, 16, 0.75)',
-								border: '1px solid rgba(203, 166, 247, 0.3)',
-								boxShadow:
-									'0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(203, 166, 247, 0.1)',
-								backdropFilter: 'blur(16px)',
-								WebkitBackdropFilter: 'blur(16px)',
-								transformOrigin: 'top right'
-							}}
-						>
-							{[
-								{
-									label: isSavedGame
-										? 'Remove Game from Library'
-										: 'Save Game',
-									action: () => {
-										onToggleSavedGame();
-										setIsMenuOpen(false);
+						<>
+							<motion.button
+								type="button"
+								aria-label="Close menu"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								onClick={() => setIsMenuOpen(false)}
+								className="fixed inset-0 z-[85] cursor-default"
+								style={{ background: 'transparent' }}
+							/>
+							<motion.div
+								initial={{
+									opacity: 0,
+									scale: 0.96,
+									y: -8,
+									filter: 'blur(8px)'
+								}}
+								animate={{
+									opacity: 1,
+									scale: 1,
+									y: 0,
+									filter: 'blur(0px)'
+								}}
+								exit={{
+									opacity: 0,
+									scale: 0.96,
+									y: -6,
+									filter: 'blur(6px)'
+								}}
+								transition={{
+									type: 'spring',
+									stiffness: 420,
+									damping: 28
+								}}
+								className="absolute right-0 top-full mt-3 w-56 rounded-2xl p-1.5 flex flex-col z-[95] pointer-events-auto"
+								style={{
+									background: 'rgba(14, 14, 16, 0.72)',
+									border: '1px solid rgba(45, 45, 58, 0.5)',
+									boxShadow:
+										'0 10px 30px rgba(0,0,0,0.5), 0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
+									backdropFilter: 'blur(16px)',
+									WebkitBackdropFilter: 'blur(16px)',
+									transformOrigin: 'top right'
+								}}
+							>
+								{[
+									{
+										label: isPinned
+											? 'Unpin from New Tab'
+											: 'Pin to New Tab',
+										icon: isPinned ? PinOff : Pin,
+										action: () => {
+											onTogglePin();
+											setIsMenuOpen(false);
+										},
+										disabled: !canTogglePin
 									},
-									disabled: !canToggleSavedGame
-								},
-								{
-									label: 'History',
-									action: () => {
-										onOpenHistory();
-										setIsMenuOpen(false);
+									{
+										label: isSavedGame
+											? 'Remove from Games'
+											: 'Save as Game',
+										icon: isSavedGame
+											? BookmarkMinus
+											: Bookmark,
+										action: () => {
+											onToggleSavedGame();
+											setIsMenuOpen(false);
+										},
+										disabled: !canToggleSavedGame
 									},
-									disabled: false
-								},
-								{
-									label: 'Settings',
-									action: () => {
-										onOpenSettings();
-										setIsMenuOpen(false);
-									},
-									disabled: false
-								}
-							].map((item, i) => (
-								<motion.button
-									key={item.label}
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									transition={{
-										delay: i * 0.03 + 0.05,
-										duration: 0.15
-									}}
-									whileHover={
-										item.disabled
-											? {}
-											: {
-													background:
-														'rgba(203, 166, 247, 0.15)',
-													boxShadow:
-														'inset 0 0 8px rgba(203, 166, 247, 0.2)'
-												}
+									{
+										label: 'Save as App',
+										icon: LayoutGrid,
+										action: () => {},
+										disabled: true,
+										hint: 'Coming soon'
 									}
-									whileTap={item.disabled ? {} : { scale: 0.97 }}
-									onClick={item.action}
-									disabled={item.disabled}
-									className={`px-3 py-2 text-sm text-left rounded-xl transition-colors ${
-										item.disabled
-											? 'cursor-default text-white/28'
-											: 'cursor-pointer text-white/80 hover:text-white'
-									}`}
-								>
-									{item.label}
-								</motion.button>
-							))}
-						</motion.div>
+								].map((item, i) => {
+									const Icon = item.icon;
+									return (
+										<motion.button
+											key={item.label}
+											initial={{ opacity: 0, x: -4 }}
+											animate={{ opacity: 1, x: 0 }}
+											transition={{
+												delay: i * 0.025 + 0.03,
+												duration: 0.14
+											}}
+											whileHover={
+												item.disabled
+													? {}
+													: {
+															background:
+																'rgba(255, 255, 255, 0.05)'
+														}
+											}
+											whileTap={
+												item.disabled
+													? {}
+													: { scale: 0.98 }
+											}
+											onClick={item.action}
+											disabled={item.disabled}
+											className={`flex items-center gap-2.5 px-3 py-2.5 text-sm text-left rounded-xl transition-colors ${
+												item.disabled
+													? 'cursor-default text-white/25'
+													: 'cursor-pointer text-white/80 hover:text-white'
+											}`}
+										>
+											<Icon className="w-4 h-4 shrink-0" />
+											<span className="flex-1">
+												{item.label}
+											</span>
+											{item.hint && (
+												<span className="text-[10px] uppercase tracking-wider text-white/25">
+													{item.hint}
+												</span>
+											)}
+										</motion.button>
+									);
+								})}
+							</motion.div>
+						</>
 					)}
 				</AnimatePresence>
 			</motion.div>

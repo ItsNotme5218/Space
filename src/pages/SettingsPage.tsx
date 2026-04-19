@@ -1011,10 +1011,10 @@ const transportKeyMap: Record<string, string> = {
 };
 
 const searchEngineUrls: Record<string, string> = {
+	Brave: 'https://search.brave.com/search?q=%s',
 	DuckDuckGo: 'https://www.duckduckgo.com/?q=%s',
 	Google: 'https://www.google.com/search?q=%s',
 	Bing: 'https://www.bing.com/search?q=%s',
-	Brave: 'https://search.brave.com/search?q=%s',
 	'Yahoo!': 'https://search.yahoo.com/search?p=%s'
 };
 
@@ -1024,7 +1024,7 @@ const ProxyPanel = () => {
 		'transportDisplay',
 		'Libcurl'
 	);
-	const [engine, setEngine] = useLocalStorage('searchEngine', 'DuckDuckGo');
+	const [engine, setEngine] = useLocalStorage('searchEngine', 'Brave');
 
 	const handleProxyChange = (v: string) => {
 		setProxy(v);
@@ -1089,10 +1089,10 @@ const ProxyPanel = () => {
 					<Select
 						value={engine}
 						options={[
+							'Brave',
 							'DuckDuckGo',
 							'Google',
 							'Bing',
-							'Brave',
 							'Yahoo!'
 						]}
 						onChange={handleEngineChange}

@@ -50,13 +50,17 @@ export const Sessions = ({
 		>
 			<div
 				ref={scrollRef}
-				className="flex flex-col items-center p-2 mb-2 pt-0"
+				className="flex flex-col items-center mb-2"
 				style={{
 					overflowY: 'auto',
 					overflowX: 'hidden',
 					scrollbarWidth: 'none',
 					msOverflowStyle: 'none',
-					minHeight: 0
+					minHeight: 0,
+					paddingInline: 20,
+					paddingTop: 0,
+					paddingBottom: 8,
+					marginInline: -12
 				}}
 			>
 				{sessions.map((session, index) => {
