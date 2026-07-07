@@ -1,0 +1,30 @@
+[
+	{
+		"name": "YouTube",
+		"url": "https://www.youtube.com/",
+		"category": "Media",
+		"description": "Watch, upload, and share videos — music, tutorials, live streams, and everything in between.",
+		"confidence": 95
+	},
+	{
+		"name": "GitHub",
+		"url": "https://github.com/",
+		"category": "Developer",
+		"description": "Host and collaborate on code with Git repositories, issues, pull requests, and Actions.",
+		"confidence": 92
+	},
+	{
+		"name": "Instagram",
+		"url": "https://www.instagram.com/",
+		"category": "Social",
+		"description": "Share photos, videos, stories, and reels, and keep up with friends and creators.",
+		"confidence": 74
+	},
+	{
+		"name": "Spotify",
+		"url": "https://open.spotify.com/",
+		"category": "Media",
+		"description": "Stream millions of songs, podcasts, and playlists for every mood and moment.",
+		"confidence": 85
+	}
+]

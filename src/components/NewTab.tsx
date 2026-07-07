@@ -413,23 +413,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 						fontWeight: 500
 					}}
 				>
-					<span
-						style={{
-							display: 'inline-block',
-							width: 16,
-							height: 1,
-							background: 'rgba(139, 92, 246, 0.5)'
-						}}
-					/>
 					{formatDate()}
-					<span
-						style={{
-							display: 'inline-block',
-							width: 16,
-							height: 1,
-							background: 'rgba(139, 92, 246, 0.5)'
-						}}
-					/>
 				</motion.span>
 				<motion.div
 					className="relative"
@@ -560,9 +544,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				className="mt-10 w-full px-6"
 				style={{ maxWidth: 560 }}
 			>
-				<div
-					className="flex flex-wrap justify-center gap-4"
-				>
+				<div className="flex flex-wrap justify-center gap-4">
 					<AnimatePresence mode="popLayout">
 						{pins.map((pin, i) => (
 							<PinTile

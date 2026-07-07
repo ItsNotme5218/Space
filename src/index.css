@@ -36,6 +36,16 @@
 		font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
 	}
 
+	/* Enabled buttons and role="button" elements should always show the
+	   pointer cursor. :where() keeps specificity at zero so any explicit
+	   cursor-* utility or inline style still wins. */
+	button:where(:not(:disabled)),
+	[role='button']:where(:not([aria-disabled='true'])),
+	label:where([for]),
+	summary {
+		cursor: pointer;
+	}
+
 	body {
 		font-family:
 			'Space Grotesk',

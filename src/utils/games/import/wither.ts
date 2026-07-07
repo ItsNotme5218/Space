@@ -32,7 +32,7 @@ class WitherGames {
 			engine:
 				entry.frameType === 'iframe'
 					? 'proxy'
-					: (entry.frameType ?? 'proxy'),
+					: entry.frameType ?? 'proxy',
 			description: entry.description ?? null
 		}));
 

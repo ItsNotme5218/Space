@@ -26,7 +26,7 @@ type StateValue = (typeof states)[keyof typeof states];
 const config = {
 	totalStars: 550,
 	minStars: 0,
-	maxStars: 2500,
+	maxStars: 1800,
 	backgroundStars: 989,
 	galaxyRadius: 750,
 	galaxyTiltX: 0.84,
@@ -145,14 +145,14 @@ const config = {
 		fill: '#050312',
 		vignette: true,
 		vignetteStrength: 0.03,
-		distantStars: 675,
+		distantStars: 460,
 		distantSizeMin: 0.7,
 		distantSizeMax: 1.7,
 		distantAlpha: 0.35,
 		distantTwinkle: 0.0012,
 		distantTwinkleAmp: 0.35,
 		distantDriftSpeed: 0.007,
-		farStars: 275,
+		farStars: 190,
 		farSizeMin: 1.1,
 		farSizeMax: 2.6,
 		farAlpha: 0.2,
@@ -167,11 +167,12 @@ const config = {
 		fadeInDuration: 150
 	},
 	render: {
-		dprCap: 4,
+		dprCap: 2,
 		sortByDepth: true,
-		sortEveryNFrames: 2,
+		sortEveryNFrames: 3,
 		maxDt: 33,
-		motionBlurStrength: 0.25
+		motionBlurStrength: 0.25,
+		nebulaScale: 0.2
 	}
 };
 
@@ -662,11 +663,14 @@ export const SpaceStars = ({
 			centerX = 0,
 			centerY = 0,
 			dpr = 1;
+		let dprLimit = config.render.dprCap;
 		let stars: StarData[] = [];
 		let textPoints: { x: number; y: number }[] = [];
 		let bgDistant: BgStar[] = [];
 		let bgFar: BgStar[] = [];
 		let nebulaBlobs: NebulaBlob[] = [];
+		let nebulaCanvas: HTMLCanvasElement | null = null;
+		let nebulaCtx: CanvasRenderingContext2D | null = null;
 		const spriteCache = new Map<number, HTMLCanvasElement>();
 
 		let currentState: StateValue = states.swirling;
@@ -687,8 +691,8 @@ export const SpaceStars = ({
 			const elapsed = now - lastFpsTime;
 			if (elapsed >= 500) {
 				const currentFps = (frameCount / elapsed) * 1000;
-				if (currentFps < 15 && config.render.dprCap > 1) {
-					dpr = Math.max(1, dpr - 1);
+				if (currentFps < 24 && dprLimit > 0.75) {
+					dprLimit = Math.max(0.75, dprLimit - 0.5);
 					setCanvasSize();
 				}
 				frameCount = 0;
@@ -697,7 +701,7 @@ export const SpaceStars = ({
 		};
 
 		const setCanvasSize = () => {
-			dpr = Math.min(window.devicePixelRatio || 1, config.render.dprCap);
+			dpr = Math.min(window.devicePixelRatio || 1, dprLimit);
 			width = canvas!.clientWidth;
 			height = canvas!.clientHeight;
 			canvas!.width = Math.floor(width * dpr);
@@ -705,6 +709,16 @@ export const SpaceStars = ({
 			ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 			centerX = width / 2;
 			centerY = height / 2;
+
+			if (nebulaCfg.enabled) {
+				const ns = config.render.nebulaScale;
+				if (!nebulaCanvas) {
+					nebulaCanvas = document.createElement('canvas');
+				}
+				nebulaCanvas.width = Math.max(1, Math.floor(width * ns));
+				nebulaCanvas.height = Math.max(1, Math.floor(height * ns));
+				nebulaCtx = nebulaCanvas.getContext('2d');
+			}
 		};
 
 		const drawBgLayer = (
@@ -735,14 +749,26 @@ export const SpaceStars = ({
 			ctx!.restore();
 		};
 
+		// The nebula is rendered into a small offscreen buffer (0.2x) with no
+		// blur filter, then upscaled onto the main canvas. The upscale itself
+		// provides the soft glow, avoiding the extremely expensive per-frame
+		// `ctx.filter = blur()` that dominated frame time.
 		const drawNebula = (now: number, dt: number) => {
 			if (!nebulaCfg.enabled || !nebulaBlobs.length) return;
+			if (!nebulaCanvas || !nebulaCtx) return;
 			const time = now * 0.001;
-			ctx!.save();
-			ctx!.globalCompositeOperation = 'screen';
+			const nctx = nebulaCtx;
+			const ns = config.render.nebulaScale;
 
+			nctx.setTransform(ns, 0, 0, ns, 0, 0);
+			nctx.clearRect(0, 0, width, height);
+			nctx.globalCompositeOperation = 'screen';
+			// Blur the low-res buffer: a small radius here becomes a large
+			// effective blur once the buffer is upscaled, matching the original
+			// full-res filter at a fraction of the cost.
 			const avgBlur = (nebulaCfg.blurMin + nebulaCfg.blurMax) / 2;
-			ctx!.filter = `blur(${avgBlur}px)`;
+			nctx.filter = `blur(${avgBlur * ns}px)`;
+
 			for (let i = 0; i < nebulaBlobs.length; i++) {
 				const b = nebulaBlobs[i];
 				const sizeConf =
@@ -779,9 +805,9 @@ export const SpaceStars = ({
 					Math.sin(time * b.wobSpeed + b.wobPhase) *
 						nebulaCfg.wobbleAmp;
 
-				ctx!.globalAlpha = clamp(a, 0, 1);
+				nctx.globalAlpha = clamp(a, 0, 1);
 				const r = b.baseR * wob;
-				const grad = ctx!.createRadialGradient(
+				const grad = nctx.createRadialGradient(
 					b.x,
 					b.y,
 					0,
@@ -792,11 +818,18 @@ export const SpaceStars = ({
 				grad.addColorStop(0, b.c0);
 				grad.addColorStop(0.55, b.c1);
 				grad.addColorStop(1, 'rgba(0,0,0,0)');
-				ctx!.fillStyle = grad;
-				ctx!.beginPath();
-				ctx!.arc(b.x, b.y, r, 0, Math.PI * 2);
-				ctx!.fill();
+				nctx.fillStyle = grad;
+				nctx.beginPath();
+				nctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+				nctx.fill();
 			}
+
+			ctx!.save();
+			ctx!.globalCompositeOperation = 'screen';
+			ctx!.globalAlpha = 1;
+			ctx!.imageSmoothingEnabled = true;
+			ctx!.imageSmoothingQuality = 'high';
+			ctx!.drawImage(nebulaCanvas, 0, 0, width, height);
 			ctx!.restore();
 		};
 
@@ -1344,7 +1377,13 @@ export const SpaceStars = ({
 			animId = requestAnimationFrame(animate);
 		};
 
-		const handleResize = () => initAll();
+		let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+		const handleResize = () => {
+			if (resizeTimer) clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(() => {
+				if (!stopped) initAll();
+			}, 200);
+		};
 		window.addEventListener('resize', handleResize);
 
 		document.fonts.ready.then(() => {
@@ -1356,6 +1395,7 @@ export const SpaceStars = ({
 		return () => {
 			stopped = true;
 			cancelAnimationFrame(animId);
+			if (resizeTimer) clearTimeout(resizeTimer);
 			window.removeEventListener('resize', handleResize);
 		};
 	}, [mode]);

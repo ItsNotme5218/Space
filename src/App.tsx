@@ -4,6 +4,10 @@ import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { SpaceStars } from './components/SpaceStars';
 import { IntroSplash } from './components/IntroSplash';
+import {
+	SessionOverlay,
+	type SessionLoadStatus
+} from './components/SessionOverlay';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useTabCloak } from './hooks/useTabCloak';
@@ -14,8 +18,10 @@ import {
 	createInitialSessionHistory,
 	createSessionHistoryEntry,
 	emptyPlaybackState,
+	emptySavedAppsState,
 	emptySavedGamesState,
 	findSavedGameByUrl,
+	getAppLibraryStatus,
 	getGameLibraryStatus,
 	getHostLabel,
 	isLikelyUrlInput,
@@ -92,6 +98,10 @@ const App = () => {
 		'savedGamesState',
 		emptySavedGamesState
 	);
+	const [savedAppsState, setSavedAppsState] = useLocalStorage(
+		'savedAppsState',
+		emptySavedAppsState
+	);
 	const [, setPlaybackState] = useLocalStorage(
 		'playbackState',
 		emptyPlaybackState
@@ -122,6 +132,79 @@ const App = () => {
 	}));
 	const [proxyReady, setProxyReady] = useState(false);
 	const proxyRef = useRef<Proxy | null>(null);
+	const [sessionLoad, setSessionLoad] = useState<
+		Record<number, { status: SessionLoadStatus; slow: boolean }>
+	>({});
+	const loadTimersRef = useRef<
+		Record<
+			number,
+			{
+				slow?: ReturnType<typeof setTimeout>;
+				error?: ReturnType<typeof setTimeout>;
+			}
+		>
+	>({});
+
+	const clearSessionLoadTimers = useCallback((id: number) => {
+		const timers = loadTimersRef.current[id];
+		if (!timers) return;
+		if (timers.slow) clearTimeout(timers.slow);
+		if (timers.error) clearTimeout(timers.error);
+		delete loadTimersRef.current[id];
+	}, []);
+
+	const beginSessionLoad = useCallback(
+		(id: number) => {
+			clearSessionLoadTimers(id);
+			setSessionLoad(previous => ({
+				...previous,
+				[id]: { status: 'loading', slow: false }
+			}));
+			const slow = setTimeout(() => {
+				setSessionLoad(previous =>
+					previous[id]?.status === 'loading'
+						? {
+								...previous,
+								[id]: { status: 'loading', slow: true }
+							}
+						: previous
+				);
+			}, 9000);
+			const error = setTimeout(() => {
+				setSessionLoad(previous =>
+					previous[id]?.status === 'loading'
+						? {
+								...previous,
+								[id]: { status: 'error', slow: false }
+							}
+						: previous
+				);
+			}, 30000);
+			loadTimersRef.current[id] = { slow, error };
+		},
+		[clearSessionLoadTimers]
+	);
+
+	const finishSessionLoad = useCallback(
+		(id: number, status: SessionLoadStatus) => {
+			clearSessionLoadTimers(id);
+			setSessionLoad(previous => ({
+				...previous,
+				[id]: { status, slow: false }
+			}));
+		},
+		[clearSessionLoadTimers]
+	);
+
+	useEffect(() => {
+		const timers = loadTimersRef.current;
+		return () => {
+			Object.values(timers).forEach(timer => {
+				if (timer.slow) clearTimeout(timer.slow);
+				if (timer.error) clearTimeout(timer.error);
+			});
+		};
+	}, []);
 
 	const initializeProxy = useCallback(async (proxy: Proxy) => {
 		const activateProxy = async (proxyKey: string) => {
@@ -317,6 +400,15 @@ const App = () => {
 						break;
 				}
 
+				switch (isInternalTarget) {
+					case false:
+						beginSessionLoad(sessionId);
+						break;
+					default:
+						finishSessionLoad(sessionId, 'ready');
+						break;
+				}
+
 				const customSavedGame = findSavedGameByUrl(
 					savedGamesState,
 					resolvedUrl
@@ -327,10 +419,10 @@ const App = () => {
 						...options,
 						kind: isInternalTarget
 							? 'internal'
-							: (options.kind ?? 'search'),
+							: options.kind ?? 'search',
 						librarySource: customSavedGame
 							? 'custom'
-							: (options.librarySource ?? null)
+							: options.librarySource ?? null
 					}
 				);
 
@@ -372,7 +464,13 @@ const App = () => {
 				console.error('[App] Session navigation failed', error);
 			}
 		},
-		[recordSearchVisit, recordSessionVisit, savedGamesState]
+		[
+			beginSessionLoad,
+			finishSessionLoad,
+			recordSearchVisit,
+			recordSessionVisit,
+			savedGamesState
+		]
 	);
 
 	useEffect(() => {
@@ -686,6 +784,10 @@ const App = () => {
 		activeHistoryEntry,
 		savedGamesState
 	);
+	const appLibraryStatus = getAppLibraryStatus(
+		activeHistoryEntry,
+		savedAppsState
+	);
 	const isOnInternalPage = activeHistoryEntry.kind === 'internal';
 	const canTogglePin =
 		!isOnInternalPage && Boolean(activeHistoryEntry.url.trim());
@@ -831,6 +933,8 @@ const App = () => {
 			return;
 		}
 
+		beginSessionLoad(activeSession);
+
 		if (iframe.contentWindow) {
 			try {
 				iframe.contentWindow.location.reload();
@@ -840,7 +944,53 @@ const App = () => {
 				iframe.src = currentSrc;
 			}
 		}
-	}, [getActiveIframe, activeSession]);
+	}, [getActiveIframe, activeSession, beginSessionLoad]);
+
+	const handleSessionRetry = useCallback(
+		(id: number) => {
+			const root = carouselRef.current;
+			const iframe = root?.querySelector<HTMLIFrameElement>(
+				`iframe[data-session-uid="${id}"]`
+			);
+			const data = rawSessions.current.find(s => s.id === id);
+			const target = data?.url || newTabUrl;
+			beginSessionLoad(id);
+			if (iframe) {
+				iframe.src = target;
+			}
+		},
+		[beginSessionLoad]
+	);
+
+	const handleSessionHome = useCallback(
+		(id: number) => {
+			finishSessionLoad(id, 'ready');
+			void navigateSession(id, '');
+		},
+		[finishSessionLoad, navigateSession]
+	);
+
+	const handleSessionReport = useCallback(
+		(id: number) => {
+			const history =
+				sessionHistoryMap[id] ?? createInitialSessionHistory();
+			const entry = history.entries[history.index];
+			const url = entry?.url || '';
+			const title = `Broken page: ${entry?.title || getHostLabel(url)}`;
+			const body = [
+				`URL: ${url}`,
+				`Proxy: ${proxyRef.current?.proxySetting ?? 'unknown'}`,
+				'',
+				'What went wrong?'
+			].join('\n');
+			const query = new URLSearchParams({ title, body });
+			window.open(
+				`https://github.com/crllect/space-v2/issues/new?${query.toString()}`,
+				'_blank'
+			);
+		},
+		[sessionHistoryMap]
+	);
 
 	const handleToggleSavedGame = useCallback(() => {
 		switch (gameLibraryStatus.canToggle) {
@@ -946,6 +1096,109 @@ const App = () => {
 		setSavedGamesState
 	]);
 
+	const handleToggleSavedApp = useCallback(() => {
+		switch (appLibraryStatus.canToggle) {
+			case false:
+				return;
+			default:
+				break;
+		}
+
+		const normalizedUrl = activeHistoryEntry.normalizedUrl;
+
+		switch (appLibraryStatus.isSaved) {
+			case true: {
+				const nextEntry = createSessionHistoryEntry(
+					activeHistoryEntry.url,
+					{
+						...activeHistoryEntry,
+						kind: 'search',
+						librarySource: null
+					}
+				);
+
+				setSavedAppsState(previousState => {
+					const nextCustomApps = previousState.customApps.filter(
+						app => normalizeComparableUrl(app.url) !== normalizedUrl
+					);
+					const nextRemovedAppUrls =
+						appLibraryStatus.librarySource === 'default'
+							? [
+									...previousState.removedAppUrls.filter(
+										url =>
+											normalizeComparableUrl(url) !==
+											normalizedUrl
+									),
+									activeHistoryEntry.url
+								]
+							: previousState.removedAppUrls.filter(
+									url =>
+										normalizeComparableUrl(url) !==
+										normalizedUrl
+								);
+
+					return {
+						customApps: nextCustomApps,
+						removedAppUrls: nextRemovedAppUrls
+					};
+				});
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: syncSessionHistoryEntry(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextEntry
+					)
+				}));
+				return;
+			}
+			default: {
+				const nextEntry = createSessionHistoryEntry(
+					activeHistoryEntry.url,
+					{
+						...activeHistoryEntry,
+						kind: 'app',
+						librarySource: 'custom'
+					}
+				);
+
+				setSavedAppsState(previousState => {
+					const nextCustomApp = buildSavedGameRecord(nextEntry);
+					const nextCustomApps = [
+						nextCustomApp,
+						...previousState.customApps.filter(
+							app =>
+								normalizeComparableUrl(app.url) !==
+								normalizedUrl
+						)
+					];
+
+					return {
+						customApps: nextCustomApps,
+						removedAppUrls: previousState.removedAppUrls.filter(
+							url => normalizeComparableUrl(url) !== normalizedUrl
+						)
+					};
+				});
+				setSessionHistoryMap(previousState => ({
+					...previousState,
+					[activeSession]: syncSessionHistoryEntry(
+						previousState[activeSession] ??
+							createInitialSessionHistory(),
+						nextEntry
+					)
+				}));
+				recordSessionVisit(nextEntry);
+			}
+		}
+	}, [
+		activeHistoryEntry,
+		activeSession,
+		appLibraryStatus,
+		recordSessionVisit,
+		setSavedAppsState
+	]);
+
 	const handleTogglePin = useCallback(() => {
 		switch (canTogglePin) {
 			case false:
@@ -1017,11 +1270,18 @@ const App = () => {
 					>
 						{sessions.map((s, index) => {
 							const isActive = index === activeIndex;
+							const load = sessionLoad[s.id];
+							const history = sessionHistoryMap[s.id];
+							const entry = history?.entries[history.index ?? 0];
+							const overlayLabel = entry?.url
+								? entry.title || getHostLabel(entry.url)
+								: '';
 							return (
 								<div
 									key={s.id}
 									className="iframeContainer"
 									style={{
+										position: 'relative',
 										width: `${100 / sessions.length}%`,
 										height: '100%',
 										flexShrink: 0,
@@ -1047,6 +1307,9 @@ const App = () => {
 										data-session-id={index}
 										data-session-uid={s.id}
 										className="w-full h-full"
+										onLoad={() =>
+											finishSessionLoad(s.id, 'ready')
+										}
 										style={{
 											borderRadius: 12,
 											border: '1px solid rgba(255,255,255,0.06)',
@@ -1056,6 +1319,22 @@ const App = () => {
 											WebkitBackdropFilter: 'blur(4px)'
 										}}
 									/>
+									{load && (
+										<SessionOverlay
+											status={load.status}
+											slow={load.slow}
+											label={overlayLabel}
+											onRetry={() =>
+												handleSessionRetry(s.id)
+											}
+											onHome={() =>
+												handleSessionHome(s.id)
+											}
+											onReport={() =>
+												handleSessionReport(s.id)
+											}
+										/>
+									)}
 								</div>
 							);
 						})}
@@ -1178,6 +1457,9 @@ const App = () => {
 							onToggleSavedGame={handleToggleSavedGame}
 							canToggleSavedGame={gameLibraryStatus.canToggle}
 							isSavedGame={gameLibraryStatus.isSaved}
+							onToggleSavedApp={handleToggleSavedApp}
+							canToggleSavedApp={appLibraryStatus.canToggle}
+							isSavedApp={appLibraryStatus.isSaved}
 							onTogglePin={handleTogglePin}
 							canTogglePin={canTogglePin}
 							isPinned={pinnedState}

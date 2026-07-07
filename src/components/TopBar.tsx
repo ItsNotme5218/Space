@@ -13,7 +13,8 @@ import {
 	PinOff,
 	Bookmark,
 	BookmarkMinus,
-	LayoutGrid
+	LayoutGrid,
+	Grid2x2X
 } from 'lucide-react';
 import { useLocalStorage, writeSetting } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
@@ -70,6 +71,9 @@ interface TopBarProps {
 	onToggleSavedGame: () => void;
 	canToggleSavedGame: boolean;
 	isSavedGame: boolean;
+	onToggleSavedApp: () => void;
+	canToggleSavedApp: boolean;
+	isSavedApp: boolean;
 	onTogglePin: () => void;
 	canTogglePin: boolean;
 	isPinned: boolean;
@@ -91,6 +95,9 @@ export const TopBar = ({
 	onToggleSavedGame,
 	canToggleSavedGame,
 	isSavedGame,
+	onToggleSavedApp,
+	canToggleSavedApp,
+	isSavedApp,
 	onTogglePin,
 	canTogglePin,
 	isPinned
@@ -866,11 +873,17 @@ export const TopBar = ({
 										disabled: !canToggleSavedGame
 									},
 									{
-										label: 'Save as App',
-										icon: LayoutGrid,
-										action: () => {},
-										disabled: true,
-										hint: 'Coming soon'
+										label: isSavedApp
+											? 'Remove from Apps'
+											: 'Save as App',
+										icon: isSavedApp
+											? Grid2x2X
+											: LayoutGrid,
+										action: () => {
+											onToggleSavedApp();
+											setIsMenuOpen(false);
+										},
+										disabled: !canToggleSavedApp
 									}
 								].map((item, i) => {
 									const Icon = item.icon;
@@ -908,11 +921,6 @@ export const TopBar = ({
 											<span className="flex-1">
 												{item.label}
 											</span>
-											{item.hint && (
-												<span className="text-[10px] uppercase tracking-wider text-white/25">
-													{item.hint}
-												</span>
-											)}
 										</motion.button>
 									);
 								})}

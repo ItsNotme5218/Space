@@ -119,6 +119,15 @@ const reportIssueUrl = 'https://github.com/crllect/space-v2/issues/new';
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(max, Math.max(min, value));
 
+const posterGradient = (seed: string): string => {
+	let hash = 0;
+	for (let i = 0; i < seed.length; i++) {
+		hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+	}
+	const hue = Math.abs(hash) % 360;
+	return `linear-gradient(135deg, hsl(${hue}, 52%, 30%), hsl(${(hue + 42) % 360}, 48%, 15%))`;
+};
+
 const spaceGames = new SpaceGames();
 let cachedLocalGames: GameItem[] | null = null;
 let cachedImportedGames: GameItem[] | null = null;
@@ -525,29 +534,57 @@ const dispatchGameLaunch = (game: GameItem, target: 'active' | 'new') => {
 const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
 	const [imageKey, setImageKey] = useState(image);
 	const [imageFailed, setImageFailed] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	if (imageKey !== image) {
 		setImageKey(image);
 		setImageFailed(false);
+		setImageLoaded(false);
 	}
 
-	const hasLoadedImage = Boolean(image) && !imageFailed;
+	const hasImage = Boolean(image) && !imageFailed;
+	const initial = (title || '?').trim().charAt(0).toUpperCase() || '?';
 
 	return (
 		<div className={`relative overflow-hidden ${className}`}>
-			{hasLoadedImage ? (
+			{/* While loading: a neutral skeleton (no color). Only a genuinely
+			    broken image falls back to a colored gradient + initial, so the
+			    loading state never flashes random colors. */}
+			{!hasImage ? (
+				<div
+					className="absolute inset-0 flex items-center justify-center"
+					style={{ background: posterGradient(title || 'game') }}
+				>
+					<span
+						className="select-none font-bold text-white/80"
+						style={{
+							fontSize: 'clamp(1.5rem, 30%, 3rem)',
+							textShadow: '0 2px 12px rgba(0,0,0,0.4)'
+						}}
+					>
+						{initial}
+					</span>
+				</div>
+			) : !imageLoaded ? (
+				<div className="absolute inset-0 animate-pulse bg-white/6" />
+			) : null}
+
+			{hasImage ? (
 				<img
 					src={image}
 					alt={title}
 					loading="lazy"
 					decoding="async"
 					referrerPolicy="no-referrer"
+					onLoad={() => setImageLoaded(true)}
 					onError={() => setImageFailed(true)}
 					className="absolute inset-0 h-full w-full object-cover"
+					style={{
+						opacity: imageLoaded ? 1 : 0,
+						transition: 'opacity 0.35s ease'
+					}}
 				/>
-			) : (
-				<div className="absolute inset-0 animate-pulse bg-white/6" />
-			)}
+			) : null}
 		</div>
 	);
 });

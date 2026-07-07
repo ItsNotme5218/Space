@@ -10,13 +10,19 @@ interface ItemGridProps {
 	config?: Partial<GridConfig>;
 	header?: ReactNode;
 	onItemClick?: (item: GridItem) => void;
+	onLaunchItem?: (item: GridItem) => void;
+	onToggleSaveItem?: (item: GridItem) => void;
+	isItemSaved?: (item: GridItem) => boolean;
 }
 
 export const ItemGrid = ({
 	items,
 	config,
 	header,
-	onItemClick
+	onItemClick,
+	onLaunchItem,
+	onToggleSaveItem,
+	isItemSaved
 }: ItemGridProps) => {
 	const { cols, rows, staggerDelay } = { ...defaultGridConfig, ...config };
 	const itemsPerPage = cols * rows;
@@ -138,7 +144,7 @@ export const ItemGrid = ({
 				<div className="w-[80%] h-[88%] relative">
 					<LayoutGroup>
 						<div
-							className="grid gap-3 h-full"
+							className="grid gap-x-3 gap-y-3 h-full"
 							style={{
 								gridTemplateColumns: `repeat(${cols}, 1fr)`,
 								gridTemplateRows: `repeat(${rows}, 1fr)`
@@ -163,6 +169,13 @@ export const ItemGrid = ({
 										onCardClick={handleCardClick}
 										onHoverStart={handleHoverStart}
 										onHoverEnd={handleHoverEnd}
+										onLaunch={onLaunchItem}
+										onToggleSave={onToggleSaveItem}
+										isSaved={
+											isItemSaved
+												? isItemSaved(item)
+												: false
+										}
 									/>
 								))}
 							</AnimatePresence>

@@ -35,6 +35,10 @@ export default defineConfig({
 		chunkSizeWarningLimit: 1000,
 		reportCompressedSize: false,
 		rolldownOptions: {
+			input: {
+				main: resolve(__dirname, 'index.html'),
+				newtab: resolve(__dirname, 'newtab.html')
+			},
 			output: {
 				codeSplitting: {
 					minSize: 10000,
@@ -61,12 +65,6 @@ export default defineConfig({
 						}
 					]
 				}
-			}
-		},
-		rollupOptions: {
-			input: {
-				main: resolve(__dirname, 'index.html'),
-				newtab: resolve(__dirname, 'newtab.html')
 			}
 		}
 	},

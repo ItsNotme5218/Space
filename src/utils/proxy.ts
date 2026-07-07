@@ -181,14 +181,15 @@ class Proxy implements ProxyInterface {
 
 		const transportFile = transportMap[transports] || '/l/index.mjs';
 
-		/*const wispUrl =
+		// Use the app's own configured wisp server (defaults to the local
+		// wisp endpoint served by index.ts at /w/). Falling back to a
+		// third-party server made sessions flaky when that host was down.
+		const wispUrl =
 			this.wispUrl ||
 			(location.protocol === 'https:' ? 'wss' : 'ws') +
-			'://' +
-			location.host +
-			'/w/';*/
-
-		const wispUrl = 'wss://daydreamx.pro/wisp/';
+				'://' +
+				location.host +
+				'/w/';
 
 		const transportOptions: Record<string, any> = {
 			wisp: wispUrl
@@ -484,6 +485,7 @@ class Proxy implements ProxyInterface {
 	async checkAuthentication(): Promise<boolean> {
 		try {
 			const module = await import(
+				/* @vite-ignore */
 				window.location.origin + '/p/index.mjs'
 			);
 			const PlusClient = module.default;

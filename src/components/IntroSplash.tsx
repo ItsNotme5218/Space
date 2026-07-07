@@ -37,7 +37,7 @@ export const IntroSplash = ({ progress, onComplete }: IntroSplashProps) => {
 							position: 'absolute',
 							right: 20,
 							bottom: '25px',
-							overflow: 'hidden',
+							overflow: 'visible',
 							zIndex: 9999,
 							pointerEvents: 'auto'
 						}}

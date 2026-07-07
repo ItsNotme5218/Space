@@ -62,7 +62,7 @@ await server.register(fastifyCompress, {
 
 await server.register(fastifyHelmet, {
 	xPoweredBy: false,
-	crossOriginEmbedderPolicy: true,
+	crossOriginEmbedderPolicy: { policy: 'credentialless' }, //used to be true, but that breaks images sometimes
 	crossOriginOpenerPolicy: true,
 	contentSecurityPolicy: false
 });
