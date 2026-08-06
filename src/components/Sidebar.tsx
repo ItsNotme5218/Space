@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sessions } from './Sessions';
-import { Gamepad2, LayoutGrid, History, Settings } from 'lucide-react';
+import { Gamepad2, History, Settings } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
 import logoImg from '@assets/logo.webp';
+import { openNightPlusLogin } from '@utils/nightplus';
 
 const navItems = [
 	{ id: 'games', icon: Gamepad2 },
-	{ id: 'apps', icon: LayoutGrid },
 	{ id: 'discord', icon: SiDiscord },
 	{ id: 'playback', icon: History },
 	{ id: 'settings', icon: Settings }
@@ -248,7 +248,11 @@ export const Sidebar = ({
 			const containerRect = container.getBoundingClientRect();
 			const btnRect = btn.getBoundingClientRect();
 			setIndicatorY(
-				btnRect.top - containerRect.top + btnRect.height / 2 - 20
+				btnRect.top -
+					containerRect.top -
+					container.clientTop +
+					btnRect.height / 2 -
+					20
 			);
 		});
 	}, [activeItem]);
@@ -271,11 +275,10 @@ export const Sidebar = ({
 			onMouseLeave={() => handleHover(false)}
 		>
 			<motion.div
-				className="fixed -left-12 top-1/2 w-13 h-80 rounded-full border border-violet-400/20"
+				className="fixed -left-12 top-1/2 w-13 h-80 rounded-full"
 				style={{
-					background: 'rgba(14, 14, 16, 0.5)',
-					boxShadow:
-						'0 0 8px 4px rgba(203, 166, 247, 0.5), 0 0 20px 8px rgba(139, 92, 246, 0.3), 0 0 2px 1px rgba(139, 92, 246, 0.5) inset'
+					background: 'var(--color-surface)',
+					border: '1px solid var(--color-border)'
 				}}
 				animate={{
 					opacity: isVisible ? 0 : 1,
@@ -296,13 +299,10 @@ export const Sidebar = ({
 			>
 				<div
 					ref={navContainerRef}
-					className="relative rounded-full border w-14 border-[#1B1B1B] flex flex-col items-center"
+					className="relative rounded-full w-14 flex flex-col items-center"
 					style={{
-						background: 'rgba(14, 14, 16, 0.65)',
-						boxShadow:
-							'0 0 4px 1px rgba(255, 255, 255, 0.05), 0 0 10px 1px #1B1B1B inset',
-						backdropFilter: 'blur(4px)',
-						WebkitBackdropFilter: 'blur(4px)',
+						background: 'var(--color-surface)',
+						border: '1px solid var(--color-border)',
 						padding: '0.875rem 0.5rem'
 					}}
 				>
@@ -457,7 +457,8 @@ export const Sidebar = ({
 					<motion.button
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
-						className="flex items-center justify-center mt-2"
+						onClick={() => void openNightPlusLogin()}
+						title="Night+"
 					>
 						<NightPlusIcon />
 					</motion.button>

@@ -1,20 +1,27 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import { rejectUntrustedRequest } from './guard';
+
+const UPSTREAM = 'https://jwtauth-srv-api.night-x.com';
 
 const jwtHandler = async (request: FastifyRequest, reply: FastifyReply) => {
-	const targetUrl = `https://jwtauth-srv-api.night-x.com${request.url.replace('/api/plus', '')}`;
+	if (rejectUntrustedRequest(request, reply)) return;
+
+	const target = new URL(
+		request.url.replace(/^\/api\/plus/, '') || '/',
+		UPSTREAM
+	);
+	if (target.origin !== UPSTREAM) {
+		reply.code(400).send({ error: 'Invalid request path' });
+		return;
+	}
+	const targetUrl = target.toString();
 
 	const headers: Record<string, string> = {
 		Host: 'auth.night-x.com', // dont chnage this, we fucked up the jwt server to only allow this url, so yea
 		'User-Agent': request.headers['user-agent'] || 'DDXProxy/2.0'
 	};
 
-	// Forward relevant headers
-	const headersToForward = [
-		'authorization',
-		'content-type',
-		'accept',
-		'x-forwarded-for'
-	];
+	const headersToForward = ['authorization', 'content-type', 'accept'];
 	headersToForward.forEach(header => {
 		if (request.headers[header]) {
 			headers[header] = request.headers[header] as string;

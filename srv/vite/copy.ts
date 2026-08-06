@@ -1,15 +1,20 @@
-import { epoxyPath } from '@mercuryworkshop/epoxy-transport';
-import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
+import { createRequire } from 'node:module';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
 import { refluxPath } from '@nightnetwork/reflux';
 import { enigmaPath } from '@nightnetwork/enigma/path';
 import { baremuxPath as bmworkerPath } from '@nightnetwork/bm-plusworker/path';
-import path from 'path';
+import path, { dirname } from 'path';
+
+const require = createRequire(import.meta.url);
+
+const dirOf = (specifier: string) => dirname(require.resolve(specifier));
 
 export const routePaths = {
 	epoxy: 'ep',
 	scramjet: 's',
+	controller: 'c',
+	scramjetUtils: 'ut',
 	libcurl: 'l',
 	uv: 'u',
 	reflux: 'r',
@@ -28,7 +33,7 @@ const plusClientPath = path.resolve(
 
 const copyMap = {
 	epoxy: {
-		path: epoxyPath,
+		path: dirOf('@mercuryworkshop/epoxy-transport'),
 		files: ['*'],
 		dest: routePaths.epoxy
 	},
@@ -44,15 +49,21 @@ const copyMap = {
 	},
 	scramjet: {
 		path: scramjetPath,
-		files: [
-			{ name: 'scramjet.all.js', rename: 'all.js' },
-			{ name: 'scramjet.sync.js', rename: 'sync.js' },
-			{ name: 'scramjet.wasm.wasm', rename: 'wasm.wasm' }
-		],
+		files: ['*'],
 		dest: routePaths.scramjet
 	},
+	controller: {
+		path: dirOf('@mercuryworkshop/scramjet-controller'),
+		files: ['*'],
+		dest: routePaths.controller
+	},
+	scramjetUtils: {
+		path: dirOf('@mercuryworkshop/scramjet-utils'),
+		files: ['*'],
+		dest: routePaths.scramjetUtils
+	},
 	libcurl: {
-		path: libcurlPath,
+		path: dirOf('@mercuryworkshop/libcurl-transport'),
 		files: ['*'],
 		dest: routePaths.libcurl
 	},
@@ -69,25 +80,12 @@ const copyMap = {
 	auth: {
 		path: authPath,
 		files: [
-			'bg_alt_2.png',
-			'bg_alt.jpeg',
-			'bg.png',
-			{ name: 'index.html', rename: 'night-login.html' },
-			'night-auth.css',
-			'night-login-frame.es.js',
-			'night-login-frame.es.js.map',
-			'night-login-frame.umd.js',
-			'night-login-frame.umd.js.map',
-			'night-login.cdn.js',
-			'night-login.cdn.js.map',
-			'night-login.css',
-			'night-login.umd.js',
-			'night-login.umd.js.map',
-			'nightlogo.png',
-			'nightplus_icon.png',
-			'nightplus.png',
-			'nightplusheader.png',
-			'vite.svg'
+			'*.png',
+			'*.jpeg',
+			'*.svg',
+			'*.css',
+			'*.js',
+			{ name: 'index.html', rename: 'night-login.html' }
 		],
 		dest: routePaths.auth
 	},

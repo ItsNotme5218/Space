@@ -7,7 +7,7 @@ import {
 	toSpcUrl
 } from './internal-pages';
 
-export type PlaybackKind = 'game' | 'app' | 'search' | 'internal';
+export type PlaybackKind = 'game' | 'search' | 'internal';
 export type LibrarySource = 'default' | 'custom' | null;
 
 export interface SavedGameRecord {
@@ -22,11 +22,6 @@ export interface SavedGameRecord {
 export interface SavedGamesState {
 	customGames: SavedGameRecord[];
 	removedGameUrls: string[];
-}
-
-export interface SavedAppsState {
-	customApps: SavedGameRecord[];
-	removedAppUrls: string[];
 }
 
 export interface PlaybackMediaEntry {
@@ -51,7 +46,6 @@ export interface PlaybackSearchEntry {
 
 export interface PlaybackState {
 	games: PlaybackMediaEntry[];
-	apps: PlaybackMediaEntry[];
 	searches: PlaybackSearchEntry[];
 }
 
@@ -83,14 +77,8 @@ export const emptySavedGamesState: SavedGamesState = {
 	removedGameUrls: []
 };
 
-export const emptySavedAppsState: SavedAppsState = {
-	customApps: [],
-	removedAppUrls: []
-};
-
 export const emptyPlaybackState: PlaybackState = {
 	games: [],
-	apps: [],
 	searches: []
 };
 
@@ -230,7 +218,7 @@ export const createSessionHistoryEntry = (
 	const title = meta.title?.trim() || getFallbackTitle(input);
 	const tags = meta.tags?.filter(Boolean) ?? [];
 
-	let kind = meta.kind ?? 'app';
+	let kind = meta.kind ?? 'search';
 
 	switch (normalizedUrl) {
 		case `${spcProtocol}newtab`:
@@ -276,7 +264,7 @@ export const mergeSessionHistoryEntry = (
 	tags: nextEntry.tags.length > 0 ? nextEntry.tags : currentEntry.tags,
 	librarySource: nextEntry.librarySource ?? currentEntry.librarySource,
 	kind:
-		nextEntry.kind === 'app' && currentEntry.kind !== 'app'
+		nextEntry.kind === 'search' && currentEntry.kind !== 'search'
 			? currentEntry.kind
 			: nextEntry.kind
 });
@@ -420,85 +408,6 @@ export const getGameLibraryStatus = (
 	}
 
 	switch (entry!.librarySource === 'default' && entry!.kind === 'game') {
-		case true:
-			return {
-				canToggle: true,
-				isSaved: true,
-				librarySource: 'default' as LibrarySource
-			};
-		default:
-			return {
-				canToggle: true,
-				isSaved: false,
-				librarySource: null as LibrarySource
-			};
-	}
-};
-
-export const findSavedAppByUrl = (
-	savedAppsState: SavedAppsState,
-	input: string
-) => {
-	const normalizedUrl = normalizeComparableUrl(input);
-
-	return (
-		savedAppsState.customApps.find(
-			app => normalizeComparableUrl(app.url) === normalizedUrl
-		) ?? null
-	);
-};
-
-export const isRemovedAppUrl = (
-	savedAppsState: SavedAppsState,
-	input: string
-) => {
-	const normalizedUrl = normalizeComparableUrl(input);
-
-	return savedAppsState.removedAppUrls.some(
-		url => normalizeComparableUrl(url) === normalizedUrl
-	);
-};
-
-export const getAppLibraryStatus = (
-	entry: SessionHistoryEntry | null | undefined,
-	savedAppsState: SavedAppsState
-) => {
-	switch (Boolean(entry && entry.normalizedUrl !== `${spcProtocol}newtab`)) {
-		case false:
-			return {
-				canToggle: false,
-				isSaved: false,
-				librarySource: null as LibrarySource
-			};
-		default:
-			break;
-	}
-
-	switch (isRemovedAppUrl(savedAppsState, entry!.url)) {
-		case true:
-			return {
-				canToggle: true,
-				isSaved: false,
-				librarySource: null as LibrarySource
-			};
-		default:
-			break;
-	}
-
-	const customApp = findSavedAppByUrl(savedAppsState, entry!.url);
-
-	switch (Boolean(customApp)) {
-		case true:
-			return {
-				canToggle: true,
-				isSaved: true,
-				librarySource: 'custom' as LibrarySource
-			};
-		default:
-			break;
-	}
-
-	switch (entry!.librarySource === 'default' && entry!.kind === 'app') {
 		case true:
 			return {
 				canToggle: true,

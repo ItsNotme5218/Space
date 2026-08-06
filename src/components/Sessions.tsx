@@ -24,13 +24,7 @@ export const Sessions = ({
 }: SessionsProps) => {
 	const [hoveredSession, setHoveredSession] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const [previousActiveSession, setPreviousActiveSession] =
-		useState(activeSession);
 	const atMax = sessions.length >= maxSessions;
-
-	useEffect(() => {
-		setPreviousActiveSession(activeSession);
-	}, [activeSession]);
 
 	const handleSessionClick = (session: Session) => {
 		if (
@@ -80,9 +74,6 @@ export const Sessions = ({
 					const isActive = highlightActive && isCurrentSession;
 					const isHovered = hoveredSession === session.id;
 					const showClose = isActive && isHovered;
-					const shouldSpinIndicator =
-						isActive && previousActiveSession !== activeSession;
-
 					return (
 						<motion.button
 							key={session.id}
@@ -151,12 +142,7 @@ export const Sessions = ({
 								<motion.div
 									layoutId="session-indicator"
 									className="absolute inset-0 rounded-xl pointer-events-none"
-									initial={
-										shouldSpinIndicator
-											? { rotate: 180 }
-											: false
-									}
-									animate={{ rotate: 0 }}
+									initial={false}
 									style={{
 										background:
 											'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(203, 166, 247, 0.05) 100%)',
@@ -179,7 +165,7 @@ export const Sessions = ({
 				{!atMax && (
 					<motion.button
 						onClick={onAddSession}
-						whileHover={{ scale: 1.1, rotate: 90 }}
+						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.9 }}
 						initial={false}
 						transition={{

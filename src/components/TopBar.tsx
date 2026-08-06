@@ -12,9 +12,7 @@ import {
 	Pin,
 	PinOff,
 	Bookmark,
-	BookmarkMinus,
-	LayoutGrid,
-	Grid2x2X
+	BookmarkMinus
 } from 'lucide-react';
 import { useLocalStorage, writeSetting } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
@@ -46,12 +44,8 @@ const searchEngines: Record<
 };
 
 const pillStyle = {
-	background: 'rgba(14, 14, 16, 0.65)',
-	border: '1px solid rgba(45, 45, 58, 0.5)',
-	boxShadow:
-		'0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
-	backdropFilter: 'blur(4px)',
-	WebkitBackdropFilter: 'blur(4px)',
+	background: 'var(--color-surface)',
+	border: '1px solid var(--color-border)',
 	pointerEvents: 'auto' as const
 };
 
@@ -71,9 +65,6 @@ interface TopBarProps {
 	onToggleSavedGame: () => void;
 	canToggleSavedGame: boolean;
 	isSavedGame: boolean;
-	onToggleSavedApp: () => void;
-	canToggleSavedApp: boolean;
-	isSavedApp: boolean;
 	onTogglePin: () => void;
 	canTogglePin: boolean;
 	isPinned: boolean;
@@ -95,9 +86,6 @@ export const TopBar = ({
 	onToggleSavedGame,
 	canToggleSavedGame,
 	isSavedGame,
-	onToggleSavedApp,
-	canToggleSavedApp,
-	isSavedApp,
 	onTogglePin,
 	canTogglePin,
 	isPinned
@@ -167,31 +155,6 @@ export const TopBar = ({
 
 	const engine = searchEngines[searchEngine] || searchEngines.DuckDuckGo;
 
-	const hexToGlowRgb = (hex: string) => {
-		const r = parseInt(hex.slice(1, 3), 16);
-		const g = parseInt(hex.slice(3, 5), 16);
-		const b = parseInt(hex.slice(5, 7), 16);
-		return `${r}, ${g}, ${b}`;
-	};
-	const glowRgb = hexToGlowRgb(engine.color);
-
-	const isGoogle = searchEngine === 'Google';
-	const headerGradient = isGoogle
-		? 'linear-gradient(135deg, rgba(66, 133, 244, 0.08) 0%, transparent 15%, rgba(234, 67, 53, 0.07) 30%, rgba(251, 188, 5, 0.04) 60%, rgba(52, 168, 83, 0.09) 100%)'
-		: `linear-gradient(135deg, rgba(${glowRgb}, 0.06) 0%, transparent 60%, rgba(${glowRgb}, 0.02) 100%)`;
-
-	const shiftColor = (
-		hex: string,
-		hueShift: number,
-		lighten: number
-	): string => {
-		const r = parseInt(hex.slice(1, 3), 16);
-		const g = parseInt(hex.slice(3, 5), 16);
-		const b = parseInt(hex.slice(5, 7), 16);
-		return `rgb(${Math.min(255, r + lighten)}, ${Math.min(255, g + lighten + hueShift)}, ${Math.min(255, b + lighten - hueShift)})`;
-	};
-	const textGradient = `linear-gradient(135deg, ${engine.color}, ${shiftColor(engine.color, 15, 30)})`;
-
 	const activeSessionData = sessions.find(s => s.id === activeSession);
 	const isOnNewTab = !activeSessionData?.url;
 
@@ -221,6 +184,23 @@ export const TopBar = ({
 			}
 		};
 
+		const decodeScramjet = (
+			value: string,
+			prefix: string,
+			decoder?: (input: string) => string
+		) => {
+			if (!value.startsWith(prefix) || typeof decoder !== 'function') {
+				return null;
+			}
+			const rest = value.slice(prefix.length);
+			const token = rest.slice(rest.lastIndexOf('/') + 1);
+			try {
+				return decoder(token);
+			} catch {
+				return null;
+			}
+		};
+
 		let path = proxyUrl;
 
 		try {
@@ -231,16 +211,11 @@ export const TopBar = ({
 		}
 
 		const uvPrefix = window.__uv$config?.prefix || '/u/res/';
-		const scramjetPrefix =
-			window.__scramjet$config?.prefix ||
-			window.proxy?.scramConfig?.prefix ||
-			'/s/res/';
+		const scramjetPrefix = window.proxy?.scramConfig?.prefix || '/s/res/';
 		const uvDecode = window.__uv$config?.decodeUrl as
-			| ((input: string) => string)
-			| undefined;
-		const scramjetDecode = window.__scramjet$config?.codec?.decode as
-			| ((input: string) => string)
-			| undefined;
+			((input: string) => string) | undefined;
+		const scramjetDecode = window.proxy?.scramConfig?.codec?.decode as
+			((input: string) => string) | undefined;
 		const candidates = [
 			path,
 			path.replace(window.location.origin, ''),
@@ -249,7 +224,7 @@ export const TopBar = ({
 
 		for (const candidate of candidates) {
 			const decodedUrl =
-				decodeCandidate(candidate, scramjetPrefix, scramjetDecode) ||
+				decodeScramjet(candidate, scramjetPrefix, scramjetDecode) ||
 				decodeCandidate(candidate, uvPrefix, uvDecode);
 
 			switch (Boolean(decodedUrl)) {
@@ -487,40 +462,12 @@ export const TopBar = ({
 			}`}
 			style={{ position: 'fixed' }}
 		>
-			<motion.div
-				className="engineBg"
-				animate={{
-					opacity: inputFocused ? [0.6, 0.9, 0.6] : [0.2, 0.4, 0.2],
-					scale: inputFocused ? [0.99, 1.01, 0.99] : 1
-				}}
-				transition={{
-					repeat: Infinity,
-					duration: 4,
-					ease: 'easeInOut'
-				}}
-				style={{
-					position: 'absolute',
-					inset: '-0.25rem',
-					borderRadius: 20,
-					background: headerGradient,
-					pointerEvents: 'none',
-					transition: 'background 0.4s ease',
-					zIndex: 999,
-					filter: 'blur(5px)'
-				}}
-			/>
-			<motion.div
-				whileHover={{
-					scale: 1.01,
-					y: -1,
-					boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)`
-				}}
-				transition={{ type: 'spring', stiffness: 340, damping: 24 }}
+			<div
 				className="flex items-center gap-0.5 h-10 rounded-full p-2!"
 				style={pillStyle}
 			>
 				<motion.button
-					whileHover={canGoBack ? { scale: 1.08 } : {}}
+					whileHover={canGoBack ? { scale: 1.05 } : {}}
 					whileTap={canGoBack ? { scale: 0.94 } : {}}
 					onClick={onBack}
 					disabled={!canGoBack}
@@ -534,7 +481,7 @@ export const TopBar = ({
 					<ArrowLeft className="w-4 h-4" />
 				</motion.button>
 				<motion.button
-					whileHover={{ scale: 1.08, rotate: 30 }}
+					whileHover={{ scale: 1.05 }}
 					whileTap={{ scale: 0.94 }}
 					onClick={handleReloadClick}
 					className={iconButtonClass}
@@ -545,7 +492,7 @@ export const TopBar = ({
 					</motion.div>
 				</motion.button>
 				<motion.button
-					whileHover={canGoForward ? { scale: 1.08 } : {}}
+					whileHover={canGoForward ? { scale: 1.05 } : {}}
 					whileTap={canGoForward ? { scale: 0.94 } : {}}
 					onClick={onForward}
 					disabled={!canGoForward}
@@ -559,7 +506,7 @@ export const TopBar = ({
 					<ArrowRight className="w-4 h-4" />
 				</motion.button>
 				<motion.button
-					whileHover={{ scale: 1.08 }}
+					whileHover={{ scale: 1.05 }}
 					whileTap={{ scale: 0.94 }}
 					onClick={handleHome}
 					className={iconButtonClass}
@@ -567,7 +514,7 @@ export const TopBar = ({
 				>
 					<Home className="w-4 h-4" />
 				</motion.button>
-			</motion.div>
+			</div>
 
 			<motion.div
 				className="flex-1 h-10 rounded-full cursor-text"
@@ -575,29 +522,16 @@ export const TopBar = ({
 				onMouseEnter={() => setInputHovered(true)}
 				onMouseLeave={() => setInputHovered(false)}
 				animate={{
-					scale: inputFocused ? 1.005 : 1,
 					borderColor: inputFocused
-						? `rgba(${glowRgb}, 0.4)`
+						? engine.color
 						: inputHovered
-							? `rgba(${glowRgb}, 0.2)`
-							: 'rgba(45, 45, 58, 0.5)',
-					boxShadow: inputFocused
-						? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 25px rgba(${glowRgb}, 0.2), inset 0 0 15px rgba(${glowRgb}, 0.1)`
-						: inputHovered
-							? `0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset, 0 0 15px rgba(${glowRgb}, 0.1)`
-							: '0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset'
+							? 'var(--color-border-strong)'
+							: 'var(--color-border)'
 				}}
-				transition={{
-					type: 'spring',
-					stiffness: 350,
-					damping: 30,
-					mass: 1
-				}}
+				transition={{ duration: 0.12 }}
 				style={{
-					background: 'rgba(14, 14, 16, 0.65)',
-					border: '1px solid rgba(45, 45, 58, 0.5)',
-					backdropFilter: 'blur(4px)',
-					WebkitBackdropFilter: 'blur(4px)',
+					background: 'var(--color-input)',
+					border: '1px solid var(--color-border)',
 					pointerEvents: 'auto'
 				}}
 			>
@@ -613,7 +547,7 @@ export const TopBar = ({
 							cycleEngine();
 						}}
 						className="flex items-center gap-1.5 shrink-0 select-none cursor-pointer rounded-md px-1.5 py-0.5"
-						whileHover={{ scale: 1.06 }}
+						whileHover={{ scale: 1.05 }}
 						whileTap={{ scale: 0.94 }}
 						animate={{
 							opacity: inputFocused ? 1 : 0.65
@@ -624,7 +558,7 @@ export const TopBar = ({
 							border: 'none',
 							outline: 'none'
 						}}
-						title={`Search with ${engine.label} — click to switch`}
+						title={`Search with ${engine.label}, click to switch`}
 					>
 						<Search
 							className="shrink-0"
@@ -658,22 +592,6 @@ export const TopBar = ({
 								transition={{ duration: 0.15 }}
 								className="text-[10px] font-semibold tracking-wider uppercase"
 								style={{
-									background:
-										inputFocused && !engine.letterColors
-											? textGradient
-											: 'none',
-									backgroundClip:
-										inputFocused && !engine.letterColors
-											? 'text'
-											: undefined,
-									WebkitBackgroundClip:
-										inputFocused && !engine.letterColors
-											? 'text'
-											: undefined,
-									WebkitTextFillColor:
-										inputFocused && !engine.letterColors
-											? 'transparent'
-											: undefined,
 									color: inputFocused
 										? engine.color
 										: 'rgba(255, 255, 255, 0.25)',
@@ -711,8 +629,8 @@ export const TopBar = ({
 						className="w-px h-4 shrink-0"
 						style={{
 							background: inputFocused
-								? `rgba(${glowRgb}, 0.25)`
-								: 'rgba(255, 255, 255, 0.06)',
+								? 'var(--color-border-strong)'
+								: 'var(--color-border)',
 							transition: 'background 0.2s'
 						}}
 					/>
@@ -766,17 +684,13 @@ export const TopBar = ({
 				</form>
 			</motion.div>
 
-			<motion.div
-				whileHover={{
-					boxShadow: `0 0 15px rgba(${glowRgb}, 0.2), inset 0 0 8px rgba(255,255,255,0.05)`
-				}}
-				transition={{ duration: 0.15 }}
+			<div
 				className="flex items-center gap-0.5 h-10 rounded-full p-2! relative z-[90]"
 				style={pillStyle}
 				ref={menuRef}
 			>
 				<motion.button
-					whileHover={{ scale: 1.08 }}
+					whileHover={{ scale: 1.05 }}
 					whileTap={{ scale: 0.94 }}
 					onClick={toggleFullscreen}
 					className={iconButtonClass}
@@ -791,7 +705,7 @@ export const TopBar = ({
 					)}
 				</motion.button>
 				<motion.button
-					whileHover={{ scale: 1.08 }}
+					whileHover={{ scale: 1.05 }}
 					whileTap={{ scale: 0.94 }}
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
 					className={iconButtonClass}
@@ -838,12 +752,8 @@ export const TopBar = ({
 								}}
 								className="absolute right-0 top-full mt-3 w-56 rounded-2xl p-1.5 flex flex-col z-[95] pointer-events-auto"
 								style={{
-									background: 'rgba(14, 14, 16, 0.72)',
-									border: '1px solid rgba(45, 45, 58, 0.5)',
-									boxShadow:
-										'0 10px 30px rgba(0,0,0,0.5), 0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
-									backdropFilter: 'blur(16px)',
-									WebkitBackdropFilter: 'blur(16px)',
+									background: 'var(--color-surface)',
+									border: '1px solid var(--color-border)',
 									transformOrigin: 'top right'
 								}}
 							>
@@ -871,19 +781,6 @@ export const TopBar = ({
 											setIsMenuOpen(false);
 										},
 										disabled: !canToggleSavedGame
-									},
-									{
-										label: isSavedApp
-											? 'Remove from Apps'
-											: 'Save as App',
-										icon: isSavedApp
-											? Grid2x2X
-											: LayoutGrid,
-										action: () => {
-											onToggleSavedApp();
-											setIsMenuOpen(false);
-										},
-										disabled: !canToggleSavedApp
 									}
 								].map((item, i) => {
 									const Icon = item.icon;
@@ -928,7 +825,7 @@ export const TopBar = ({
 						</>
 					)}
 				</AnimatePresence>
-			</motion.div>
+			</div>
 		</header>
 	);
 };

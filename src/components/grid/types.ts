@@ -4,11 +4,9 @@ export interface GridItem {
 	url?: string;
 	image?: string;
 	subtitle?: string;
-	description?: string;
-	category?: string;
+	categories?: string[];
+	sourceLabel?: string;
 	source?: 'default' | 'saved';
-	/** Proxy-support confidence 0-100. Undefined for manually added apps (N/A). */
-	confidence?: number;
 }
 
 export interface GridConfig {
@@ -18,7 +16,7 @@ export interface GridConfig {
 }
 
 export const defaultGridConfig: GridConfig = {
-	cols: 4,
-	rows: 5,
-	staggerDelay: 0.1
+	cols: 6,
+	rows: 6,
+	staggerDelay: 0.03
 };

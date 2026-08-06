@@ -1,25 +1,16 @@
 import {
-	memo,
 	startTransition,
 	useCallback,
 	useDeferredValue,
 	useEffect,
 	useMemo,
-	useRef,
 	useState
 } from 'react';
 import localforage from 'localforage';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-	ArrowLeft,
-	ChevronLeft,
-	ChevronRight,
-	Flag,
-	Play,
-	Search,
-	X
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, X } from 'lucide-react';
 import { Loading } from '../components/Loading';
+import { ItemGrid, type GridItem } from '../components/grid';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SpaceGames } from '../utils/games';
 import {
@@ -48,84 +39,10 @@ interface RawGame {
 	tags?: string[];
 }
 
-interface GameCategory {
-	id: string;
-	label: string;
-	description: string;
-	totalItems: number;
-	items: GameItem[];
-}
-
-interface ViewerState {
-	categoryId: string;
-	itemIndex: number;
-}
-
-interface CategoryRowProps {
-	category: GameCategory;
-	onSelect: (categoryId: string, itemIndex: number) => void;
-	onViewAll: (categoryId: string) => void;
-}
-
-interface GamePosterProps {
-	title: string;
-	image: string;
-	className?: string;
-}
-
-interface GameCardProps {
-	game: GameItem;
-	onSelect: () => void;
-	compact?: boolean;
-}
-
-const rowPreviewSize = 18;
-const activePageSize = 120;
-const viewerPreviewSize = 12;
 const importedMapBatchSize = 600;
-const shelfEdgeZone = 72;
-const glassStyle = {
-	background: 'rgba(12,10,18,0.65)',
-	border: '1px solid rgba(255,255,255,0.06)',
-	boxShadow:
-		'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
-	backdropFilter: 'blur(24px)',
-	WebkitBackdropFilter: 'blur(24px)'
-};
 const pillStyle = {
-	background: 'rgba(14, 14, 16, 0.65)',
-	border: '1px solid rgba(45, 45, 58, 0.5)',
-	boxShadow:
-		'0 0 8px 1px rgba(255, 255, 255, 0.04), 0 0 12px 1px rgba(27, 27, 27, 0.65) inset',
-	backdropFilter: 'blur(4px)',
-	WebkitBackdropFilter: 'blur(4px)'
-};
-const buttonStyle = {
-	background: 'rgba(12,10,18,0.5)',
-	border: '1px solid rgba(255,255,255,0.05)',
-	boxShadow: '0 2px 16px -6px rgba(0,0,0,0.35)',
-	backdropFilter: 'blur(40px)',
-	WebkitBackdropFilter: 'blur(40px)'
-};
-const primaryButtonStyle = {
-	background:
-		'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
-	border: '1px solid rgba(139,92,246,0.22)',
-	boxShadow: '0 0 16px rgba(139,92,246,0.15)',
-	color: '#c4b5fd'
-};
-const reportIssueUrl = 'https://github.com/crllect/space-v2/issues/new';
-
-const clamp = (value: number, min: number, max: number) =>
-	Math.min(max, Math.max(min, value));
-
-const posterGradient = (seed: string): string => {
-	let hash = 0;
-	for (let i = 0; i < seed.length; i++) {
-		hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-	}
-	const hue = Math.abs(hash) % 360;
-	return `linear-gradient(135deg, hsl(${hue}, 52%, 30%), hsl(${(hue + 42) % 360}, 48%, 15%))`;
+	background: 'var(--color-surface)',
+	border: '1px solid var(--color-border)'
 };
 
 const spaceGames = new SpaceGames();
@@ -147,31 +64,11 @@ interface ImportedGamesCachePayload {
 }
 
 const categoryConfig = [
-	{
-		id: 'popular',
-		label: 'Popular',
-		description: 'The quickest way into the most opened games.'
-	},
-	{
-		id: 'multiplayer',
-		label: 'Multiplayer',
-		description: 'Competitive and co-op games worth queueing up.'
-	},
-	{
-		id: 'horror',
-		label: 'Horror',
-		description: 'Short, weird, and tense picks for darker sessions.'
-	},
-	{
-		id: 'emulator',
-		label: 'Emulators',
-		description: 'Retro-style runs and throwback favorites.'
-	},
-	{
-		id: 'all',
-		label: 'All Games',
-		description: 'Everything in the library, local and imported.'
-	}
+	{ id: 'all', label: 'All' },
+	{ id: 'popular', label: 'Popular' },
+	{ id: 'multiplayer', label: 'Multiplayer' },
+	{ id: 'horror', label: 'Horror' },
+	{ id: 'emulator', label: 'Emulators' }
 ] as const;
 
 const normalizeImage = (image?: string) => {
@@ -269,6 +166,36 @@ const normalizeTags = (tags?: string[]) =>
 		)
 	);
 
+const getHostLabel = (url: string) => {
+	switch (true) {
+		case !url:
+			return 'library';
+		default:
+			try {
+				return new URL(url).hostname.replace(/^www\./, '');
+			} catch {
+				return 'library';
+			}
+	}
+};
+
+const getTagLabel = (tag: string) => {
+	switch (tag) {
+		case 'popular':
+			return 'Popular';
+		case 'multiplayer':
+			return 'Multiplayer';
+		case 'horror':
+			return 'Horror';
+		case 'emulator':
+			return 'Emulator';
+		case 'all':
+			return 'All';
+		default:
+			return tag.charAt(0).toUpperCase() + tag.slice(1);
+	}
+};
+
 const mapGame = (game: RawGame, source: GameSource): GameItem => {
 	const url = game.url ?? '';
 	const tags = normalizeTags([...(game.tags ?? []), ...inferGameTags(game)]);
@@ -287,6 +214,16 @@ const mapGame = (game: RawGame, source: GameSource): GameItem => {
 			.toLowerCase()
 	};
 };
+
+const toGridItem = (game: GameItem): GridItem => ({
+	id: game.id,
+	title: game.title,
+	url: game.url,
+	image: game.image,
+	categories: game.tags.filter(tag => tag !== 'all').map(getTagLabel),
+	sourceLabel: game.source,
+	source: game.source === 'saved' ? 'saved' : 'default'
+});
 
 const waitForIdle = () =>
 	new Promise<void>(resolve => {
@@ -446,466 +383,22 @@ const fetchMappedImportedGames = (
 	return importedGamesPromise;
 };
 
-const getAllPreviewItems = (
-	localGames: GameItem[],
-	importedGames: GameItem[]
-) => {
-	switch (true) {
-		case localGames.length >= rowPreviewSize:
-			return localGames.slice(0, rowPreviewSize);
-		case importedGames.length === 0:
-			return localGames.slice(0, rowPreviewSize);
-		default:
-			return [
-				...localGames,
-				...importedGames.slice(
-					0,
-					Math.max(0, rowPreviewSize - localGames.length)
-				)
-			];
-	}
-};
-
-const getHostLabel = (url: string) => {
-	switch (true) {
-		case !url:
-			return 'library';
-		default:
-			try {
-				return new URL(url).hostname.replace(/^www\./, '');
-			} catch {
-				return 'library';
+const dispatchGameLaunch = (item: GridItem) => {
+	if (!item.url) return;
+	window.dispatchEvent(
+		new CustomEvent('space:navigate', {
+			detail: {
+				url: item.url,
+				target: 'new',
+				title: item.title,
+				image: item.image,
+				tags: item.categories,
+				kind: 'game',
+				librarySource: item.source === 'saved' ? 'custom' : 'default'
 			}
-	}
-};
-
-const getTagLabel = (tag: string) => {
-	switch (tag) {
-		case 'popular':
-			return 'Popular';
-		case 'multiplayer':
-			return 'Multiplayer';
-		case 'horror':
-			return 'Horror';
-		case 'emulator':
-			return 'Emulator';
-		case 'all':
-			return 'All';
-		default:
-			return tag.charAt(0).toUpperCase() + tag.slice(1);
-	}
-};
-
-const getSummaryText = (game: GameItem, categoryLabel: string) => {
-	const visibleTags = game.tags.filter(tag => tag !== 'all');
-
-	switch (visibleTags.length) {
-		case 0:
-			return `${game.title} is ready to open from ${game.hostLabel}.`;
-		case 1:
-			return `${game.title} is part of ${getTagLabel(visibleTags[0]).toLowerCase()} and opens directly inside the browser tab.`;
-		default:
-			return `${game.title} fits the ${categoryLabel.toLowerCase()} shelf and is tagged ${getTagLabel(visibleTags[0]).toLowerCase()} and ${getTagLabel(visibleTags[1]).toLowerCase()}.`;
-	}
-};
-
-const dispatchGameLaunch = (game: GameItem, target: 'active' | 'new') => {
-	switch (Boolean(game.url)) {
-		case false:
-			return;
-		default:
-			window.dispatchEvent(
-				new CustomEvent('space:navigate', {
-					detail: {
-						url: game.url,
-						target,
-						title: game.title,
-						image: game.image,
-						tags: game.tags,
-						kind: 'game',
-						librarySource:
-							game.source === 'saved' ? 'custom' : 'default'
-					}
-				})
-			);
-	}
-};
-
-const GamePoster = memo(({ title, image, className = '' }: GamePosterProps) => {
-	const [imageKey, setImageKey] = useState(image);
-	const [imageFailed, setImageFailed] = useState(false);
-	const [imageLoaded, setImageLoaded] = useState(false);
-
-	if (imageKey !== image) {
-		setImageKey(image);
-		setImageFailed(false);
-		setImageLoaded(false);
-	}
-
-	const hasImage = Boolean(image) && !imageFailed;
-	const initial = (title || '?').trim().charAt(0).toUpperCase() || '?';
-
-	return (
-		<div className={`relative overflow-hidden ${className}`}>
-			{/* While loading: a neutral skeleton (no color). Only a genuinely
-			    broken image falls back to a colored gradient + initial, so the
-			    loading state never flashes random colors. */}
-			{!hasImage ? (
-				<div
-					className="absolute inset-0 flex items-center justify-center"
-					style={{ background: posterGradient(title || 'game') }}
-				>
-					<span
-						className="select-none font-bold text-white/80"
-						style={{
-							fontSize: 'clamp(1.5rem, 30%, 3rem)',
-							textShadow: '0 2px 12px rgba(0,0,0,0.4)'
-						}}
-					>
-						{initial}
-					</span>
-				</div>
-			) : !imageLoaded ? (
-				<div className="absolute inset-0 animate-pulse bg-white/6" />
-			) : null}
-
-			{hasImage ? (
-				<img
-					src={image}
-					alt={title}
-					loading="lazy"
-					decoding="async"
-					referrerPolicy="no-referrer"
-					onLoad={() => setImageLoaded(true)}
-					onError={() => setImageFailed(true)}
-					className="absolute inset-0 h-full w-full object-cover"
-					style={{
-						opacity: imageLoaded ? 1 : 0,
-						transition: 'opacity 0.35s ease'
-					}}
-				/>
-			) : null}
-		</div>
+		})
 	);
-});
-
-const GameCard = memo(({ game, onSelect, compact = false }: GameCardProps) => {
-	const visibleTags = game.tags.filter(tag => tag !== 'all').slice(0, 2);
-	const hoverBorderColor =
-		game.source === 'imported'
-			? 'rgba(190,147,255,0.3)'
-			: game.source === 'saved'
-				? 'rgba(125,211,252,0.28)'
-				: 'rgba(255,255,255,0.15)';
-
-	return (
-		<motion.button
-			onClick={onSelect}
-			whileHover={{
-				y: compact ? -3 : -4,
-				scale: compact ? 1.01 : 1.02,
-				borderColor: hoverBorderColor
-			}}
-			whileTap={{ scale: 0.97 }}
-			className={`overflow-hidden rounded-2xl text-left ${
-				compact ? 'shrink-0 w-44 md:w-52' : 'w-full'
-			}`}
-			style={{
-				...glassStyle,
-				border: `1px solid ${
-					game.source === 'imported'
-						? 'rgba(168,85,247,0.22)'
-						: game.source === 'saved'
-							? 'rgba(56,189,248,0.2)'
-							: 'rgba(255,255,255,0.1)'
-				}`
-			}}
-		>
-			<div className="p-3">
-				<GamePoster
-					title={game.title}
-					image={game.image}
-					className={
-						compact ? 'h-28 md:h-32 rounded-xl' : 'h-40 rounded-xl'
-					}
-				/>
-
-				<div className="mt-3 space-y-2 px-1 pb-1">
-					<div className="flex items-start justify-between gap-2">
-						<div className="min-w-0">
-							<h3 className="truncate text-sm font-semibold text-white/94 md:text-[15px]">
-								{game.title}
-							</h3>
-							<p className="mt-1 truncate text-[11px] uppercase tracking-[0.22em] text-white/34">
-								{game.hostLabel}
-							</p>
-						</div>
-
-						<span
-							className="rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em]"
-							style={{
-								background:
-									game.source === 'imported'
-										? 'rgba(168,85,247,0.14)'
-										: game.source === 'saved'
-											? 'rgba(56,189,248,0.14)'
-											: 'rgba(255,255,255,0.08)',
-								color:
-									game.source === 'imported'
-										? 'rgba(233,213,255,0.92)'
-										: game.source === 'saved'
-											? 'rgba(186,230,253,0.92)'
-											: 'rgba(255,255,255,0.54)'
-							}}
-						>
-							{game.source}
-						</span>
-					</div>
-
-					<div className="flex flex-wrap gap-1.5">
-						{visibleTags.length > 0 ? (
-							visibleTags.map(tag => (
-								<span
-									key={`${game.id}-${tag}`}
-									className="rounded-full bg-white/7 px-2.5 py-1 text-[11px] font-medium text-white/62"
-								>
-									{getTagLabel(tag)}
-								</span>
-							))
-						) : (
-							<span className="rounded-full bg-white/7 px-2.5 py-1 text-[11px] font-medium text-white/48">
-								Explore
-							</span>
-						)}
-					</div>
-				</div>
-			</div>
-		</motion.button>
-	);
-});
-
-const CategoryRow = memo(
-	({ category, onSelect, onViewAll }: CategoryRowProps) => {
-		const scrollerRef = useRef<HTMLDivElement | null>(null);
-		const trackRef = useRef<HTMLDivElement | null>(null);
-		const [edgeWeights, setEdgeWeights] = useState<Record<number, number>>(
-			{}
-		);
-		const [canScrollLeft, setCanScrollLeft] = useState(false);
-		const [canScrollRight, setCanScrollRight] = useState(false);
-
-		const updateScrollState = useCallback(() => {
-			const scroller = scrollerRef.current;
-
-			switch (Boolean(scroller)) {
-				case false:
-					return;
-				default:
-					setCanScrollLeft(scroller!.scrollLeft > 4);
-					setCanScrollRight(
-						scroller!.scrollLeft <
-							scroller!.scrollWidth - scroller!.clientWidth - 4
-					);
-			}
-		}, []);
-
-		const updateEdgeWeights = useCallback(() => {
-			const scroller = scrollerRef.current;
-			const track = trackRef.current;
-
-			switch (Boolean(scroller && track)) {
-				case false:
-					return;
-				default:
-					break;
-			}
-
-			const scrollerRect = scroller!.getBoundingClientRect();
-			const edgeZone = Math.min(
-				shelfEdgeZone,
-				scrollerRect.width / 5 || 1
-			);
-			const safeLeft = scrollerRect.left + edgeZone;
-			const safeRight = scrollerRect.right - edgeZone;
-			const nextWeights: Record<number, number> = {};
-
-			Array.from(track!.children).forEach((node, index) => {
-				const rect = (node as HTMLElement).getBoundingClientRect();
-				const leftPenalty = clamp(
-					(safeLeft - rect.left) / Math.max(edgeZone, 1),
-					0,
-					1
-				);
-				const rightPenalty = clamp(
-					(rect.right - safeRight) / Math.max(edgeZone, 1),
-					0,
-					1
-				);
-
-				nextWeights[index] = clamp(
-					1 - Math.max(leftPenalty, rightPenalty),
-					0,
-					1
-				);
-			});
-
-			setEdgeWeights(nextWeights);
-			updateScrollState();
-		}, [updateScrollState]);
-
-		useEffect(() => {
-			const scroller = scrollerRef.current;
-			const rafId = requestAnimationFrame(updateEdgeWeights);
-
-			switch (Boolean(scroller)) {
-				case false:
-					return () => cancelAnimationFrame(rafId);
-				default:
-					break;
-			}
-
-			const handleScroll = () => {
-				updateEdgeWeights();
-			};
-
-			scroller!.addEventListener('scroll', handleScroll, {
-				passive: true
-			});
-			window.addEventListener('resize', updateEdgeWeights);
-
-			return () => {
-				cancelAnimationFrame(rafId);
-				scroller!.removeEventListener('scroll', handleScroll);
-				window.removeEventListener('resize', updateEdgeWeights);
-			};
-		}, [updateEdgeWeights]);
-
-		const scrollShelf = useCallback((direction: 'left' | 'right') => {
-			const scroller = scrollerRef.current;
-
-			switch (Boolean(scroller)) {
-				case false:
-					return;
-				default:
-					scroller!.scrollBy({
-						left:
-							direction === 'left'
-								? -scroller!.clientWidth * 0.68
-								: scroller!.clientWidth * 0.68,
-						behavior: 'smooth'
-					});
-			}
-		}, []);
-
-		return (
-			<motion.section
-				initial={false}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.35 }}
-				className="space-y-4"
-			>
-				<div className="flex items-end justify-between gap-4">
-					<div className="space-y-1">
-						<h2 className="text-xl font-semibold tracking-tight text-white/92 md:text-2xl">
-							{category.label}
-							<span className="ml-2 text-sm font-medium text-white/34">
-								({category.totalItems.toLocaleString()})
-							</span>
-						</h2>
-						<p className="text-sm text-white/44">
-							{category.description}
-						</p>
-					</div>
-
-					<div className="flex items-center gap-2">
-						<motion.button
-							onClick={() => onViewAll(category.id)}
-							whileHover={{ scale: 1.03 }}
-							whileTap={{ scale: 0.97 }}
-							className="rounded-xl px-4 py-2 text-sm font-medium text-white/78"
-							style={buttonStyle}
-						>
-							View All
-						</motion.button>
-						<motion.button
-							onClick={() => scrollShelf('left')}
-							whileHover={{ scale: 1.06 }}
-							whileTap={{ scale: 0.95 }}
-							disabled={!canScrollLeft}
-							className="flex h-10 w-10 items-center justify-center rounded-xl"
-							style={{
-								...buttonStyle,
-								opacity: canScrollLeft ? 1 : 0.3
-							}}
-						>
-							<ChevronLeft className="h-4 w-4 text-white/84" />
-						</motion.button>
-						<motion.button
-							onClick={() => scrollShelf('right')}
-							whileHover={{ scale: 1.06 }}
-							whileTap={{ scale: 0.95 }}
-							disabled={!canScrollRight}
-							className="flex h-10 w-10 items-center justify-center rounded-xl"
-							style={{
-								...buttonStyle,
-								opacity: canScrollRight ? 1 : 0.3
-							}}
-						>
-							<ChevronRight className="h-4 w-4 text-white/84" />
-						</motion.button>
-					</div>
-				</div>
-
-				<div className="-mx-16 px-8">
-					<div
-						ref={scrollerRef}
-						className="overflow-x-auto pb-2 px-8"
-						style={{
-							scrollbarWidth: 'none',
-							msOverflowStyle: 'none',
-							WebkitMaskImage:
-								'linear-gradient(to right, transparent 0, black 64px, black calc(100% - 64px), transparent 100%)',
-							maskImage:
-								'linear-gradient(to right, transparent 0, black 64px, black calc(100% - 64px), transparent 100%)'
-						}}
-					>
-						<div ref={trackRef} className="flex w-max gap-4 py-2">
-							{category.items.map((game, itemIndex) => {
-								const weight = edgeWeights[itemIndex] ?? 1;
-								const baseOpacity = clamp(
-									0.6 + weight * 0.4,
-									0,
-									1
-								);
-
-								return (
-									<motion.div
-										key={`${category.id}-${game.id}-${itemIndex}`}
-										animate={{
-											opacity: baseOpacity
-										}}
-										whileHover={{
-											opacity: 1
-										}}
-										className="origin-center"
-									>
-										<GameCard
-											game={game}
-											compact
-											onSelect={() =>
-												onSelect(category.id, itemIndex)
-											}
-										/>
-									</motion.div>
-								);
-							})}
-						</div>
-					</div>
-				</div>
-			</motion.section>
-		);
-	}
-);
+};
 
 export const GamesPage = () => {
 	const [localGames, setLocalGames] = useState<GameItem[]>(
@@ -919,10 +412,8 @@ export const GamesPage = () => {
 		() => !cachedImportedGames
 	);
 	const [searchValue, setSearchValue] = useState('');
-	const [viewer, setViewer] = useState<ViewerState | null>(null);
-	const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
-	const [visibleItemCount, setVisibleItemCount] = useState(activePageSize);
-	const [savedGamesState] = useLocalStorage(
+	const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+	const [savedGamesState, setSavedGamesState] = useLocalStorage(
 		'savedGamesState',
 		emptySavedGamesState
 	);
@@ -931,6 +422,7 @@ export const GamesPage = () => {
 		searchValue.trim().toLowerCase()
 	);
 	const isInitialLibraryLoading = isLoading && localGames.length === 0;
+
 	const removedGameUrls = useMemo(
 		() =>
 			new Set(
@@ -939,6 +431,15 @@ export const GamesPage = () => {
 				)
 			),
 		[savedGamesState.removedGameUrls]
+	);
+	const savedUrls = useMemo(
+		() =>
+			new Set(
+				savedGamesState.customGames.map(game =>
+					normalizeComparableUrl(game.url)
+				)
+			),
+		[savedGamesState.customGames]
 	);
 	const savedGames = useMemo(
 		() =>
@@ -1048,840 +549,223 @@ export const GamesPage = () => {
 		};
 	}, []);
 
-	const visibleLocalGames = useMemo(
-		() =>
-			localGames.filter(
-				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
-			),
-		[localGames, removedGameUrls]
-	);
-	const visibleImportedGames = useMemo(
-		() =>
-			importedGames.filter(
-				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
-			),
-		[importedGames, removedGameUrls]
-	);
-	const visibleSavedGames = useMemo(
-		() =>
-			savedGames.filter(
-				game => !removedGameUrls.has(normalizeComparableUrl(game.url))
-			),
-		[removedGameUrls, savedGames]
-	);
-	const totalGameCount =
-		visibleLocalGames.length +
-		visibleImportedGames.length +
-		visibleSavedGames.length;
+	const allGames = useMemo(() => {
+		const merged = [...savedGames, ...localGames, ...importedGames];
+		return merged.filter(
+			game => !removedGameUrls.has(normalizeComparableUrl(game.url))
+		);
+	}, [importedGames, localGames, removedGameUrls, savedGames]);
 
-	const categoryMap = useMemo(() => {
-		const nextMap: Record<string, GameItem[]> = {};
+	const categoryCounts = useMemo(() => {
+		const counts: Record<string, number> = {};
 
-		for (const gameList of [
-			visibleLocalGames,
-			visibleSavedGames,
-			visibleImportedGames
-		]) {
-			for (const game of gameList) {
-				for (const tag of game.tags) {
-					switch (Boolean(nextMap[tag])) {
-						case false:
-							nextMap[tag] = [];
-							break;
-						default:
-							break;
-					}
-
-					nextMap[tag].push(game);
-				}
+		for (const game of allGames) {
+			for (const tag of game.tags) {
+				counts[tag] = (counts[tag] ?? 0) + 1;
 			}
 		}
 
-		return nextMap;
-	}, [visibleImportedGames, visibleLocalGames, visibleSavedGames]);
+		return counts;
+	}, [allGames]);
 
-	const allPreviewItems = useMemo(
+	const visibleCategories = useMemo(
 		() =>
-			getAllPreviewItems(
-				[...visibleLocalGames, ...visibleSavedGames],
-				visibleImportedGames
+			categoryConfig.filter(
+				category =>
+					category.id === 'all' ||
+					(categoryCounts[category.id] ?? 0) > 0
 			),
-		[visibleImportedGames, visibleLocalGames, visibleSavedGames]
+		[categoryCounts]
 	);
 
-	const needsMergedGames = useMemo(() => {
-		switch (true) {
-			case deferredSearchValue.length > 0:
-			case viewAllCategory === 'all':
-			case viewer?.categoryId === 'all':
-				return true;
-			default:
-				return false;
-		}
-	}, [deferredSearchValue.length, viewAllCategory, viewer?.categoryId]);
+	const items = useMemo<GridItem[]>(() => {
+		const byCategory =
+			activeCategoryId === 'all'
+				? allGames
+				: allGames.filter(game => game.tags.includes(activeCategoryId));
 
-	const mergedGames = useMemo(() => {
-		switch (needsMergedGames) {
-			case true:
-				return [
-					...visibleLocalGames,
-					...visibleSavedGames,
-					...visibleImportedGames
-				];
-			default:
-				return [];
-		}
-	}, [
-		needsMergedGames,
-		visibleImportedGames,
-		visibleLocalGames,
-		visibleSavedGames
-	]);
+		const searched =
+			deferredSearchValue.length > 0
+				? byCategory.filter(game =>
+						game.searchValue.includes(deferredSearchValue)
+					)
+				: byCategory;
 
-	const getCategoryItems = useCallback(
-		(categoryId: string) => {
-			switch (categoryId) {
-				case 'popular':
-					return categoryMap.popular ?? [];
-				case 'multiplayer':
-					return categoryMap.multiplayer ?? [];
-				case 'horror':
-					return categoryMap.horror ?? [];
-				case 'emulator':
-					return categoryMap.emulator ?? [];
-				case 'all':
-					return mergedGames;
-				default:
-					return [];
-			}
-		},
-		[categoryMap, mergedGames]
+		return searched.map(toGridItem);
+	}, [activeCategoryId, allGames, deferredSearchValue]);
+
+	const isItemSaved = useCallback(
+		(item: GridItem) =>
+			Boolean(item.url) &&
+			savedUrls.has(normalizeComparableUrl(item.url!)),
+		[savedUrls]
 	);
 
-	const rowCategories = useMemo(() => {
-		return categoryConfig
-			.map(config => {
-				switch (config.id) {
-					case 'all':
-						return {
-							id: config.id,
-							label: config.label,
-							description: config.description,
-							totalItems: totalGameCount,
-							items: allPreviewItems
-						} satisfies GameCategory;
-					default: {
-						const sourceItems = categoryMap[config.id] ?? [];
+	const handleLaunch = useCallback((item: GridItem) => {
+		dispatchGameLaunch(item);
+	}, []);
 
-						return {
-							id: config.id,
-							label: config.label,
-							description: config.description,
-							totalItems: sourceItems.length,
-							items: sourceItems.slice(0, rowPreviewSize)
-						} satisfies GameCategory;
-					}
-				}
-			})
-			.filter(category => category.totalItems > 0);
-	}, [allPreviewItems, categoryMap, totalGameCount]);
+	const handleToggleSave = useCallback(
+		(item: GridItem) => {
+			if (!item.url) return;
+			const url = item.url;
+			const normalized = normalizeComparableUrl(url);
 
-	const activeCategory = useMemo(() => {
-		switch (true) {
-			case deferredSearchValue.length > 0: {
-				const items = mergedGames.filter(game =>
-					game.searchValue.includes(deferredSearchValue)
+			setSavedGamesState(previous => {
+				const alreadySaved = previous.customGames.some(
+					game => normalizeComparableUrl(game.url) === normalized
 				);
+
+				if (alreadySaved) {
+					return {
+						...previous,
+						customGames: previous.customGames.filter(
+							game =>
+								normalizeComparableUrl(game.url) !== normalized
+						)
+					};
+				}
 
 				return {
-					id: 'search',
-					label: `Results for "${searchValue.trim()}"`,
-					description: `${items.length.toLocaleString()} matching games`,
-					totalItems: items.length,
-					items
-				} satisfies GameCategory;
-			}
-			case Boolean(viewAllCategory): {
-				const matchedConfig = categoryConfig.find(
-					config => config.id === viewAllCategory
-				);
-				const items = getCategoryItems(viewAllCategory!);
-
-				switch (Boolean(matchedConfig)) {
-					case false:
-						return null;
-					default:
-						return {
-							id: matchedConfig!.id,
-							label: matchedConfig!.label,
-							description: matchedConfig!.description,
-							totalItems: items.length,
-							items
-						} satisfies GameCategory;
-				}
-			}
-			default:
-				return null;
-		}
-	}, [
-		deferredSearchValue,
-		getCategoryItems,
-		mergedGames,
-		searchValue,
-		viewAllCategory
-	]);
-
-	const viewerCategory = useMemo(() => {
-		switch (Boolean(viewer)) {
-			case false:
-				return null;
-			default:
-				switch (activeCategory?.id === viewer!.categoryId) {
-					case true:
-						return activeCategory;
-					default: {
-						const matchedConfig = categoryConfig.find(
-							config => config.id === viewer!.categoryId
-						);
-						const items = getCategoryItems(viewer!.categoryId);
-
-						switch (Boolean(matchedConfig)) {
-							case false:
-								return null;
-							default:
-								return {
-									id: matchedConfig!.id,
-									label: matchedConfig!.label,
-									description: matchedConfig!.description,
-									totalItems: items.length,
-									items
-								} satisfies GameCategory;
-						}
-					}
-				}
-		}
-	}, [activeCategory, getCategoryItems, viewer]);
-
-	const viewerItems = useMemo(
-		() => viewerCategory?.items ?? [],
-		[viewerCategory]
+					customGames: [
+						{
+							id: `${item.id}-${Date.now()}`,
+							name: item.title,
+							url,
+							image: item.image,
+							tags: item.categories,
+							addedAt: Date.now()
+						},
+						...previous.customGames
+					],
+					removedGameUrls: previous.removedGameUrls.filter(
+						removed =>
+							normalizeComparableUrl(removed) !== normalized
+					)
+				};
+			});
+		},
+		[setSavedGamesState]
 	);
 
-	const activeViewerGame = useMemo(() => {
-		switch (Boolean(viewer && viewerItems.length > 0)) {
-			case false:
-				return null;
-			default:
-				return viewerItems[viewer!.itemIndex] ?? null;
-		}
-	}, [viewer, viewerItems]);
-
-	const visibleActiveItems = useMemo(() => {
-		switch (Boolean(activeCategory)) {
-			case false:
-				return [];
-			default:
-				return activeCategory!.items.slice(0, visibleItemCount);
-		}
-	}, [activeCategory, visibleItemCount]);
-
-	const viewerPreviewItems = useMemo(() => {
-		switch (Boolean(viewer && activeViewerGame)) {
-			case false:
-				return [];
-			default: {
-				const maxStart = Math.max(
-					0,
-					viewerItems.length - viewerPreviewSize
-				);
-				const startIndex = clamp(
-					viewer!.itemIndex - Math.floor(viewerPreviewSize / 2),
-					0,
-					maxStart
-				);
-
-				return viewerItems.slice(
-					startIndex,
-					startIndex + viewerPreviewSize
-				);
-			}
-		}
-	}, [activeViewerGame, viewer, viewerItems]);
-
-	const canLoadMoreActiveItems = useMemo(() => {
-		switch (Boolean(activeCategory)) {
-			case false:
-				return false;
-			default:
-				return visibleItemCount < activeCategory!.totalItems;
-		}
-	}, [activeCategory, visibleItemCount]);
-
-	useEffect(() => {
-		setVisibleItemCount(activePageSize);
-	}, [activeCategory?.id, deferredSearchValue, viewAllCategory]);
-
-	useEffect(() => {
-		setViewer(currentViewer => {
-			switch (Boolean(currentViewer)) {
-				case false:
-					return currentViewer;
-				default:
-					break;
-			}
-
-			const category =
-				activeCategory?.id === currentViewer!.categoryId
-					? activeCategory
-					: viewerCategory;
-
-			switch (Boolean(category)) {
-				case false:
-					return null;
-				case currentViewer!.itemIndex >= category!.items.length:
-					return {
-						...currentViewer!,
-						itemIndex: 0
-					};
-				default:
-					return currentViewer;
-			}
-		});
-	}, [activeCategory, viewerCategory]);
-
-	const openViewer = useCallback((categoryId: string, itemIndex: number) => {
-		setViewer({ categoryId, itemIndex });
-	}, []);
-
-	const closeViewer = useCallback(() => {
-		setViewer(null);
-	}, []);
-
-	const openViewAll = useCallback((categoryId: string) => {
-		setViewAllCategory(categoryId);
-		setViewer(null);
-	}, []);
-
-	const closeViewAll = useCallback(() => {
-		setViewAllCategory(null);
-	}, []);
-
-	const goViewerPrev = useCallback(() => {
-		setViewer(previousViewer => {
-			switch (Boolean(previousViewer && viewerItems.length > 0)) {
-				case false:
-					return previousViewer;
-				default:
-					return {
-						...previousViewer!,
-						itemIndex:
-							(previousViewer!.itemIndex -
-								1 +
-								viewerItems.length) %
-							viewerItems.length
-					};
-			}
-		});
-	}, [viewerItems.length]);
-
-	const goViewerNext = useCallback(() => {
-		setViewer(previousViewer => {
-			switch (Boolean(previousViewer && viewerItems.length > 0)) {
-				case false:
-					return previousViewer;
-				default:
-					return {
-						...previousViewer!,
-						itemIndex:
-							(previousViewer!.itemIndex + 1) % viewerItems.length
-					};
-			}
-		});
-	}, [viewerItems.length]);
-
-	const handlePlayNow = useCallback(() => {
-		switch (Boolean(activeViewerGame)) {
-			case false:
-				return;
-			default:
-				dispatchGameLaunch(activeViewerGame!, 'new');
-				setViewer(null);
-		}
-	}, [activeViewerGame]);
-
-	const handleReportBrokenGame = useCallback(() => {
-		switch (Boolean(activeViewerGame)) {
-			case false:
-				return;
-			default: {
-				const title = `Broken game: ${activeViewerGame!.title}`;
-				const body = [
-					`Game: ${activeViewerGame!.title}`,
-					`URL: ${activeViewerGame!.url}`,
-					`Source: ${activeViewerGame!.source}`,
-					`Tags: ${activeViewerGame!.tags.join(', ')}`,
-					'',
-					'What is broken?'
-				].join('\n');
-				const query = new URLSearchParams({
-					title,
-					body
-				});
-
-				window.open(`${reportIssueUrl}?${query.toString()}`, '_blank');
-				setViewer(null);
-			}
-		}
-	}, [activeViewerGame]);
-
-	const loadMoreActiveItems = useCallback(() => {
-		setVisibleItemCount(previousCount => previousCount + activePageSize);
-	}, []);
-
-	useEffect(() => {
-		switch (Boolean(viewer)) {
-			case false:
-				return;
-			default:
-				break;
-		}
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			switch (event.key) {
-				case 'Escape':
-					closeViewer();
-					return;
-				case 'ArrowLeft':
-					goViewerPrev();
-					return;
-				case 'ArrowRight':
-					goViewerNext();
-					return;
-				default:
-					return;
-			}
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-		};
-	}, [closeViewer, goViewerNext, goViewerPrev, viewer]);
-
-	return (
-		<div className="h-full w-full overflow-y-auto">
-			<div className="min-h-full px-10 pt-6 pb-24">
-				<div className="mx-auto max-w-375 space-y-8">
-					<motion.header
-						initial={false}
-						animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-						transition={{ duration: 0.25 }}
-						className="mx-auto flex w-full max-w-2xl items-center gap-2"
-					>
-						<div
-							className="flex flex-1 items-center gap-3 rounded-full px-4 h-10"
-							style={pillStyle}
-						>
-							<Search className="h-4 w-4 text-white/40" />
-							<input
-								value={searchValue}
-								onChange={event => {
-									setSearchValue(event.target.value);
-									setViewAllCategory(null);
-								}}
-								placeholder="Search games"
-								spellCheck={false}
-								className="w-full bg-transparent text-[13px] text-white/85 outline-none placeholder:text-white/30"
-								style={{
-									fontFamily:
-										"'DM Sans', 'Inter', system-ui, sans-serif",
-									letterSpacing: '0.01em',
-									caretColor: '#8b5cf6'
-								}}
-							/>
-							{searchValue ? (
-								<button
-									onClick={() => setSearchValue('')}
-									className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white"
-								>
-									<X className="h-3.5 w-3.5" />
-								</button>
-							) : null}
-						</div>
-						<div
-							className="flex h-10 items-center rounded-full px-4"
-							style={pillStyle}
-							title={
-								isImportedLoading
-									? 'Loading imported games'
-									: 'Library ready'
-							}
-						>
-							<span
-								className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full"
-								style={{
-									background: isImportedLoading
-										? '#fbbf24'
-										: '#34d399',
-									boxShadow: isImportedLoading
-										? '0 0 6px rgba(251,191,36,0.5)'
-										: '0 0 6px rgba(52,211,153,0.5)'
-								}}
-							/>
-							<span
-								className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/70"
-								style={{
-									fontFamily:
-										"'DM Sans', 'Inter', system-ui, sans-serif"
-								}}
-							>
-								{totalGameCount.toLocaleString()}
-							</span>
-						</div>
-					</motion.header>
-
-					{isInitialLibraryLoading ? (
-						<div
-							className="relative overflow-hidden rounded-3xl px-6 py-20"
-							style={glassStyle}
-						>
-							<div className="relative h-20">
-								<Loading />
-							</div>
-						</div>
-					) : activeCategory ? (
-						<section className="space-y-5">
-							<div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-								<div className="space-y-2">
-									<h2 className="text-2xl font-semibold tracking-tight text-white/92 md:text-3xl">
-										{activeCategory.label}
-									</h2>
-									<p className="text-sm text-white/44">
-										{activeCategory.description}
-									</p>
-								</div>
-
-								<div className="flex items-center gap-2">
-									{deferredSearchValue.length === 0 ? (
-										<motion.button
-											onClick={closeViewAll}
-											whileHover={{ scale: 1.03 }}
-											whileTap={{ scale: 0.97 }}
-											className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white/84"
-											style={buttonStyle}
-										>
-											<ArrowLeft className="h-4 w-4" />
-											Back
-										</motion.button>
-									) : null}
-									<div className="rounded-xl bg-white/8 px-4 py-2 text-sm text-white/56">
-										{activeCategory.totalItems.toLocaleString()}{' '}
-										games
-									</div>
-								</div>
-							</div>
-
-							{activeCategory.totalItems > 0 ? (
-								<>
-									<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-										{visibleActiveItems.map(
-											(game, itemIndex) => (
-												<GameCard
-													key={`${activeCategory.id}-${game.id}`}
-													game={game}
-													onSelect={() =>
-														openViewer(
-															activeCategory.id,
-															itemIndex
-														)
-													}
-												/>
-											)
-										)}
-									</div>
-
-									{canLoadMoreActiveItems ? (
-										<div className="flex justify-center pt-2">
-											<motion.button
-												onClick={loadMoreActiveItems}
-												whileHover={{ scale: 1.03 }}
-												whileTap={{ scale: 0.97 }}
-												className="rounded-xl px-5 py-3 text-sm font-medium"
-												style={primaryButtonStyle}
-											>
-												Load More
-											</motion.button>
-										</div>
-									) : null}
-								</>
-							) : (
-								<div
-									className="rounded-2xl px-6 py-16 text-center"
-									style={glassStyle}
-								>
-									<div className="text-lg font-semibold text-white/90">
-										No matching games
-									</div>
-									<p className="mt-2 text-sm text-white/46">
-										Try another search or clear the filters.
-									</p>
-								</div>
-							)}
-						</section>
-					) : (
-						<div className="space-y-10">
-							{rowCategories.map(category => (
-								<CategoryRow
-									key={category.id}
-									category={category}
-									onSelect={openViewer}
-									onViewAll={openViewAll}
-								/>
-							))}
-						</div>
-					)}
+	const header = (
+		<div className="space-y-3">
+			<div className="flex flex-wrap items-end justify-between gap-3">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight text-white/92 md:text-3xl">
+						Games
+					</h1>
+					<p className="mt-0.5 text-sm text-white/42">
+						{items.length.toLocaleString()} games ready to play.
+					</p>
 				</div>
 
-				<AnimatePresence>
-					{activeViewerGame && viewerCategory ? (
-						<motion.section
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							className="fixed inset-0 z-80"
+				<div className="flex items-center gap-2">
+					<div
+						className="flex h-9 w-56 items-center gap-2 rounded-full px-3"
+						style={pillStyle}
+					>
+						<Search className="h-4 w-4 shrink-0 text-white/40" />
+						<input
+							value={searchValue}
+							onChange={event =>
+								setSearchValue(event.target.value)
+							}
+							placeholder="Search games"
+							spellCheck={false}
+							className="w-full bg-transparent text-[13px] text-white/85 outline-none placeholder:text-white/30"
+							style={{ caretColor: '#8b5cf6' }}
+						/>
+						{searchValue ? (
+							<button
+								onClick={() => setSearchValue('')}
+								className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white"
+							>
+								<X className="h-3.5 w-3.5" />
+							</button>
+						) : null}
+					</div>
+
+					<div
+						className="flex h-9 items-center rounded-full px-3"
+						style={pillStyle}
+						title={
+							isImportedLoading
+								? 'Loading imported games'
+								: 'Library ready'
+						}
+					>
+						<span
+							className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full"
 							style={{
-								isolation: 'isolate',
-								backdropFilter: 'blur(10px)',
-								WebkitBackdropFilter: 'blur(10px)'
+								background: isImportedLoading
+									? '#fbbf24'
+									: '#34d399'
+							}}
+						/>
+						<span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+							{allGames.length.toLocaleString()}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<div className="flex flex-wrap gap-1.5">
+				{visibleCategories.map(category => {
+					const isActive = category.id === activeCategoryId;
+
+					return (
+						<button
+							key={category.id}
+							onClick={() => setActiveCategoryId(category.id)}
+							className="rounded-full px-3 py-1 text-[12px] font-medium transition-colors"
+							style={{
+								background: isActive
+									? 'var(--color-primary)'
+									: 'var(--color-surface)',
+								border: `1px solid ${
+									isActive
+										? 'var(--color-primary)'
+										: 'var(--color-border)'
+								}`,
+								color: isActive
+									? '#ffffff'
+									: 'rgba(255,255,255,0.6)'
 							}}
 						>
-							<div
-								className="fixed inset-0"
-								onClick={closeViewer}
-								style={{
-									background: 'rgba(5, 3, 18, 0.92)',
-									filter: 'blur(100px)'
-								}}
-							/>
-
-							<motion.div
-								initial={{ opacity: 0, scale: 0.985, y: 16 }}
-								animate={{ opacity: 1, scale: 1, y: 0 }}
-								exit={{ opacity: 0, scale: 0.985, y: 16 }}
-								transition={{ duration: 0.2 }}
-								className="relative flex h-full flex-col px-5 py-5 md:px-8 md:py-7"
-							>
-								<div className="flex items-center justify-between gap-3">
-									<motion.button
-										onClick={closeViewer}
-										whileHover={{ x: -2, scale: 1.02 }}
-										whileTap={{ scale: 0.97 }}
-										className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white/88"
-										style={buttonStyle}
-									>
-										<ArrowLeft className="h-4 w-4" />
-										Back
-									</motion.button>
-
-									<div className="text-xs uppercase tracking-[0.24em] text-white/42">
-										{viewerCategory.label}
-									</div>
-
-									<div className="flex items-center gap-2">
-										<motion.button
-											onClick={goViewerPrev}
-											whileHover={{ scale: 1.06 }}
-											whileTap={{ scale: 0.94 }}
-											className="flex h-10 w-10 items-center justify-center rounded-xl"
-											style={buttonStyle}
-										>
-											<ChevronLeft className="h-4 w-4 text-white/84" />
-										</motion.button>
-										<motion.button
-											onClick={goViewerNext}
-											whileHover={{ scale: 1.06 }}
-											whileTap={{ scale: 0.94 }}
-											className="flex h-10 w-10 items-center justify-center rounded-xl"
-											style={buttonStyle}
-										>
-											<ChevronRight className="h-4 w-4 text-white/84" />
-										</motion.button>
-									</div>
-								</div>
-
-								<div className="mt-6 grid flex-1 gap-6 overflow-hidden lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-									<div
-										className="min-h-0 overflow-hidden rounded-3xl p-4"
-										style={{
-											...glassStyle,
-											border: '1px solid rgba(255,255,255,0.08)'
-										}}
-									>
-										<GamePoster
-											title={activeViewerGame.title}
-											image={activeViewerGame.image}
-											className="h-full min-h-80 w-full rounded-2xl"
-										/>
-									</div>
-
-									<div
-										className="flex min-h-0 flex-col overflow-hidden rounded-3xl p-6"
-										style={{
-											background: 'rgba(11, 8, 16, 0.97)',
-											border: '1px solid rgba(203,166,247,0.22)',
-											boxShadow:
-												'0 16px 60px rgba(0,0,0,0.35), inset 0 0 20px rgba(139,92,246,0.12)'
-										}}
-									>
-										<div className="space-y-4">
-											<div className="space-y-2">
-												<div className="text-[11px] uppercase tracking-[0.24em] text-white/38">
-													{activeViewerGame.hostLabel}
-												</div>
-												<h2 className="text-3xl font-bold tracking-tight text-white/94 md:text-4xl">
-													{activeViewerGame.title}
-												</h2>
-											</div>
-
-											<p className="text-sm leading-6 text-white/56 md:text-base">
-												{getSummaryText(
-													activeViewerGame,
-													viewerCategory.label
-												)}
-											</p>
-
-											<div className="flex flex-wrap gap-2">
-												{activeViewerGame.tags.map(
-													tag => (
-														<span
-															key={`${activeViewerGame.id}-${tag}`}
-															className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-medium text-white/68"
-														>
-															{getTagLabel(tag)}
-														</span>
-													)
-												)}
-											</div>
-
-											<div className="flex flex-wrap gap-3">
-												<motion.button
-													onClick={handlePlayNow}
-													whileHover={{
-														scale: 1.02,
-														y: -1
-													}}
-													whileTap={{ scale: 0.98 }}
-													className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
-													style={primaryButtonStyle}
-												>
-													<Play className="h-4 w-4" />
-													Play Now
-												</motion.button>
-												<motion.button
-													onClick={
-														handleReportBrokenGame
-													}
-													whileHover={{
-														scale: 1.02,
-														y: -1
-													}}
-													whileTap={{ scale: 0.98 }}
-													className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white/88"
-													style={buttonStyle}
-												>
-													<Flag className="h-4 w-4" />
-													Report Broken Game
-												</motion.button>
-											</div>
-										</div>
-
-										<div className="mt-6 flex min-h-0 flex-1 flex-col overflow-hidden">
-											<div className="mb-3 text-[11px] uppercase tracking-[0.22em] text-white/38">
-												More in {viewerCategory.label}
-											</div>
-											<div
-												className="min-h-0 flex-1 overflow-y-auto pr-2"
-												style={{
-													scrollbarWidth: 'thin',
-													scrollbarColor:
-														'rgba(139,92,246,0.55) rgba(255,255,255,0.06)',
-													overscrollBehavior:
-														'contain'
-												}}
-											>
-												<div className="grid content-start gap-3 sm:grid-cols-2">
-													{viewerPreviewItems.map(
-														game => {
-															const itemIndex =
-																viewerItems.findIndex(
-																	item =>
-																		item.id ===
-																		game.id
-																);
-
-															return (
-																<motion.button
-																	key={`viewer-item-${game.id}`}
-																	onClick={() =>
-																		openViewer(
-																			viewerCategory.id,
-																			itemIndex
-																		)
-																	}
-																	whileHover={{
-																		cursor: 'pointer',
-																		scale: 0.95
-																	}}
-																	whileTap={{
-																		scale: 0.9
-																	}}
-																	className="overflow-hidden rounded-2xl p-3 text-left"
-																	style={{
-																		background:
-																			itemIndex ===
-																			viewer?.itemIndex
-																				? 'rgba(139,92,246,0.12)'
-																				: 'rgba(255,255,255,0.05)',
-																		border:
-																			itemIndex ===
-																			viewer?.itemIndex
-																				? '1px solid rgba(139,92,246,0.24)'
-																				: '1px solid rgba(255,255,255,0.08)'
-																	}}
-																>
-																	<GamePoster
-																		title={
-																			game.title
-																		}
-																		image={
-																			game.image
-																		}
-																		className="h-24 w-full rounded-xl"
-																	/>
-																	<div className="mt-3 truncate text-sm font-semibold text-white/90">
-																		{
-																			game.title
-																		}
-																	</div>
-																	<div className="mt-1 truncate text-[11px] uppercase tracking-[0.2em] text-white/34">
-																		{
-																			game.hostLabel
-																		}
-																	</div>
-																</motion.button>
-															);
-														}
-													)}
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</motion.div>
-						</motion.section>
-					) : null}
-				</AnimatePresence>
+							{category.label}
+						</button>
+					);
+				})}
 			</div>
 		</div>
+	);
+
+	if (isInitialLibraryLoading) {
+		return (
+			<div className="flex h-full w-full items-center justify-center overflow-hidden">
+				<div className="relative h-20 w-full">
+					<Loading />
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{ duration: 0.2 }}
+			className="h-full w-full overflow-hidden"
+		>
+			<ItemGrid
+				resetKey={`${activeCategoryId}-${deferredSearchValue}`}
+				items={items}
+				onLaunchItem={handleLaunch}
+				onToggleSaveItem={handleToggleSave}
+				isItemSaved={isItemSaved}
+				header={header}
+			/>
+		</motion.div>
 	);
 };

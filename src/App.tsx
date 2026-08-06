@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { SpaceStars } from './components/SpaceStars';
-import { IntroSplash } from './components/IntroSplash';
 import {
 	SessionOverlay,
 	type SessionLoadStatus
@@ -18,10 +17,8 @@ import {
 	createInitialSessionHistory,
 	createSessionHistoryEntry,
 	emptyPlaybackState,
-	emptySavedAppsState,
 	emptySavedGamesState,
 	findSavedGameByUrl,
-	getAppLibraryStatus,
 	getGameLibraryStatus,
 	getHostLabel,
 	isLikelyUrlInput,
@@ -85,22 +82,14 @@ const App = () => {
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [sidebarHovered, setSidebarHovered] = useState(false);
-	const [skipIntroPref] = useLocalStorage('skipIntro', false);
-	const [showIntro, setShowIntro] = useState(() => !skipIntroPref);
-	const [introProgress, setIntroProgress] = useState(0);
-	const [isSkipped, setIsSkipped] = useState(() => skipIntroPref);
 	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
 	const [particles] = useLocalStorage('particles', true);
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
-	const [bgValue] = useLocalStorage('bgValue', '#050312');
+	const [bgValue] = useLocalStorage('bgValue', '#000000');
 	const [autoCapSessions] = useLocalStorage('autoCapSessions', true);
 	const [savedGamesState, setSavedGamesState] = useLocalStorage(
 		'savedGamesState',
 		emptySavedGamesState
-	);
-	const [savedAppsState, setSavedAppsState] = useLocalStorage(
-		'savedAppsState',
-		emptySavedAppsState
 	);
 	const [, setPlaybackState] = useLocalStorage(
 		'playbackState',
@@ -273,12 +262,6 @@ const App = () => {
 						)
 					}));
 					return;
-				case 'app':
-					setPlaybackState(previousState => ({
-						...previousState,
-						apps: pushPlaybackMediaEntry(previousState.apps, entry)
-					}));
-					return;
 				default:
 					return;
 			}
@@ -296,12 +279,6 @@ const App = () => {
 							previousState.games,
 							entry
 						)
-					}));
-					return;
-				case 'app':
-					setPlaybackState(previousState => ({
-						...previousState,
-						apps: syncPlaybackMediaEntry(previousState.apps, entry)
 					}));
 					return;
 				default:
@@ -368,7 +345,6 @@ const App = () => {
 			}
 
 			try {
-				let encodedUrl = '';
 				let resolvedUrl = '';
 				let isSearch = false;
 
@@ -379,11 +355,6 @@ const App = () => {
 						await proxy!.ready;
 						resolvedUrl = proxy!.search(nextInput);
 						isSearch = !isLikelyUrlInput(nextInput);
-						encodedUrl = await proxy!.convertURL(
-							proxy!.config,
-							proxy!.proxySetting,
-							nextInput
-						);
 					}
 				}
 
@@ -393,7 +364,7 @@ const App = () => {
 
 				switch (idx !== -1) {
 					case true:
-						rawSessions.current[idx].url = encodedUrl;
+						rawSessions.current[idx].url = resolvedUrl;
 						setSessions([...rawSessions.current]);
 						break;
 					default:
@@ -419,10 +390,10 @@ const App = () => {
 						...options,
 						kind: isInternalTarget
 							? 'internal'
-							: options.kind ?? 'search',
+							: (options.kind ?? 'search'),
 						librarySource: customSavedGame
 							? 'custom'
-							: options.librarySource ?? null
+							: (options.librarySource ?? null)
 					}
 				);
 
@@ -443,7 +414,6 @@ const App = () => {
 
 				switch (nextEntry.kind) {
 					case 'game':
-					case 'app':
 						recordSessionVisit(nextEntry);
 						break;
 					case 'search':
@@ -602,7 +572,6 @@ const App = () => {
 
 					switch (nextEntry.kind) {
 						case 'game':
-						case 'app':
 							recordSessionVisit(nextEntry);
 							return;
 						case 'search':
@@ -676,17 +645,29 @@ const App = () => {
 	useEffect(() => {
 		const root = carouselRef.current;
 		if (!root) return;
+		const proxy = proxyRef.current;
 		for (const s of sessions) {
 			const iframe = root.querySelector<HTMLIFrameElement>(
 				`iframe[data-session-uid="${s.id}"]`
 			);
 			if (!iframe) continue;
-			const targetSrc = s.url || newTabUrl;
-			if (iframe.getAttribute('src') !== targetSrc) {
-				iframe.src = targetSrc;
+
+			if (iframe.dataset.sessionTarget === s.url) continue;
+			iframe.dataset.sessionTarget = s.url;
+
+			if (!s.url) {
+				if (iframe.getAttribute('src') !== newTabUrl) {
+					iframe.src = newTabUrl;
+				}
+				continue;
 			}
+
+			void proxy?.navigate(iframe, s.url).catch(error => {
+				console.error('[App] Session navigation failed', error);
+				finishSessionLoad(s.id, 'error');
+			});
 		}
-	}, [sessions]);
+	}, [sessions, finishSessionLoad]);
 
 	const handleNavClick = (id: string) => {
 		navigate(id === 'home' ? '/' : `/${id}`);
@@ -768,7 +749,6 @@ const App = () => {
 
 	const isSpecialPage =
 		activeItem === 'games' ||
-		activeItem === 'apps' ||
 		activeItem === 'settings' ||
 		activeItem === 'playback';
 
@@ -783,10 +763,6 @@ const App = () => {
 	const gameLibraryStatus = getGameLibraryStatus(
 		activeHistoryEntry,
 		savedGamesState
-	);
-	const appLibraryStatus = getAppLibraryStatus(
-		activeHistoryEntry,
-		savedAppsState
 	);
 	const isOnInternalPage = activeHistoryEntry.kind === 'internal';
 	const canTogglePin =
@@ -953,13 +929,20 @@ const App = () => {
 				`iframe[data-session-uid="${id}"]`
 			);
 			const data = rawSessions.current.find(s => s.id === id);
-			const target = data?.url || newTabUrl;
 			beginSessionLoad(id);
-			if (iframe) {
-				iframe.src = target;
+			if (!iframe) return;
+
+			if (!data?.url) {
+				iframe.src = newTabUrl;
+				return;
 			}
+
+			void proxyRef.current?.navigate(iframe, data.url).catch(error => {
+				console.error('[App] Session retry failed', error);
+				finishSessionLoad(id, 'error');
+			});
 		},
-		[beginSessionLoad]
+		[beginSessionLoad, finishSessionLoad]
 	);
 
 	const handleSessionHome = useCallback(
@@ -1096,109 +1079,6 @@ const App = () => {
 		setSavedGamesState
 	]);
 
-	const handleToggleSavedApp = useCallback(() => {
-		switch (appLibraryStatus.canToggle) {
-			case false:
-				return;
-			default:
-				break;
-		}
-
-		const normalizedUrl = activeHistoryEntry.normalizedUrl;
-
-		switch (appLibraryStatus.isSaved) {
-			case true: {
-				const nextEntry = createSessionHistoryEntry(
-					activeHistoryEntry.url,
-					{
-						...activeHistoryEntry,
-						kind: 'search',
-						librarySource: null
-					}
-				);
-
-				setSavedAppsState(previousState => {
-					const nextCustomApps = previousState.customApps.filter(
-						app => normalizeComparableUrl(app.url) !== normalizedUrl
-					);
-					const nextRemovedAppUrls =
-						appLibraryStatus.librarySource === 'default'
-							? [
-									...previousState.removedAppUrls.filter(
-										url =>
-											normalizeComparableUrl(url) !==
-											normalizedUrl
-									),
-									activeHistoryEntry.url
-								]
-							: previousState.removedAppUrls.filter(
-									url =>
-										normalizeComparableUrl(url) !==
-										normalizedUrl
-								);
-
-					return {
-						customApps: nextCustomApps,
-						removedAppUrls: nextRemovedAppUrls
-					};
-				});
-				setSessionHistoryMap(previousState => ({
-					...previousState,
-					[activeSession]: syncSessionHistoryEntry(
-						previousState[activeSession] ??
-							createInitialSessionHistory(),
-						nextEntry
-					)
-				}));
-				return;
-			}
-			default: {
-				const nextEntry = createSessionHistoryEntry(
-					activeHistoryEntry.url,
-					{
-						...activeHistoryEntry,
-						kind: 'app',
-						librarySource: 'custom'
-					}
-				);
-
-				setSavedAppsState(previousState => {
-					const nextCustomApp = buildSavedGameRecord(nextEntry);
-					const nextCustomApps = [
-						nextCustomApp,
-						...previousState.customApps.filter(
-							app =>
-								normalizeComparableUrl(app.url) !==
-								normalizedUrl
-						)
-					];
-
-					return {
-						customApps: nextCustomApps,
-						removedAppUrls: previousState.removedAppUrls.filter(
-							url => normalizeComparableUrl(url) !== normalizedUrl
-						)
-					};
-				});
-				setSessionHistoryMap(previousState => ({
-					...previousState,
-					[activeSession]: syncSessionHistoryEntry(
-						previousState[activeSession] ??
-							createInitialSessionHistory(),
-						nextEntry
-					)
-				}));
-				recordSessionVisit(nextEntry);
-			}
-		}
-	}, [
-		activeHistoryEntry,
-		activeSession,
-		appLibraryStatus,
-		recordSessionVisit,
-		setSavedAppsState
-	]);
-
 	const handleTogglePin = useCallback(() => {
 		switch (canTogglePin) {
 			case false:
@@ -1303,7 +1183,7 @@ const App = () => {
 									}}
 								>
 									<iframe
-										src={s.url || newTabUrl}
+										src={newTabUrl}
 										data-session-id={index}
 										data-session-uid={s.id}
 										className="w-full h-full"
@@ -1312,11 +1192,7 @@ const App = () => {
 										}
 										style={{
 											borderRadius: 12,
-											border: '1px solid rgba(255,255,255,0.06)',
-											background:
-												'radial-gradient(ellipse at center, transparent 60%, rgba(24,20,28,0.65) 100%)',
-											backdropFilter: 'blur(4px)',
-											WebkitBackdropFilter: 'blur(4px)'
+											border: '1px solid var(--color-border)'
 										}}
 									/>
 									{load && (
@@ -1372,29 +1248,21 @@ const App = () => {
 		);
 	};
 
-	const [introDone, setIntroDone] = useState(false);
-
-	useEffect(() => {
-		if (!showIntro) {
-			setIntroDone(true);
-		}
-	}, [showIntro]);
-
 	const bgStyle = (() => {
-		if (particles) return { backgroundColor: '#050312' };
+		if (particles) return { backgroundColor: 'transparent' };
 		switch (bgMode) {
 			case 'image':
 				return {
-					backgroundColor: '#050312',
+					backgroundColor: '#000000',
 					backgroundImage: `url(${bgValue})`,
 					backgroundSize: 'cover',
 					backgroundPosition: 'center',
 					backgroundRepeat: 'no-repeat'
 				};
 			case 'solid':
-				return { backgroundColor: bgValue || '#050312' };
+				return { backgroundColor: bgValue || '#000000' };
 			default:
-				return { backgroundColor: '#050312' };
+				return { backgroundColor: '#000000' };
 		}
 	})();
 
@@ -1402,35 +1270,13 @@ const App = () => {
 		<div
 			id="app-root"
 			className="h-screen flex flex-col overflow-hidden"
-			style={bgStyle}
+			style={{ ...bgStyle, position: 'relative', zIndex: 1 }}
 		>
-			<div className="fixed inset-0" style={{ zIndex: 0 }}>
-				{particles && (
-					<SpaceStars
-						mode="intro"
-						skip={isSkipped}
-						onIntroComplete={() => setShowIntro(false)}
-						onProgress={setIntroProgress}
-					/>
-				)}
-			</div>
+			{particles && <SpaceStars />}
 
-			{showIntro && (
-				<IntroSplash
-					progress={introProgress}
-					onComplete={() => {
-						setIsSkipped(true);
-						setShowIntro(false);
-					}}
-				/>
-			)}
-
-			<motion.div
+			<div
 				className="relative flex flex-col h-full"
 				style={{ zIndex: 1 }}
-				initial={{ opacity: 0 }}
-				animate={{ opacity: introDone ? 1 : 0 }}
-				transition={{ duration: 1.5, ease: 'easeInOut' }}
 			>
 				{!isSpecialPage && (
 					<>
@@ -1457,9 +1303,6 @@ const App = () => {
 							onToggleSavedGame={handleToggleSavedGame}
 							canToggleSavedGame={gameLibraryStatus.canToggle}
 							isSavedGame={gameLibraryStatus.isSaved}
-							onToggleSavedApp={handleToggleSavedApp}
-							canToggleSavedApp={appLibraryStatus.canToggle}
-							isSavedApp={appLibraryStatus.isSaved}
 							onTogglePin={handleTogglePin}
 							canTogglePin={canTogglePin}
 							isPinned={pinnedState}
@@ -1498,7 +1341,7 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
-			</motion.div>
+			</div>
 		</div>
 	);
 };

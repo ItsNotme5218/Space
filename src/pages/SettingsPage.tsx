@@ -41,17 +41,13 @@ const Toggle = ({ on, set }: { on: boolean; set: (v: boolean) => void }) => (
 		className="relative w-12 h-7 rounded-full cursor-pointer shrink-0"
 		animate={{
 			backgroundColor: on
-				? 'rgba(139,92,246,0.65)'
-				: 'rgba(255,255,255,0.06)',
-			boxShadow: on
-				? '0 0 14px rgba(139,92,246,0.35), inset 0 0 6px rgba(139,92,246,0.2)'
-				: 'inset 0 1px 3px rgba(0,0,0,0.3)'
+				? 'var(--color-primary)'
+				: 'var(--color-surface-light)'
 		}}
 		transition={spring}
 	>
 		<motion.div
 			className="absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white/90"
-			style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
 			animate={{ x: on ? 20 : 0 }}
 			transition={spring}
 		/>
@@ -131,10 +127,8 @@ const Select = ({
 						className="absolute z-50 right-0 min-w-50 rounded-2xl overflow-hidden"
 						style={{
 							...(dropUp ? { bottom: '100%' } : { top: '100%' }),
-							background: 'rgba(14,14,18,0.96)',
-							border: '1px solid rgba(255,255,255,0.06)',
-							boxShadow: '0 20px 60px -12px rgba(0,0,0,0.8)',
-							backdropFilter: 'blur(4px)'
+							background: 'var(--color-surface)',
+							border: '1px solid var(--color-border)'
 						}}
 					>
 						{options.map((o, i) => {
@@ -207,16 +201,14 @@ const Btn = ({
 		style={
 			variant === 'ghost'
 				? {
-						background: 'rgba(255,255,255,0.04)',
-						border: '1px solid rgba(255,255,255,0.07)',
+						background: 'var(--color-surface)',
+						border: '1px solid var(--color-border)',
 						color: 'rgba(255,255,255,0.45)'
 					}
 				: {
-						background:
-							'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
-						border: '1px solid rgba(139,92,246,0.22)',
-						color: '#c4b5fd',
-						boxShadow: '0 0 16px rgba(139,92,246,0.15)'
+						background: 'var(--color-primary)',
+						border: '1px solid var(--color-primary)',
+						color: '#ffffff'
 					}
 		}
 	>
@@ -244,12 +236,8 @@ const Section = ({
 		<div
 			className="rounded-2xl divide-y divide-white/4"
 			style={{
-				background: 'rgba(12,10,18,0.82)',
-				border: '1px solid rgba(255,255,255,0.05)',
-				backdropFilter: 'blur(40px)',
-				WebkitBackdropFilter: 'blur(40px)',
-				boxShadow:
-					'0 2px 16px -6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+				background: 'var(--color-surface)',
+				border: '1px solid var(--color-border)'
 			}}
 		>
 			{children}
@@ -355,8 +343,7 @@ const CustomCloakInputs = () => {
 	};
 
 	const inputFocusStyle = {
-		border: '1px solid rgba(139,92,246,0.3)',
-		boxShadow: '0 0 0 3px rgba(139,92,246,0.08)'
+		border: '1px solid var(--color-primary)'
 	};
 
 	return (
@@ -583,7 +570,7 @@ const CloakPanel = () => {
 };
 
 const presetColors = [
-	'#050312',
+	'#000000',
 	'#0a0a1a',
 	'#1a0a2e',
 	'#0d1117',
@@ -597,7 +584,7 @@ const presetColors = [
 
 const BackgroundSelector = () => {
 	const [bgMode, setBgMode] = useLocalStorage('bgMode', 'solid');
-	const [bgValue, setBgValue] = useLocalStorage('bgValue', '#050312');
+	const [bgValue, setBgValue] = useLocalStorage('bgValue', '#000000');
 	const [urlInput, setUrlInput] = useState('');
 	const [urlSaved, setUrlSaved] = useState(false);
 	const urlTimer = useRef<ReturnType<typeof setTimeout>>(null);
@@ -649,8 +636,7 @@ const BackgroundSelector = () => {
 	};
 
 	const inputFocusStyle = {
-		border: '1px solid rgba(139,92,246,0.3)',
-		boxShadow: '0 0 0 3px rgba(139,92,246,0.08)'
+		border: '1px solid var(--color-primary)'
 	};
 
 	return (
@@ -684,18 +670,14 @@ const BackgroundSelector = () => {
 									border:
 										bgMode === 'solid' && bgValue === c
 											? '2px solid rgba(139,92,246,0.6)'
-											: '2px solid rgba(255,255,255,0.06)',
-									boxShadow:
-										bgMode === 'solid' && bgValue === c
-											? '0 0 12px rgba(139,92,246,0.25)'
-											: 'none'
+											: '2px solid rgba(255,255,255,0.06)'
 								}}
 							/>
 						))}
 						<div className="relative w-9 h-9 shrink-0">
 							<input
 								type="color"
-								value={bgMode === 'solid' ? bgValue : '#050312'}
+								value={bgMode === 'solid' ? bgValue : '#000000'}
 								onChange={e => {
 									setBgMode('solid');
 									setBgValue(e.target.value);
@@ -735,11 +717,7 @@ const BackgroundSelector = () => {
 									border:
 										bgMode === 'image' && bgValue === bg.url
 											? '2px solid rgba(139,92,246,0.6)'
-											: '2px solid rgba(255,255,255,0.06)',
-									boxShadow:
-										bgMode === 'image' && bgValue === bg.url
-											? '0 0 12px rgba(139,92,246,0.25)'
-											: 'none'
+											: '2px solid rgba(255,255,255,0.06)'
 								}}
 							>
 								<img
@@ -856,11 +834,11 @@ const BackgroundSelector = () => {
 										: bgValue}
 								</span>
 								<motion.button
-									whileHover={{ scale: 1.1 }}
+									whileHover={{ scale: 1.05 }}
 									whileTap={{ scale: 0.9 }}
 									onClick={() => {
 										setBgMode('solid');
-										setBgValue('#050312');
+										setBgValue('#000000');
 									}}
 									className="p-1.5 rounded-lg cursor-pointer text-white/25 hover:text-white/50 transition-colors"
 								>
@@ -883,7 +861,6 @@ const AppearPanel = () => {
 	);
 	const [clock12h, setClock12h] = useLocalStorage('clock12h', false);
 	const [clockLock, setClockLock] = useLocalStorage('clockLock', false);
-	const [skipIntro, setSkipIntro] = useLocalStorage('skipIntro', false);
 
 	return (
 		<div className="flex flex-col gap-12">
@@ -893,12 +870,6 @@ const AppearPanel = () => {
 					desc="Sidebar slides away when not hovered"
 				>
 					<Toggle on={autoHideSidebar} set={setAutoHideSidebar} />
-				</Row>
-				<Row
-					label="Skip Intro Animation"
-					desc="Don't play the galaxy intro on startup"
-				>
-					<Toggle on={skipIntro} set={setSkipIntro} />
 				</Row>
 			</Section>
 
@@ -920,7 +891,7 @@ const AppearPanel = () => {
 			<Section title="Background" delay={0.06}>
 				<Row
 					label="Starfield Particles"
-					desc="Animated star background — turn off to pick an image or color"
+					desc="Animated star background, turn off to pick an image or color"
 				>
 					<Toggle on={particles} set={setParticles} />
 				</Row>
@@ -946,11 +917,7 @@ const AppearPanel = () => {
 								key={c}
 								className="w-7 h-7 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/20 transition-all duration-150"
 								style={{
-									background: c,
-									boxShadow:
-										c === '#8b5cf6'
-											? `0 0 10px ${c}50`
-											: 'none'
+									background: c
 								}}
 							/>
 						))}
@@ -1187,10 +1154,8 @@ export const SettingsPage = () => {
 											className="absolute inset-0 rounded-xl"
 											style={{
 												background:
-													'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
-												border: '1px solid rgba(139,92,246,0.18)',
-												boxShadow:
-													'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)'
+													'var(--color-primary)',
+												border: '1px solid var(--color-primary)'
 											}}
 											transition={spring}
 										/>
@@ -1211,8 +1176,7 @@ export const SettingsPage = () => {
 					transition={{ ...soft, delay: 0.1 }}
 					className="w-full max-w-3xl h-px mt-4 mb-14"
 					style={{
-						background:
-							'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)'
+						background: 'var(--color-border)'
 					}}
 				/>
 

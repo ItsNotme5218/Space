@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import {
 	Gamepad2,
-	LayoutGrid,
 	Search as SearchIcon,
 	Clock,
 	Trash2,
@@ -20,8 +19,7 @@ const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
 
 const tabs = [
 	{ id: 'searches', label: 'Searches', icon: SearchIcon },
-	{ id: 'games', label: 'Games', icon: Gamepad2 },
-	{ id: 'apps', label: 'Apps', icon: LayoutGrid }
+	{ id: 'games', label: 'Games', icon: Gamepad2 }
 ] as const;
 
 type TabId = (typeof tabs)[number]['id'];
@@ -85,7 +83,7 @@ const groupByDay = <T extends { timestamp: number }>(items: T[]) => {
 
 const openHistoryEntry = (
 	entry: PlaybackMediaEntry | PlaybackSearchEntry,
-	kind: 'game' | 'app' | 'search'
+	kind: 'game' | 'search'
 ) => {
 	window.dispatchEvent(
 		new CustomEvent('space:navigate', {
@@ -111,7 +109,7 @@ const MediaCard = ({
 }: {
 	entry: PlaybackMediaEntry;
 	delay: number;
-	kind: 'game' | 'app';
+	kind: 'game';
 	onDelete: (id: string) => void;
 }) => (
 	<motion.div
@@ -120,25 +118,22 @@ const MediaCard = ({
 		animate={{ opacity: 1, y: 0 }}
 		exit={{
 			opacity: 0,
-			scale: 0.96,
-			filter: 'blur(6px)'
+			scale: 0.96
 		}}
 		transition={{ ...soft, delay }}
 		className="group rounded-2xl overflow-hidden cursor-pointer"
 		style={{
-			background: 'rgba(12,10,18,0.65)',
-			border: '1px solid rgba(255,255,255,0.06)',
-			boxShadow:
-				'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+			background: 'var(--color-surface)',
+			border: '1px solid var(--color-border)'
 		}}
 	>
 		<div
 			className="w-full aspect-video"
 			style={{
 				background: entry.image
-					? `linear-gradient(rgba(8,6,14,0.1), rgba(8,6,14,0.45)), url(${entry.image}) center / cover no-repeat`
-					: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(255,255,255,0.03))',
-				borderBottom: '1px solid rgba(255,255,255,0.04)'
+					? `url(${entry.image}) center / cover no-repeat`
+					: 'var(--color-surface-light)',
+				borderBottom: '1px solid var(--color-border)'
 			}}
 		/>
 		<div className="px-4 py-3 flex items-start justify-between gap-2">
@@ -243,7 +238,7 @@ const MediaPanel = ({
 	onDelete
 }: {
 	items: PlaybackMediaEntry[];
-	kind: 'game' | 'app';
+	kind: 'game';
 	onDelete: (id: string) => void;
 }) => {
 	const grouped = useMemo(() => groupByDay(items), [items]);
@@ -364,12 +359,8 @@ const SearchPanel = ({
 					<div
 						className="rounded-2xl divide-y divide-white/4 overflow-hidden"
 						style={{
-							background: 'rgba(12,10,18,0.65)',
-							border: '1px solid rgba(255,255,255,0.06)',
-							backdropFilter: 'blur(8px)',
-							WebkitBackdropFilter: 'blur(8px)',
-							boxShadow:
-								'0 2px 16px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+							background: 'var(--color-surface)',
+							border: '1px solid var(--color-border)'
 						}}
 					>
 						<AnimatePresence mode="popLayout">
@@ -413,13 +404,6 @@ export const PlaybackPage = () => {
 		}));
 	};
 
-	const handleDeleteApp = (id: string) => {
-		setPlaybackState(previousState => ({
-			...previousState,
-			apps: previousState.apps.filter(entry => entry.id !== id)
-		}));
-	};
-
 	const handleDeleteSearch = (id: string) => {
 		setPlaybackState(previousState => ({
 			...previousState,
@@ -445,7 +429,7 @@ export const PlaybackPage = () => {
 					transition={{ ...soft, delay: 0.04 }}
 					className="text-base text-white/25 mb-12"
 				>
-					Games, apps, and search history
+					Games and search history
 				</motion.p>
 
 				<LayoutGroup>
@@ -478,10 +462,8 @@ export const PlaybackPage = () => {
 											className="absolute inset-0 rounded-xl"
 											style={{
 												background:
-													'linear-gradient(180deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 100%)',
-												border: '1px solid rgba(139,92,246,0.18)',
-												boxShadow:
-													'inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.15), 0 0 16px rgba(139,92,246,0.08)'
+													'var(--color-primary)',
+												border: '1px solid var(--color-primary)'
 											}}
 											transition={spring}
 										/>
@@ -502,8 +484,7 @@ export const PlaybackPage = () => {
 					transition={{ ...soft, delay: 0.1 }}
 					className="w-full max-w-4xl h-px mt-12 mb-14"
 					style={{
-						background:
-							'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.2) 25%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.2) 75%, transparent 100%)'
+						background: 'var(--color-border)'
 					}}
 				/>
 
@@ -511,9 +492,9 @@ export const PlaybackPage = () => {
 					<AnimatePresence mode="wait">
 						<motion.div
 							key={active}
-							initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
-							animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-							exit={{ opacity: 0, y: -14, filter: 'blur(4px)' }}
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -14 }}
 							transition={soft}
 						>
 							{(() => {
@@ -524,14 +505,6 @@ export const PlaybackPage = () => {
 												items={playbackState.games}
 												kind="game"
 												onDelete={handleDeleteGame}
-											/>
-										);
-									case 'apps':
-										return (
-											<MediaPanel
-												items={playbackState.apps}
-												kind="app"
-												onDelete={handleDeleteApp}
 											/>
 										);
 									default:

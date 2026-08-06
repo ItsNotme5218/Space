@@ -13,24 +13,20 @@ interface SessionOverlayProps {
 }
 
 const glass = {
-	background: 'rgba(12,10,18,0.55)',
-	border: '1px solid rgba(255,255,255,0.06)',
-	boxShadow: '0 2px 16px -6px rgba(0,0,0,0.4)',
-	backdropFilter: 'blur(6px)',
-	WebkitBackdropFilter: 'blur(6px)'
+	background: 'var(--color-surface)',
+	border: '1px solid var(--color-border)'
 };
 
 const buttonStyle = {
-	background: 'rgba(255,255,255,0.05)',
-	border: '1px solid rgba(255,255,255,0.08)',
+	background: 'var(--color-surface)',
+	border: '1px solid var(--color-border)',
 	color: 'rgba(255,255,255,0.85)'
 };
 
 const primaryButtonStyle = {
-	background:
-		'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(139,92,246,0.14))',
-	border: '1px solid rgba(139,92,246,0.28)',
-	color: '#c4b5fd'
+	background: 'var(--color-primary)',
+	border: '1px solid var(--color-primary)',
+	color: '#ffffff'
 };
 
 export const SessionOverlay = ({
@@ -52,8 +48,7 @@ export const SessionOverlay = ({
 			className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-5 px-6 text-center"
 			style={{
 				borderRadius: 12,
-				background:
-					'radial-gradient(ellipse at center, rgba(10,8,18,0.82) 0%, rgba(5,3,14,0.94) 100%)'
+				background: 'rgba(0,0,0,0.9)'
 			}}
 		>
 			<AnimatePresence mode="wait">
@@ -75,8 +70,7 @@ export const SessionOverlay = ({
 							}}
 							className="flex h-12 w-12 items-center justify-center rounded-full"
 							style={{
-								border: '2px solid rgba(139,92,246,0.15)',
-								boxShadow: '0 0 24px rgba(139,92,246,0.18)'
+								border: '2px solid var(--color-border)'
 							}}
 						>
 							<Loader2 className="h-6 w-6 text-violet-300/90" />
@@ -94,7 +88,7 @@ export const SessionOverlay = ({
 										exit={{ opacity: 0, height: 0 }}
 										className="text-xs text-white/40"
 									>
-										Taking longer than usual — the site may
+										Taking longer than usual, the site may
 										be slow or blocking the proxy.
 									</motion.p>
 								)}

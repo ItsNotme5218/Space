@@ -23,16 +23,13 @@ class DogeUBGames {
 		const rewrittenGames = jsonGames
 			.filter((entry: any) => entry.appName && entry.url)
 			.map((entry: any) => {
-				// Get image from Asset array, strip /assets prefix
 				let image = '';
 				if (entry.Asset && entry.Asset.length > 0) {
 					const assetPath = entry.Asset[0];
-					// Strip /assets prefix and build full URL
 					const cleanPath = assetPath.replace(/^\/assets/, '');
 					image = `${this.assetBase}${cleanPath}`;
 				}
 
-				// Combine Category and Tag into tags array
 				const tags: string[] = [];
 				if (entry.Category && Array.isArray(entry.Category)) {
 					tags.push(

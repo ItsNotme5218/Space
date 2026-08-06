@@ -49,9 +49,11 @@ export const GridCard = memo(
 		const [iconFailed, setIconFailed] = useState(false);
 		const delay = hasAnimated ? 0 : staggerIndex * staggerDelay;
 		const host = hostFromUrl(item.url);
+		const artwork = item.image ?? '';
 		const favicon = host
 			? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`
 			: '';
+		const thumbnail = artwork || favicon;
 
 		return (
 			<div
@@ -69,43 +71,30 @@ export const GridCard = memo(
 					onClick={() => onCardClick(item.id)}
 					onMouseEnter={() => onHoverStart(item.id)}
 					onAnimationComplete={() => setHasAnimated(true)}
-					initial={{ opacity: 0, scale: 0.8, y: 20 }}
+					initial={{ opacity: 0 }}
 					animate={{
 						opacity: isHiddenByExpansion ? 0 : 1,
-						scale: isHiddenByExpansion ? 0.8 : 1,
-						y: isHovered && !isExpanded ? -12 : 0,
-						rotateX: isHovered && !isExpanded ? -8 : 0,
-						boxShadow:
-							isHovered && !isExpanded
-								? '0 0 25px 5px rgba(139, 92, 246, 0.4), inset 0 0 15px rgba(203, 166, 247, 0.3)'
-								: '0 0 0px 0px rgba(139, 92, 246, 0), inset 0 0 0px rgba(203, 166, 247, 0)'
+						y: isHovered && !isExpanded ? -20 : 0,
+						rotateX: isHovered && !isExpanded ? -14 : 0
 					}}
 					transition={{
 						layout: { type: 'spring', stiffness: 350, damping: 30 },
-						opacity: { duration: 0.25, delay },
-						scale: { duration: 0.25, delay },
-						y: {
-							type: 'spring',
-							stiffness: 520,
-							damping: 30
-						},
-						rotateX: {
-							type: 'spring',
-							stiffness: 520,
-							damping: 30
-						},
-						boxShadow: { duration: 0.4 }
+						opacity: { duration: 0.18, delay },
+						y: { type: 'spring', stiffness: 520, damping: 30 },
+						rotateX: { type: 'spring', stiffness: 520, damping: 30 }
 					}}
 					className="relative rounded-2xl overflow-visible cursor-pointer w-full h-full"
 					style={{
 						background: isExpanded
 							? 'transparent'
-							: 'rgba(20, 10, 30, 0.65)',
+							: 'var(--color-surface)',
 						border: isExpanded
 							? 'none'
-							: '1px solid rgba(203, 166, 247, 0.3)',
-						backdropFilter: 'blur(8px)',
-						WebkitBackdropFilter: 'blur(8px)',
+							: `1px solid ${
+									isHovered
+										? 'var(--color-primary)'
+										: 'var(--color-border)'
+								}`,
 						pointerEvents: isHiddenByExpansion ? 'none' : 'auto',
 						transformStyle: 'preserve-3d',
 						transformOrigin: 'center bottom'
@@ -119,19 +108,29 @@ export const GridCard = memo(
 							onToggleSave={onToggleSave}
 						/>
 					) : (
-						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-							{favicon && !iconFailed ? (
+						<div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl pointer-events-none">
+							{thumbnail && !iconFailed ? (
 								<img
-									src={favicon}
+									src={thumbnail}
 									alt=""
 									referrerPolicy="no-referrer"
 									loading="lazy"
+									decoding="async"
 									onError={() => setIconFailed(true)}
-									style={{
-										width: 34,
-										height: 34,
-										borderRadius: 9
-									}}
+									className={
+										artwork
+											? 'h-full w-full object-cover'
+											: ''
+									}
+									style={
+										artwork
+											? undefined
+											: {
+													width: 34,
+													height: 34,
+													borderRadius: 9
+												}
+									}
 								/>
 							) : item.url ? (
 								<span className="text-xl font-semibold text-white/70">

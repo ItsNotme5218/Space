@@ -1,18 +1,46 @@
 import * as BareMux from '@mercuryworkshop/bare-mux';
+import {
+	BareCompatibleClient,
+	type ProxyTransport
+} from '@mercuryworkshop/proxy-transports';
 import { SettingsAPI } from '@utils/settings';
 
-type ScramjetControllerInstance = {
-	init(path?: string): Promise<void>;
-	encodeUrl(term: string): string;
+type ProxyTransportInstance = Partial<ProxyTransport>;
+
+type ProxyTransportConstructor = new (
+	opts: Record<string, any>
+) => ProxyTransportInstance;
+
+const TRANSPORT_MODULES: Record<string, string> = {
+	epoxy: '/ep/index.mjs',
+	libcurl: '/l/index.mjs'
 };
 
-type ScramjetControllerConstructor = new (
-	opts: SJConfig
-) => ScramjetControllerInstance;
+const SCRAMJET_SCRIPTS = [
+	'/s/scramjet.js',
+	'/c/controller.api.js',
+	'/ut/scramjet-utils.js'
+];
 
-type ScramjetLoader = () => {
-	ScramjetController: ScramjetControllerConstructor;
-};
+const KEEPALIVE_INTERVAL = 15000;
+const CONTROLLER_TIMEOUT = 5000;
+
+const loadScript = (src: string) =>
+	new Promise<void>((resolve, reject) => {
+		const existing = document.querySelector<HTMLScriptElement>(
+			`script[data-proxy-src="${src}"]`
+		);
+		if (existing) {
+			resolve();
+			return;
+		}
+		const script = document.createElement('script');
+		script.src = src;
+		script.dataset.proxySrc = src;
+		script.onload = () => resolve();
+		script.onerror = () => reject(new Error(`Failed to load ${src}`));
+		document.head.append(script);
+	});
 
 interface ProxyInterface {
 	connection: BareMux.BareMuxConnection;
@@ -25,7 +53,7 @@ interface ProxyInterface {
 	proxySetting: string;
 	setTransports(): Promise<void>;
 	search(input: string): string;
-	registerSW(swConfig: any): Promise<void>;
+	registerSW(swConfig: any): Promise<ServiceWorker>;
 	updateSW(): void;
 	uninstallSW(): void;
 	redirect(
@@ -35,6 +63,7 @@ interface ProxyInterface {
 	): Promise<void>;
 	fetch(url: string, params?: any): Promise<string>;
 }
+
 class Proxy implements ProxyInterface {
 	connection!: BareMux.BareMuxConnection;
 	searchVar!: string;
@@ -48,6 +77,13 @@ class Proxy implements ProxyInterface {
 	ready: Promise<void>;
 	scramConfig!: SJConfig;
 
+	private controller: ScramjetControllerInstance | null = null;
+	private frames = new WeakMap<HTMLIFrameElement, ScramjetFrameInstance>();
+	private transport: ProxyTransportInstance | null = null;
+	private registration: Promise<ServiceWorker> | null = null;
+	private controllerBoot: Promise<void> | null = null;
+	private keepalive: ReturnType<typeof setInterval> | null = null;
+
 	constructor() {
 		this.connection = new BareMux.BareMuxConnection('/b/worker.js');
 
@@ -56,27 +92,9 @@ class Proxy implements ProxyInterface {
 		this.ready = (async () => {
 			this.scramConfig = {
 				prefix: '/s/res/',
-				files: {
-					wasm: '/s/wasm.wasm',
-					all: '/s/all.js',
-					sync: '/s/sync.js'
-				},
-				siteFlags: {
-					'https://discord.com/.*': {
-						naiiveRewriter: false
-					}
-				},
-				flags: {
-					captureErrors: false,
-					cleanErrors: true,
-					naiiveRewriter: false,
-					rewriterLogs: false,
-					scramitize: false,
-					serviceworkers: false,
-					sourcemaps: true,
-					strictRewrites: true,
-					syncxhr: false
-				},
+				scramjetPath: '/s/scramjet.js',
+				wasmPath: '/s/scramjet.wasm',
+				injectPath: '/c/controller.inject.js',
 				codec: {
 					encode: url => {
 						if (!url) return url;
@@ -129,29 +147,7 @@ class Proxy implements ProxyInterface {
 					file: '/sw.js',
 					config: this.scramConfig,
 					func: async () => {
-						const loadController: ScramjetLoader | undefined = (
-							globalThis as typeof globalThis & {
-								$scramjetLoadController?: ScramjetLoader;
-							}
-						).$scramjetLoadController;
-
-						switch (typeof loadController) {
-							case 'function':
-								break;
-							default:
-								throw new Error(
-									'Scramjet controller loader is unavailable'
-								);
-						}
-
-						const { ScramjetController: LoadedScramjetController } =
-							loadController();
-						const scramjet = new LoadedScramjetController(
-							this.scramConfig
-						);
-						await scramjet.init();
-						await this.setTransports();
-						console.log('Scramjet Service Worker registered.');
+						await this.bootController();
 					}
 				}
 			};
@@ -171,19 +167,7 @@ class Proxy implements ProxyInterface {
 		})();
 	}
 
-	async setTransports() {
-		console.log('[Proxy] setTransports() called');
-		const transports = this.transportVar || 'libcurl';
-		const transportMap: Record<any, string> = {
-			epoxy: '/ep/index.mjs',
-			libcurl: '/l/index.mjs'
-		};
-
-		const transportFile = transportMap[transports] || '/l/index.mjs';
-
-		// Use the app's own configured wisp server (defaults to the local
-		// wisp endpoint served by index.ts at /w/). Falling back to a
-		// third-party server made sessions flaky when that host was down.
+	private async transportOptions(): Promise<Record<string, any>> {
 		const wispUrl =
 			this.wispUrl ||
 			(location.protocol === 'https:' ? 'wss' : 'ws') +
@@ -191,9 +175,7 @@ class Proxy implements ProxyInterface {
 				location.host +
 				'/w/';
 
-		const transportOptions: Record<string, any> = {
-			wisp: wispUrl
-		};
+		const options: Record<string, any> = { wisp: wispUrl };
 
 		const remoteProxyServer = await this.getRemoteProxyServer();
 		if (
@@ -202,22 +184,105 @@ class Proxy implements ProxyInterface {
 			remoteProxyServer !== 'null' &&
 			remoteProxyServer !== 'disabled' &&
 			remoteProxyServer !== 'false' &&
-			transportFile === '/l/index.mjs'
+			(this.transportVar || 'libcurl') === 'libcurl'
 		) {
-			transportOptions.proxy = remoteProxyServer;
+			options.proxy = remoteProxyServer;
 		}
 
-		await this.connection.setTransport(transportFile, [
-			{ ...transportOptions }
-		]);
+		return options;
+	}
 
-		/*
-		await this.connection.setTransport(transportFile, [
-			{ ...transportOptions },
-		]);
-		*/ // debug function
+	private async createTransport(): Promise<ProxyTransportInstance> {
+		const transportFile =
+			TRANSPORT_MODULES[this.transportVar] || TRANSPORT_MODULES.libcurl;
 
-		console.log('[Proxy] Transport set with options:', transportOptions);
+		const module = await import(/* @vite-ignore */ transportFile);
+		const TransportClass: ProxyTransportConstructor =
+			module.default ?? module.LibcurlClient ?? module.EpoxyTransport;
+
+		if (typeof TransportClass !== 'function') {
+			throw new Error(
+				`No transport constructor exported by ${transportFile}`
+			);
+		}
+
+		const transport = new TransportClass(await this.transportOptions());
+		if (!transport.ready && typeof transport.init === 'function') {
+			await transport.init();
+		}
+
+		return transport;
+	}
+
+	private async bootController(): Promise<void> {
+		if (this.controllerBoot) return this.controllerBoot;
+
+		this.controllerBoot = (async () => {
+			const serviceworker = await this.registerSW(this.config.sj);
+
+			for (const src of SCRAMJET_SCRIPTS) {
+				await loadScript(src);
+			}
+
+			const api = window.$scramjetController;
+			if (!api?.Controller) {
+				throw new Error('Scramjet controller failed to load');
+			}
+
+			this.transport = await this.createTransport();
+
+			this.controller = new api.Controller({
+				serviceworker,
+				transport: this.transport,
+				config: {
+					prefix: this.scramConfig.prefix,
+					scramjetPath: this.scramConfig.scramjetPath,
+					wasmPath: this.scramConfig.wasmPath,
+					injectPath: this.scramConfig.injectPath,
+					codec: this.scramConfig.codec
+				}
+			});
+
+			await this.controller.wait();
+
+			if (this.keepalive === null) {
+				this.keepalive = setInterval(() => {
+					navigator.serviceWorker.controller?.postMessage(
+						'keepalive'
+					);
+				}, KEEPALIVE_INTERVAL);
+			}
+
+			console.log('[Proxy] Scramjet controller ready');
+		})();
+
+		try {
+			await this.controllerBoot;
+		} catch (error) {
+			this.controllerBoot = null;
+			throw error;
+		}
+	}
+
+	async setTransports() {
+		const transportFile =
+			TRANSPORT_MODULES[this.transportVar] || TRANSPORT_MODULES.libcurl;
+		const options = await this.transportOptions();
+
+		await this.connection.setTransport(transportFile, [{ ...options }]);
+
+		if (this.controller) {
+			this.transport = await this.createTransport();
+			this.controller.setTransport(this.transport);
+		}
+
+		console.log('[Proxy] Transport set with options:', options);
+	}
+
+	async swapWispServer(url: string) {
+		this.wispUrl = url;
+		await this.settings.setItem('wisp', url);
+		await this.setTransports();
 	}
 
 	async getTransports() {
@@ -249,54 +314,107 @@ class Proxy implements ProxyInterface {
 		}
 	}
 
-	async registerSW(swConfig: Record<any, any>) {
-		console.log(
-			'[Proxy] registerSW() called with type:',
-			swConfig.type,
-			'file:',
-			swConfig.file
-		);
-		switch (swConfig.type) {
-			case 'sw':
-				switch ('serviceWorker' in navigator) {
-					case true: {
-						const scope = '/';
-						console.log(
-							'[Proxy] Registering service worker with scope:',
-							scope
-						);
-						await navigator.serviceWorker.register(swConfig.file, {
-							scope
-						});
+	async attachFrame(
+		iframe: HTMLIFrameElement
+	): Promise<ScramjetFrameInstance> {
+		await this.bootController();
 
-						navigator.serviceWorker.ready.then(async () => {
-							console.log(
-								'[Proxy] Service worker ready, setting up transports'
-							);
-							await this.setTransports().then(async () => {
-								const transport =
-									await this.connection.getTransport();
-								if (transport == null) {
-									console.log(
-										'[Proxy] Transport null, retrying setTransports'
-									);
-									this.setTransports();
-								}
-							});
-							this.updateSW();
-						});
-						break;
-					}
-					default:
-						break;
+		const existing = this.frames.get(iframe);
+		if (existing) return existing;
+
+		const frame = this.controller!.createFrame(iframe);
+		this.frames.set(iframe, frame);
+
+		return frame;
+	}
+
+	async navigate(iframe: HTMLIFrameElement, url: string): Promise<void> {
+		const target = this.search(url);
+
+		switch (this.proxySetting) {
+			case 'sj': {
+				const frame = await this.attachFrame(iframe);
+				frame.go(target);
+				break;
+			}
+			default: {
+				await this.registerSW(this.config.uv);
+				await this.setTransports();
+
+				const uvConfig = window.__uv$config;
+				if (!uvConfig?.encodeUrl) {
+					throw new Error('[Proxy] Ultraviolet config is not loaded');
 				}
-				break;
-			case 'iframe':
-				console.log('iframe proxy selected');
-				break;
-			case 'multi':
-				console.log('multi proxy selected');
-				break;
+
+				iframe.src = uvConfig.prefix + uvConfig.encodeUrl(target);
+			}
+		}
+	}
+
+	async registerSW(swConfig: Record<any, any>): Promise<ServiceWorker> {
+		if (swConfig?.type !== 'sw') {
+			throw new Error(
+				`Unsupported proxy backend type: ${swConfig?.type}`
+			);
+		}
+
+		if (!('serviceWorker' in navigator)) {
+			throw new Error('Service workers are unavailable in this browser');
+		}
+
+		if (this.registration) return this.registration;
+
+		this.registration = (async () => {
+			const registration = await navigator.serviceWorker.register(
+				swConfig.file,
+				{ scope: '/', updateViaCache: 'none' }
+			);
+
+			try {
+				await registration.update();
+			} catch (error) {
+				console.warn(
+					'[Proxy] Service worker update check failed',
+					error
+				);
+			}
+
+			await navigator.serviceWorker.ready;
+
+			if (!navigator.serviceWorker.controller) {
+				await new Promise<void>(resolve => {
+					const done = () => {
+						window.clearTimeout(timer);
+						navigator.serviceWorker.removeEventListener(
+							'controllerchange',
+							done
+						);
+						resolve();
+					};
+					const timer = window.setTimeout(done, CONTROLLER_TIMEOUT);
+					navigator.serviceWorker.addEventListener(
+						'controllerchange',
+						done
+					);
+				});
+			}
+
+			const serviceworker =
+				navigator.serviceWorker.controller ??
+				registration.active ??
+				registration.waiting;
+			if (!serviceworker) {
+				throw new Error('The service worker did not become active');
+			}
+
+			return serviceworker;
+		})();
+
+		try {
+			return await this.registration;
+		} catch (error) {
+			this.registration = null;
+			throw error;
 		}
 	}
 
@@ -317,22 +435,7 @@ class Proxy implements ProxyInterface {
 	}
 
 	async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
-		console.log(
-			'[Proxy] redirect() called with url:',
-			url,
-			'proxySetting:',
-			proxySetting
-		);
-		let swConfigSettings: Record<any, any> | null = null;
-		swConfigSettings = swConfig[proxySetting];
-
-		if (!swConfigSettings) {
-			console.log('[Proxy] No swConfigSettings found, returning');
-			return;
-		}
-
-		await this.registerSW(swConfigSettings);
-		await this.setTransports();
+		const encodedUrl = await this.convertURL(swConfig, proxySetting, url);
 
 		const activeIframe: HTMLIFrameElement | null =
 			document.querySelector('iframe.active');
@@ -341,34 +444,7 @@ class Proxy implements ProxyInterface {
 			return;
 		}
 
-		switch (swConfigSettings.type) {
-			case 'sw': {
-				const encoder = this.getEncoderFor(swConfigSettings);
-				const encodedUrl =
-					swConfigSettings.config.prefix + encoder(this.search(url));
-				console.log('[Proxy] Redirecting iframe to:', encodedUrl);
-				activeIframe.src = encodedUrl;
-				break;
-			}
-		}
-	}
-
-	private getEncoderFor(
-		swConfigSettings: Record<any, any>
-	): (url: string) => string {
-		const cfg = swConfigSettings?.config;
-		if (cfg?.codec?.encode && typeof cfg.codec.encode === 'function') {
-			return cfg.codec.encode.bind(cfg.codec);
-		}
-		if (cfg?.encodeUrl && typeof cfg.encodeUrl === 'function') {
-			return cfg.encodeUrl.bind(cfg);
-		}
-		if (window.__uv$config?.encodeUrl) {
-			return window.__uv$config.encodeUrl.bind(window.__uv$config);
-		}
-		throw new Error(
-			'[Proxy] No URL encoder found for active proxy backend'
-		);
+		activeIframe.src = encodedUrl;
 	}
 
 	async convertURL(
@@ -376,40 +452,64 @@ class Proxy implements ProxyInterface {
 		proxySetting: string,
 		url: string
 	) {
-		console.log(
-			'[Proxy] convertURL() called with url:',
-			url,
-			'proxySetting:',
-			proxySetting
-		);
-		let swConfigSettings: Record<any, any> | null = null;
-		swConfigSettings = swConfig[proxySetting];
+		const swConfigSettings: Record<any, any> | null =
+			swConfig[proxySetting] ?? null;
 
 		if (!swConfigSettings) {
-			console.log('[Proxy] No swConfigSettings, returning search url');
 			return this.search(url);
 		}
 
-		await this.registerSW(swConfigSettings);
-		await this.setTransports();
+		const target = this.search(url);
 
-		const encoder = this.getEncoderFor(swConfigSettings);
-		const encodedUrl =
-			swConfigSettings.config.prefix + encoder(this.search(url));
-		console.log('[Proxy] Converted URL to:', encodedUrl);
-		return encodedUrl;
+		switch (proxySetting) {
+			case 'sj': {
+				await this.bootController();
+				const prefix =
+					this.controller?.prefix ?? this.scramConfig.prefix;
+				return prefix + this.scramConfig.codec!.encode(target);
+			}
+			default: {
+				await this.registerSW(swConfigSettings);
+				await this.setTransports();
+
+				const uvConfig = window.__uv$config;
+				if (!uvConfig?.encodeUrl) {
+					throw new Error('[Proxy] Ultraviolet config is not loaded');
+				}
+
+				return uvConfig.prefix + uvConfig.encodeUrl(target);
+			}
+		}
 	}
 
 	async fetch(url: string, params?: any): Promise<string> {
-		await this.setTransports();
-		const client = new BareMux.BareClient();
-		let response: Response;
+		const transport = this.transport ?? (await this.createTransport());
+		this.transport = transport;
 
-		if (params) {
-			response = await client.fetch(url, params);
-		} else {
-			response = await client.fetch(url);
+		const headers: [string, string][] = [];
+		if (params?.headers) {
+			const source = params.headers;
+			if (typeof source[Symbol.iterator] === 'function') {
+				for (const [key, value] of source as Iterable<
+					[string, string]
+				>) {
+					headers.push([key, String(value)]);
+				}
+			} else {
+				for (const [key, value] of Object.entries(
+					source as Record<string, string>
+				)) {
+					headers.push([key, String(value)]);
+				}
+			}
 		}
+
+		const client = new BareCompatibleClient(transport as ProxyTransport);
+		const response = await client.fetch(url, {
+			method: params?.method ?? 'GET',
+			body: params?.body ?? null,
+			headers
+		});
 
 		return await response.text();
 	}

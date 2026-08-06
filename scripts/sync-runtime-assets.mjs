@@ -1,23 +1,41 @@
 import { cp, mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
-import { epoxyPath } from '@mercuryworkshop/epoxy-transport';
-import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { baremuxPath as baremuxWorkerPath } from '@nightnetwork/bm-plusworker/path';
+
+const require = createRequire(import.meta.url);
+
+const dirOf = specifier => dirname(require.resolve(specifier));
 
 const workspacePath = (...segments) => resolve(process.cwd(), ...segments);
 
 const copyEntries = [
 	{
 		type: 'directory',
-		source: epoxyPath,
+		source: dirOf('@mercuryworkshop/epoxy-transport'),
 		destination: workspacePath('public', 'ep')
 	},
 	{
 		type: 'directory',
-		source: libcurlPath,
+		source: dirOf('@mercuryworkshop/libcurl-transport'),
 		destination: workspacePath('public', 'l')
+	},
+	{
+		type: 'directory',
+		source: scramjetPath,
+		destination: workspacePath('public', 's')
+	},
+	{
+		type: 'directory',
+		source: dirOf('@mercuryworkshop/scramjet-controller'),
+		destination: workspacePath('public', 'c')
+	},
+	{
+		type: 'directory',
+		source: dirOf('@mercuryworkshop/scramjet-utils'),
+		destination: workspacePath('public', 'ut')
 	},
 	{
 		type: 'file',
@@ -41,21 +59,6 @@ const copyEntries = [
 	},
 	{
 		type: 'file',
-		source: resolve(scramjetPath, 'scramjet.all.js'),
-		destination: workspacePath('public', 's', 'all.js')
-	},
-	{
-		type: 'file',
-		source: resolve(scramjetPath, 'scramjet.sync.js'),
-		destination: workspacePath('public', 's', 'sync.js')
-	},
-	{
-		type: 'file',
-		source: resolve(scramjetPath, 'scramjet.wasm.wasm'),
-		destination: workspacePath('public', 's', 'wasm.wasm')
-	},
-	{
-		type: 'file',
 		source: resolve(baremuxWorkerPath, 'worker.js'),
 		destination: workspacePath('public', 'b', 'worker.js')
 	}
@@ -65,11 +68,14 @@ const ensureParentDirectory = async destination => {
 	await mkdir(dirname(destination), { recursive: true });
 };
 
+const SKIP = /(\.map$|\.d\.ts$|[/\\](types|temp-types-build)$)/;
+
 const copyEntry = async entry => {
 	await ensureParentDirectory(entry.destination);
 	await cp(entry.source, entry.destination, {
 		force: true,
-		recursive: entry.type === 'directory'
+		recursive: entry.type === 'directory',
+		filter: source => !SKIP.test(source)
 	});
 	console.log(`[runtime:sync] ${entry.destination}`);
 };

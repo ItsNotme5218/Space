@@ -127,7 +127,7 @@ const PinTile = ({
 			className="relative flex flex-col items-center gap-2 py-2 rounded-xl group"
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
-			whileHover={{ scale: 1.05, y: -2 }}
+			whileHover={{ scale: 1.04 }}
 		>
 			<motion.button
 				whileTap={{ scale: 0.95 }}
@@ -177,7 +177,7 @@ const PinTile = ({
 					scale: hovered ? 1 : 0.6
 				}}
 				transition={{ duration: 0.15 }}
-				whileHover={{ scale: 1.12 }}
+				whileHover={{ scale: 1.05 }}
 				whileTap={{ scale: 0.92 }}
 				onClick={e => {
 					e.stopPropagation();
@@ -221,7 +221,7 @@ const AddPinTile = ({ onAdd }: { onAdd: () => void }) => {
 		>
 			<motion.button
 				type="button"
-				whileHover={{ scale: 1.05, y: -2 }}
+				whileHover={{ scale: 1.04 }}
 				whileTap={{ scale: 0.95 }}
 				onClick={onAdd}
 				className="w-14 h-14 rounded-[14px] flex items-center justify-center relative"
@@ -396,8 +396,8 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 			style={{ background: 'transparent' }}
 		>
 			<motion.div
-				initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
-				animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
 				transition={{ ...springSoft, delay: 0 }}
 				className="flex flex-col items-center mb-8 select-none"
 			>
@@ -436,9 +436,9 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 						{timeParts.period && (
 							<motion.span
 								key="period"
-								initial={{ opacity: 0, filter: 'blur(4px)' }}
-								animate={{ opacity: 1, filter: 'blur(0px)' }}
-								exit={{ opacity: 0, filter: 'blur(4px)' }}
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
 								transition={{ duration: 0.2 }}
 								className="absolute text-[14px] font-medium"
 								style={{
@@ -481,12 +481,9 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 				<form onSubmit={handleSearchSubmit}>
 					<motion.div
 						animate={{
-							boxShadow: searchFocused
-								? '0 0 0 1px rgba(139, 92, 246, 0.45), 0 0 32px rgba(139, 92, 246, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5)'
-								: '0 0 0 1px rgba(255, 255, 255, 0.03), 0 8px 20px rgba(0, 0, 0, 0.35)',
 							borderColor: searchFocused
-								? 'rgba(139, 92, 246, 0.45)'
-								: 'rgba(40, 40, 50, 0.7)'
+								? 'var(--color-primary)'
+								: 'var(--color-border)'
 						}}
 						transition={{ duration: 0.2 }}
 						className="flex items-center gap-3 pl-3 pr-2 py-2 rounded-xl"
@@ -494,7 +491,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 							background: 'rgba(12, 12, 16, 0.75)',
 							backdropFilter: 'blur(8px)',
 							WebkitBackdropFilter: 'blur(8px)',
-							border: '1px solid rgba(40, 40, 50, 0.7)'
+							border: '1px solid var(--color-border)'
 						}}
 					>
 						<div

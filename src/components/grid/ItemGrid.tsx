@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 import { GridCard } from './GridCard';
 import { Pagination } from './Pagination';
@@ -9,6 +9,7 @@ interface ItemGridProps {
 	items: GridItem[];
 	config?: Partial<GridConfig>;
 	header?: ReactNode;
+	resetKey?: string;
 	onItemClick?: (item: GridItem) => void;
 	onLaunchItem?: (item: GridItem) => void;
 	onToggleSaveItem?: (item: GridItem) => void;
@@ -19,6 +20,7 @@ export const ItemGrid = ({
 	items,
 	config,
 	header,
+	resetKey,
 	onItemClick,
 	onLaunchItem,
 	onToggleSaveItem,
@@ -32,10 +34,17 @@ export const ItemGrid = ({
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 	const [staggerKey, setStaggerKey] = useState(0);
 
-	const totalPages = Math.ceil(items.length / itemsPerPage);
+	useEffect(() => {
+		setCurrentPage(0);
+		setExpandedId(null);
+		setStaggerKey(k => k + 1);
+	}, [resetKey]);
+
+	const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
+	const safePage = Math.min(currentPage, totalPages - 1);
 	const currentItems = items.slice(
-		currentPage * itemsPerPage,
-		(currentPage + 1) * itemsPerPage
+		safePage * itemsPerPage,
+		(safePage + 1) * itemsPerPage
 	);
 
 	const getExpandDirection = (index: number) => {
@@ -136,12 +145,12 @@ export const ItemGrid = ({
 	return (
 		<div className="h-full w-full flex flex-col overflow-hidden">
 			{header && (
-				<div className="shrink-0 px-5 pt-5 pb-2 md:px-10 md:pt-7 md:pb-3">
+				<div className="shrink-0 px-4 pt-4 pb-1 md:px-8 md:pt-5 md:pb-2">
 					{header}
 				</div>
 			)}
-			<div className="flex-1 flex justify-center items-center px-4 md:px-8">
-				<div className="w-[80%] h-[88%] relative">
+			<div className="flex-1 flex justify-center items-center overflow-hidden px-3 md:px-6">
+				<div className="w-[92%] h-[92%] relative">
 					<LayoutGroup>
 						<div
 							className="grid gap-x-3 gap-y-3 h-full"
@@ -185,7 +194,7 @@ export const ItemGrid = ({
 			</div>
 
 			<Pagination
-				currentPage={currentPage}
+				currentPage={safePage}
 				totalPages={totalPages}
 				onPrevPage={handlePrevPage}
 				onNextPage={handleNextPage}

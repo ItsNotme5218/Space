@@ -26,7 +26,6 @@ class VaporGames {
 	async rewriteGamesList() {
 		const listData = await this.fetchJson();
 
-		// Collect all zone files from Col1 and Col2
 		const zones: { file: string; type: string }[] = [];
 
 		for (const col of [listData.Col1, listData.Col2]) {
@@ -37,12 +36,10 @@ class VaporGames {
 			}
 		}
 
-		// Fetch all zone files in parallel
 		const zoneResults = await Promise.allSettled(
 			zones.map(z => this.fetchZone(z.file))
 		);
 
-		// Collect all games from successful fetches
 		const allGames: any[] = [];
 
 		for (const result of zoneResults) {

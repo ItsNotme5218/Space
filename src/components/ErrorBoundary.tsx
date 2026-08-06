@@ -45,11 +45,9 @@ class ErrorBoundary extends React.Component<
 							onClick={() => window.location.reload()}
 							className="px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer"
 							style={{
-								background:
-									'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.12))',
-								border: '1px solid rgba(139,92,246,0.22)',
-								color: '#c4b5fd',
-								boxShadow: '0 0 16px rgba(139,92,246,0.15)'
+								background: 'var(--color-primary)',
+								border: '1px solid var(--color-primary)',
+								color: '#ffffff'
 							}}
 						>
 							Reload Page

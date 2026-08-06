@@ -7,9 +7,6 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { launchAboutBlank, launchBlob, applyCloak } from './lib/cloak.ts';
 import { readSetting, initSettings } from './hooks/useLocalStorage';
 
-const AppsPage = lazy(() =>
-	import('./pages/AppsPage.tsx').then(m => ({ default: m.AppsPage }))
-);
 const GamesPage = lazy(() =>
 	import('./pages/GamesPage.tsx').then(m => ({ default: m.GamesPage }))
 );
@@ -54,7 +51,7 @@ const originalDocumentClose = document.close.bind(document);
 let shadowRoot: ShadowRoot | null = null;
 let shadowDocument: Document | null = null;
 
-const runtimeScriptSources = ['/u/config.js', '/s/config.js', '/s/all.js'];
+const runtimeScriptSources = ['/u/config.js'];
 
 const loadRuntimeScript = (src: string) =>
 	new Promise<void>((resolve, reject) => {
@@ -190,14 +187,6 @@ const initShadowApp = async () => {
 		<MemoryRouter initialEntries={['/']}>
 			<Routes>
 				<Route path="/" element={<App />}>
-					<Route
-						path="apps"
-						element={
-							<Suspense fallback={<Loading />}>
-								<AppsPage />
-							</Suspense>
-						}
-					/>
 					<Route
 						path="games"
 						element={
