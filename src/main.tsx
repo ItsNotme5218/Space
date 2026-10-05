@@ -52,53 +52,10 @@ const installAnalytics = () => {
 	win.gtag('config', ANALYTICS_TAG);
 	const tag = document.createElement('script');
 	tag.async = true;
-	// Package-relative so static subpath mounts stay in-package.
-	tag.src = assetUrl('/api/tag');
-	// Fall back on static hosts; never proxy collection requests. Final
-	// fallback executes the build-baked copy when both loads fail.
-	tag.onerror = () => {
-		tag.onerror = null;
-		const direct = document.createElement('script');
-		direct.async = true;
-		direct.src = `https://www.googletagmanager.com/gtag/js?id=${ANALYTICS_TAG}`;
-		direct.onerror = () => {
-			fetch(new URL('tag-fallback.js', location.href).toString())
-				.then(response => {
-					if (!response.ok) throw new Error('fallback unavailable');
-					return response.text();
-				})
-				.then(code => {
-					const inline = document.createElement('script');
-					inline.textContent = code;
-					(document.head ?? document.documentElement).appendChild(
-						inline
-					);
-				})
-				.catch(() => {
-					try {
-						const baked =
-							document.getElementById('ddx-gtag-inline');
-						if (!baked?.textContent) return;
-						const bin = atob(baked.textContent.replace(/\s+/g, ''));
-						const bytes = new Uint8Array(bin.length);
-						for (let i = 0; i < bin.length; i++)
-							bytes[i] = bin.charCodeAt(i);
-						const inline = document.createElement('script');
-						inline.textContent = new TextDecoder().decode(bytes);
-						(document.head ?? document.documentElement).appendChild(
-							inline
-						);
-					} catch {
-					} finally {
-						document.getElementById('ddx-gtag-inline')?.remove();
-					}
-				});
-		};
-		(document.head ?? document.documentElement).appendChild(direct);
-	};
+	tag.src = `https://www.googletagmanager.com/gtag/js?id=${ANALYTICS_TAG}`;
 	// SVG host documents may not have a head; the stub and queued
 	// commands above are installed regardless.
-	document.head?.appendChild(tag);
+	(document.head ?? document.documentElement).appendChild(tag);
 };
 
 const boot = async () => {

@@ -2,7 +2,6 @@ import { defineConfig, loadEnv } from 'vite';
 import { runtimeConfigPlugin } from './srv/vite/runtime-config';
 import { fontObfuscationPlugin } from './srv/vite/font';
 import { svgHostPlugin } from './srv/vite/svg-host';
-import { analyticsInlinePlugin } from './srv/vite/analytics-inline';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { allowedHosts } from './srv/vite/hosts.ts';
@@ -24,8 +23,6 @@ export default defineConfig(({ mode }) => ({
 			...process.env
 		}),
 		fontObfuscationPlugin(),
-		// Bakes the analytics fallback before the SVG host embeds index.html.
-		analyticsInlinePlugin('G-3DTW1KTNCF', { htmlEntries: ['index.html'] }),
 		svgHostPlugin(),
 		react(),
 		tailwindcss(),

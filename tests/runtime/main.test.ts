@@ -91,7 +91,9 @@ it('actual main entry selects runtime before scripts, passes games initial route
 	expect(calls.standalone).not.toHaveBeenCalled();
 	expect(calls.scripts).toEqual(['script']);
 	expect(doc.head.appendChild).toHaveBeenCalledOnce();
-	expect(doc.head.appendChild.mock.calls[0][0].src).toBe('/api/tag');
+	expect(doc.head.appendChild.mock.calls[0][0].src).toBe(
+		'https://www.googletagmanager.com/gtag/js?id=G-3DTW1KTNCF'
+	);
 	expect(calls.font).toHaveBeenCalledExactlyOnceWith(root);
 	expect(calls.select.mock.invocationCallOrder[0]).toBeLessThan(
 		calls.font.mock.invocationCallOrder[0]
@@ -178,7 +180,10 @@ it('standalone preparation loads only the shared Space proxy configuration scrip
 	for (let i = 0; i < 10; i++) await Promise.resolve();
 
 	expect(calls.standalone).toHaveBeenCalledOnce();
-	expect(calls.scripts).toEqual(['/api/tag', '/space-runtime.js']);
+	expect(calls.scripts).toEqual([
+		'https://www.googletagmanager.com/gtag/js?id=G-3DTW1KTNCF',
+		'/space-runtime.js'
+	]);
 	expect(calls.scripts).not.toContain('/u/config.js');
 });
 
