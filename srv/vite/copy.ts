@@ -1,9 +1,5 @@
 import { createRequire } from 'node:module';
-import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
-import { refluxPath } from '@nightnetwork/reflux';
-import { enigmaPath } from '@nightnetwork/enigma/path';
-import { baremuxPath as bmworkerPath } from '@nightnetwork/bm-plusworker/path';
 import path, { dirname } from 'path';
 
 const require = createRequire(import.meta.url);
@@ -16,11 +12,7 @@ export const routePaths = {
 	controller: 'c',
 	scramjetUtils: 'ut',
 	libcurl: 'l',
-	uv: 'u',
-	reflux: 'r',
-	enigma: 'en',
 	auth: '',
-	bmworker: 'b',
 	plusClient: 'p'
 };
 
@@ -36,16 +28,6 @@ const copyMap = {
 		path: dirOf('@mercuryworkshop/epoxy-transport'),
 		files: ['*'],
 		dest: routePaths.epoxy
-	},
-	uv: {
-		path: uvPath,
-		files: [
-			{ name: 'uv.bundle.js', rename: 'bundle.js' },
-			{ name: 'uv.handler.js', rename: 'handler.js' },
-			{ name: 'uv.client.js', rename: 'client.js' },
-			{ name: 'uv.sw.js', rename: 'worker.js' }
-		],
-		dest: routePaths.uv
 	},
 	scramjet: {
 		path: scramjetPath,
@@ -67,16 +49,6 @@ const copyMap = {
 		files: ['*'],
 		dest: routePaths.libcurl
 	},
-	reflux: {
-		path: refluxPath,
-		files: ['*'],
-		dest: routePaths.reflux
-	},
-	enigma: {
-		path: enigmaPath,
-		files: ['*'],
-		dest: routePaths.enigma
-	},
 	auth: {
 		path: authPath,
 		files: [
@@ -93,11 +65,6 @@ const copyMap = {
 		path: plusClientPath,
 		files: ['*'],
 		dest: routePaths.plusClient
-	},
-	bmworker: {
-		path: bmworkerPath,
-		files: ['*'],
-		dest: routePaths.bmworker
 	}
 };
 

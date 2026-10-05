@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 import type { GridItem } from './types';
+import { imageUrl } from './image-url';
 
 interface ExpandedMosaicProps {
 	item?: GridItem;
@@ -35,7 +36,7 @@ export const ExpandedMosaic = ({
 	const [artFailed, setArtFailed] = useState(false);
 	const host = hostFromUrl(item?.url);
 	const initial = (item?.title || '?').trim().charAt(0).toUpperCase() || '?';
-	const artwork = item?.image || (host ? faviconFor(host) : '');
+	const artwork = imageUrl(item?.image || (host ? faviconFor(host) : ''));
 	const isPoster = Boolean(item?.image);
 	const categories = (item?.categories ?? []).slice(0, 4);
 

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { NewTab } from './components/NewTab';
 import { initSettings } from './hooks/useLocalStorage';
 import './index.css';
+import { injectSpaceAds } from './runtime/ads';
 
 const handleNavigate = (url: string) => {
 	if (window.parent && window.parent !== window) {
@@ -11,6 +12,7 @@ const handleNavigate = (url: string) => {
 };
 
 const boot = async () => {
+	if (window === window.top) injectSpaceAds();
 	await initSettings();
 	const rootElement = document.getElementById('newtab-root');
 	if (rootElement) {

@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sessions } from './Sessions';
-import { Gamepad2, History, Settings } from 'lucide-react';
+import { Gamepad2, History, Search, Settings } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
 import logoImg from '@assets/logo.webp';
 import { openNightPlusLogin } from '@utils/nightplus';
 
 const navItems = [
-	{ id: 'games', icon: Gamepad2 },
-	{ id: 'discord', icon: SiDiscord },
-	{ id: 'playback', icon: History },
-	{ id: 'settings', icon: Settings }
+	{ id: 'home', label: 'Search', icon: Search },
+	{ id: 'games', label: 'Games', icon: Gamepad2 },
+	{ id: 'playback', label: 'Playback', icon: History },
+	{ id: 'settings', label: 'Settings', icon: Settings },
+	{ id: 'discord', label: 'Discord', icon: SiDiscord }
 ];
 
 import type { Session } from '../App';
@@ -309,9 +310,10 @@ export const Sidebar = ({
 					<motion.div
 						className="absolute top-0 left-1/2 w-10 h-10 rounded-full pointer-events-none z-20"
 						style={{
-							background: 'rgba(139, 92, 246, 0.2)',
+							background:
+								'color-mix(in srgb, var(--color-primary) 20%, transparent)',
 							boxShadow:
-								'0px 0px 15px 2px rgba(139,92,246,0.4), inset 0px 0px 8px 2px rgba(203,166,247,0.3)',
+								'0px 0px 15px 2px color-mix(in srgb, var(--color-primary) 40%, transparent), inset 0px 0px 8px 2px color-mix(in srgb, var(--color-primary-light) 30%, transparent)',
 							x: '-50%'
 						}}
 						initial={false}
@@ -343,6 +345,7 @@ export const Sidebar = ({
 					/>
 
 					<motion.button
+						aria-label="Home"
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.95 }}
 						onClick={() => onItemClick('')}
@@ -369,51 +372,14 @@ export const Sidebar = ({
 						transform="translateY(-15px) scaleY(0.6)"
 					/>
 
-					{navItems.slice(0, 2).map(item => {
+					{navItems.map(item => {
 						const Icon = item.icon;
 						const isActive = activeItem === item.id;
 						return (
 							<motion.button
 								key={item.id}
-								ref={el => {
-									buttonRefs.current[item.id] = el;
-								}}
-								whileHover={{ scale: 1.1 }}
-								whileTap={{ scale: 0.95 }}
-								onClick={() => onItemClick(item.id)}
-								className="relative w-10 h-10 rounded-full flex items-center justify-center"
-							>
-								<Icon
-									className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-white' : 'text-zinc-500'}`}
-								/>
-							</motion.button>
-						);
-					})}
-
-					<VDivider
-						blur={2}
-						transform="translateY(12px) scaleY(1.2)"
-					/>
-					<VDivider
-						blur={3}
-						transform="translateY(6px) scaleY(0.8)"
-					/>
-					<VDivider
-						blur={2}
-						transform="translateY(-2px) scaleY(0.5)"
-					/>
-					<VDivider blur={1.5} transform="translateY(-8px)" />
-					<VDivider
-						blur={1}
-						transform="translateY(-15px) scaleY(0.6)"
-					/>
-
-					{navItems.slice(2, 5).map(item => {
-						const Icon = item.icon;
-						const isActive = activeItem === item.id;
-						return (
-							<motion.button
-								key={item.id}
+								aria-label={item.label}
+								title={item.label}
 								ref={el => {
 									buttonRefs.current[item.id] = el;
 								}}
@@ -421,10 +387,18 @@ export const Sidebar = ({
 								whileTap={{ scale: 0.95 }}
 								onClick={() => {
 									if (item.id === 'discord') {
-										window.location.href =
-											'https://discord.night-x.com';
+										window.dispatchEvent(
+											new CustomEvent('space:navigate', {
+												detail: {
+													url: 'https://discord.night-x.com',
+													target: 'active'
+												}
+											})
+										);
 									} else {
-										onItemClick(item.id);
+										onItemClick(
+											item.id === 'home' ? '' : item.id
+										);
 									}
 								}}
 								className="relative w-10 h-10 rounded-full flex items-center justify-center"
@@ -468,7 +442,7 @@ export const Sidebar = ({
 					sessions={sessions}
 					activeSession={activeSession}
 					maxSessions={maxSessions}
-					highlightActive={isHome}
+					highlightActive={activeItem === 'home' || isHome}
 					onSessionChange={onSessionChange}
 					onAddSession={onAddSession}
 					onCloseSession={onCloseSession}

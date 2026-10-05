@@ -1,4 +1,6 @@
 import { SettingsAPI } from '@utils/settings';
+import { apiAvailability, apiUrl, requestApi } from '../runtime/api';
+import { getSpaceConfig } from '../runtime/config';
 
 
 const API_BASE_URL = '/api/plus';
@@ -70,7 +72,7 @@ export async function clearSessionToken(): Promise<void> {
 
 async function refreshAccessToken(): Promise<boolean> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/refresh`, {
+		const response = await requestApi(`${API_BASE_URL}/refresh`, {
 			method: 'POST',
 			credentials: 'include'
 		});
@@ -94,7 +96,7 @@ async function makeAuthRequest(
 	const token = await getAccessToken();
 	if (!token) throw new Error('No access token found. Please log in.');
 
-	const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+	const response = await requestApi(`${API_BASE_URL}${endpoint}`, {
 		...options,
 		headers: {
 			'Content-Type': 'application/json',
@@ -129,6 +131,7 @@ export async function tryRefreshOnBoot(): Promise<boolean> {
 }
 
 export async function isAuthenticated(): Promise<boolean> {
+	if (apiAvailability()) return false;
 	const [access, session] = await Promise.all([
 		getAccessToken(),
 		getSessionToken()
@@ -193,6 +196,7 @@ export async function getProfileEmail(): Promise<string | null> {
 }
 
 export async function getCachedNightPlusData(): Promise<NightPlusCache | null> {
+	if (apiAvailability()) return null;
 	try {
 		return (
 			((await store.getItem(KEY_CACHE)) as NightPlusCache | null) ?? null
@@ -236,6 +240,7 @@ export async function dumpNightPlusData(): Promise<void> {
 }
 
 export async function getNightPlusDataWithCache(): Promise<NightPlusCache | null> {
+	if (apiAvailability()) return null;
 	try {
 		await dumpNightPlusData();
 	} catch (error) {
@@ -348,6 +353,11 @@ const installDismissHandlers = (login: { close: () => void }): (() => void) => {
 };
 
 export async function openNightPlusLogin(): Promise<boolean> {
+	const unavailable = apiAvailability();
+	if (unavailable) {
+		window.alert(unavailable);
+		return false;
+	}
 	const { default: NightLogin } = await import('@nightnetwork/night-auth');
 
 	return await new Promise<boolean>(resolve => {
@@ -356,6 +366,7 @@ export async function openNightPlusLogin(): Promise<boolean> {
 		const login = new NightLogin({
 			service: 'Space',
 			theme: 'dark',
+			API_URL: apiUrl('/auth', getSpaceConfig())!,
 			onSuccess: async () => {
 				cleanup();
 

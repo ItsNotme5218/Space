@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ExpandedMosaic } from './ExpandedMosaic';
 import { CollapsedCard } from './CollapsedCard';
 import type { GridItem } from './types';
+import { imageUrl } from './image-url';
 
 interface GridCardProps {
 	item: GridItem;
@@ -53,7 +54,7 @@ export const GridCard = memo(
 		const favicon = host
 			? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`
 			: '';
-		const thumbnail = artwork || favicon;
+		const thumbnail = imageUrl(artwork || favicon);
 
 		return (
 			<div

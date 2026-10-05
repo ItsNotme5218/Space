@@ -1,12 +1,8 @@
-//import { FernGames } from "./fern";
 import { GnMathGames } from './gn-math';
 import { TruffledGames } from './truffled';
 import { SeleniteGames } from './selenite';
 import { VelaraGames } from './velara';
-import { DefinitelyScienceGames } from './defsci';
-import { NowGGGames } from './nowgg';
 import { CoolMathGames } from './coolmath';
-import { VaporGames } from './vapor';
 import { DogeUBGames } from './dogeub';
 import { PokiGames } from './poki';
 
@@ -20,20 +16,28 @@ const importerFetch = async (url: string, params?: any): Promise<string> => {
 		ms: number,
 		label: string
 	): Promise<T> =>
-		Promise.race([
-			p,
-			new Promise<T>((_, reject) =>
-				setTimeout(
-					() =>
-						reject(
-							new Error(
-								`[importerFetch] ${label} timeout after ${ms}ms`
-							)
-						),
-					ms
-				)
-			)
-		]);
+		new Promise<T>((resolve, reject) => {
+			const timer = setTimeout(
+				() =>
+					reject(
+						new Error(
+							`[importerFetch] ${label} timeout after ${ms}ms`
+						)
+					),
+				ms
+			);
+			p.then(resolve, reject).finally(() => clearTimeout(timer));
+		});
+
+	const proxy = typeof window !== 'undefined' ? window.proxy : undefined;
+	if (proxy) {
+		// A proxy-backed runtime must never leak its catalog request to native fetch.
+		if (proxy.mode === 'standalone') {
+			await withTimeout(proxy.ready, proxyTimeoutMs, 'proxy readiness');
+		}
+		const label = proxy.mode === 'standalone' ? 'proxy' : 'delegated';
+		return withTimeout(proxy.fetch(url, params), proxyTimeoutMs, label);
+	}
 
 	try {
 		const res = await withTimeout(
@@ -65,15 +69,13 @@ const importerFetch = async (url: string, params?: any): Promise<string> => {
 				proxyTimeoutMs,
 				'proxy'
 			);
-		} catch (proxyErr) {
-			throw new Error(
-				`[importerFetch] native and proxy both failed for ${url}: ${(proxyErr as Error).message}`
-			);
+		} catch {
+			throw new Error('[importerFetch] native and proxy fetch failed');
 		}
 	}
 
 	throw new Error(
-		`[importerFetch] no proxy available and native fetch failed for ${url}`
+		'[importerFetch] no proxy available and native fetch failed'
 	);
 };
 
@@ -88,28 +90,25 @@ const generateGameId = (name: string): string =>
 class ImportedGames {
 	truffled: TruffledGames;
 	selenite: SeleniteGames;
-	//fern: FernGames;
 	gnMath: GnMathGames;
 	velara: VelaraGames;
-	ds: DefinitelyScienceGames;
-	nowgg: NowGGGames;
+	//ds: DefinitelyScienceGames;
+	//nowgg: NowGGGames;
 	coolmath: CoolMathGames;
-	vapor: VaporGames;
-	dogeub: DogeUBGames;
-	poki: PokiGames;
+	//vapor: VaporGames;
+	//dogeub: DogeUBGames;
+	//poki: PokiGames;
 	fetch: (url: string, params?: any) => Promise<string>;
 	constructor() {
 		this.fetch = importerFetch;
-		//this.fern = new FernGames();
 		this.gnMath = new GnMathGames(this.fetch);
 		this.truffled = new TruffledGames(this.fetch);
 		this.selenite = new SeleniteGames(this.fetch);
 		this.velara = new VelaraGames(this.fetch);
-		this.ds = new DefinitelyScienceGames(this.fetch);
-		this.nowgg = new NowGGGames(this.fetch);
+		//this.nowgg = new NowGGGames(this.fetch);
 		this.coolmath = new CoolMathGames(this.fetch);
-		this.vapor = new VaporGames(this.fetch);
-		this.dogeub = new DogeUBGames(this.fetch);
+		//this.vapor = new VaporGames(this.fetch);
+		//this.dogeub = new DogeUBGames(this.fetch);
 		this.poki = new PokiGames(this.fetch);
 	}
 
@@ -121,13 +120,13 @@ class ImportedGames {
 			{ name: 'gnMath', importer: this.gnMath },
 			{ name: 'truffled', importer: this.truffled },
 			{ name: 'selenite', importer: this.selenite },
-			{ name: 'velara', importer: this.velara },
-			{ name: 'ds', importer: this.ds },
-			{ name: 'nowgg', importer: this.nowgg },
-			{ name: 'coolmath', importer: this.coolmath },
-			{ name: 'vapor', importer: this.vapor },
-			{ name: 'dogeub', importer: this.dogeub },
-			{ name: 'poki', importer: this.poki }
+			{ name: 'velara', importer: this.velara }
+			//{ name: "ds", importer: this.ds },
+			//{ name: "nowgg", importer: this.nowgg },
+			//{ name: "coolmath", importer: this.coolmath },
+			//{ name: "vapor", importer: this.vapor },
+			//{ name: "dogeub", importer: this.dogeub },
+			//{ name: "poki", importer: this.poki },
 		];
 
 		const importerTimeoutMs = 20000;
@@ -162,10 +161,10 @@ class ImportedGames {
 				);
 			}
 		});
-		const gamesWithIds = allGames.map(game => ({
-			...game,
-			id: generateGameId(game.name)
-		}));
+		const gamesWithIds = allGames.map(game => {
+			const name = game.name.replace(/,\s*webport\s*$/i, '');
+			return { ...game, name, id: generateGameId(name) };
+		});
 
 		const seen = new Set<string>();
 		const uniqueGames = gamesWithIds.filter(game => {

@@ -8,9 +8,11 @@ export const pinLimit = 12;
 
 export const defaultPins: PinnedShortcut[] = [
 	{ id: 'pin-youtube', name: 'YouTube', url: 'https://youtube.com' },
-	{ id: 'pin-github', name: 'GitHub', url: 'https://github.com' },
-	{ id: 'pin-reddit', name: 'Reddit', url: 'https://reddit.com' },
-	{ id: 'pin-discord', name: 'Discord', url: 'https://discord.com' }
+	{ id: 'pin-discord', name: 'Discord', url: 'https://discord.com' },
+	{ id: 'pin-instagram', name: 'Instagram', url: 'https://instagram.com' },
+	{ id: 'pin-tiktok', name: 'TikTok', url: 'https://tiktok.com' },
+	{ id: 'pin-spotify', name: 'Spotify', url: 'https://spotify.com' },
+	{ id: 'pin-twitch', name: 'Twitch', url: 'https://twitch.tv' }
 ];
 
 export const normalizePinUrl = (url: string): string => {

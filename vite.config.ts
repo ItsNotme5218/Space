@@ -1,4 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+import { runtimeConfigPlugin } from './srv/vite/runtime-config';
+import { fontObfuscationPlugin } from './srv/vite/font';
+import { svgHostPlugin } from './srv/vite/svg-host';
+import { analyticsInlinePlugin } from './srv/vite/analytics-inline';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { allowedHosts } from './srv/vite/hosts.ts';
@@ -10,8 +14,23 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export default defineConfig({
-	plugins: [react(), tailwindcss(), viteStaticCopy(copyRoutes())],
+export default defineConfig(({ mode }) => ({
+	// Views use MemoryRouter; only real HTML documents should resolve over HTTP.
+	appType: 'mpa',
+	base: process.env.SPACE_BUILD_MODE === 'static' ? './' : '/',
+	plugins: [
+		runtimeConfigPlugin({
+			...loadEnv(mode, process.cwd(), 'SPACE_'),
+			...process.env
+		}),
+		fontObfuscationPlugin(),
+		// Bakes the analytics fallback before the SVG host embeds index.html.
+		analyticsInlinePlugin('G-3DTW1KTNCF', { htmlEntries: ['index.html'] }),
+		svgHostPlugin(),
+		react(),
+		tailwindcss(),
+		viteStaticCopy(copyRoutes())
+	],
 	resolve: {
 		tsconfigPaths: true,
 		alias: {
@@ -68,9 +87,6 @@ export default defineConfig({
 			}
 		}
 	},
-	optimizeDeps: {
-		exclude: ['@mercuryworkshop/bare-mux']
-	},
 	server: {
 		allowedHosts: allowedHosts,
 		warmup: {
@@ -96,4 +112,4 @@ export default defineConfig({
 			}
 		}
 	}
-});
+}));

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import path from 'path';
 import fastifyStatic from '@fastify/static';
 import { APIRouter } from './api';
+import { cacheControl } from './vite/assert-artifacts';
 
 const __dirname = process.cwd();
 
@@ -13,26 +14,9 @@ async function router(fastify: FastifyInstance) {
 		prefix: '/',
 		index: ['index.html'],
 		extensions: ['html'],
+		cacheControl: false,
 		setHeaders: (res, filePath) => {
-			if (
-				filePath.includes('/res/g/') ||
-				filePath.includes('/assets/') ||
-				filePath.endsWith('.webp') ||
-				filePath.endsWith('.woff2') ||
-				filePath.endsWith('.woff')
-			) {
-				res.setHeader(
-					'Cache-Control',
-					'public, max-age=31536000, immutable'
-				);
-			} else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-				res.setHeader(
-					'Cache-Control',
-					'public, max-age=31536000, immutable'
-				);
-			} else if (filePath.endsWith('.html')) {
-				res.setHeader('Cache-Control', 'no-cache');
-			}
+			res.setHeader('Cache-Control', cacheControl(path.relative(frontendPath, filePath)));
 		}
 	});
 

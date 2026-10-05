@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { analyticsTagRoute } from './analytics';
 import { plusAPI } from './plus';
 
 async function APIRouter(app: FastifyInstance) {
@@ -15,6 +16,7 @@ async function APIRouter(app: FastifyInstance) {
 	);
 
 	plusAPI(app);
+	analyticsTagRoute(app);
 }
 
 export { APIRouter };

@@ -8,10 +8,17 @@ import {
 	type SessionLoadStatus
 } from './components/SessionOverlay';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useLocalStorage } from './hooks/useLocalStorage';
+import { readSetting, useLocalStorage } from './hooks/useLocalStorage';
 import { useTabCloak } from './hooks/useTabCloak';
-import { Proxy } from './utils/proxy';
+import type { SpaceRuntime } from './runtime';
+import {
+	defaultSearchTemplate,
+	formatInput,
+	resolveNavigation
+} from './runtime/navigation';
+import { applyAccentColor } from './runtime/accent-color';
 import { getDefaultPagePath } from './utils/internal-pages';
+import { assetUrl } from './runtime/asset-url';
 import {
 	buildSavedGameRecord,
 	createInitialSessionHistory,
@@ -76,16 +83,17 @@ interface NavigateSessionOptions extends NavigationMeta {
 	recordSearch?: boolean;
 }
 
-const App = () => {
+const App = ({ runtime }: { runtime: SpaceRuntime }) => {
 	useTabCloak();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const activeItem = location.pathname.replace('/', '') || 'home';
 	const [sidebarHovered, setSidebarHovered] = useState(false);
-	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', true);
+	const [autoHideSidebar] = useLocalStorage('autoHideSidebar', false);
 	const [particles] = useLocalStorage('particles', true);
 	const [bgMode] = useLocalStorage('bgMode', 'solid');
 	const [bgValue] = useLocalStorage('bgValue', '#000000');
+	const [themeColor] = useLocalStorage('themeColor', '#8b5cf6');
 	const [autoCapSessions] = useLocalStorage('autoCapSessions', true);
 	const [savedGamesState, setSavedGamesState] = useLocalStorage(
 		'savedGamesState',
@@ -109,6 +117,13 @@ const App = () => {
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
 	}, [autoCapSessions]);
+
+	useEffect(() => {
+		if (typeof document !== 'undefined') {
+			const appHost = document.getElementById('app-host');
+			if (appHost) applyAccentColor(appHost.style, themeColor);
+		}
+	}, [themeColor]);
 	const nextIdRef = useRef(1);
 	const carouselRef = useRef<HTMLDivElement>(null);
 	const rawSessions = useRef<Session[]>([{ id: 0, url: '' }]);
@@ -120,9 +135,12 @@ const App = () => {
 		0: createInitialSessionHistory()
 	}));
 	const [proxyReady, setProxyReady] = useState(false);
-	const proxyRef = useRef<Proxy | null>(null);
 	const [sessionLoad, setSessionLoad] = useState<
 		Record<number, { status: SessionLoadStatus; slow: boolean }>
+	>({});
+
+	const navigationOwnersRef = useRef<
+		Record<number, { token: symbol; preparing: boolean }>
 	>({});
 	const loadTimersRef = useRef<
 		Record<
@@ -176,6 +194,9 @@ const App = () => {
 
 	const finishSessionLoad = useCallback(
 		(id: number, status: SessionLoadStatus) => {
+			// A load from the previous document cannot finish async preparation.
+			if (navigationOwnersRef.current[id]?.preparing) return;
+			delete navigationOwnersRef.current[id];
 			clearSessionLoadTimers(id);
 			setSessionLoad(previous => ({
 				...previous,
@@ -188,6 +209,7 @@ const App = () => {
 	useEffect(() => {
 		const timers = loadTimersRef.current;
 		return () => {
+			navigationOwnersRef.current = {};
 			Object.values(timers).forEach(timer => {
 				if (timer.slow) clearTimeout(timer.slow);
 				if (timer.error) clearTimeout(timer.error);
@@ -195,60 +217,15 @@ const App = () => {
 		};
 	}, []);
 
-	const initializeProxy = useCallback(async (proxy: Proxy) => {
-		const activateProxy = async (proxyKey: string) => {
-			const proxyConfig = proxy.config[proxyKey];
-
-			switch (typeof proxyConfig?.func) {
-				case 'function':
-					await proxyConfig.func();
-					break;
-				default:
-					break;
-			}
-
-			await proxy.registerSW(proxyConfig);
-			await proxy.setTransports();
-
-			const transport = await proxy.connection.getTransport();
-			switch (transport === null) {
-				case true:
-					await proxy.setTransports();
-					break;
-				default:
-					break;
-			}
-		};
-
-		try {
-			await activateProxy(proxy.proxySetting);
-		} catch (error) {
-			switch (proxy.proxySetting) {
-				case 'sj':
-					proxy.proxySetting = 'uv';
-					await activateProxy('uv');
-					break;
-				default:
-					throw error;
-			}
-		}
-	}, []);
-
 	useEffect(() => {
-		const proxy = new Proxy();
-		proxyRef.current = proxy;
-		window.proxy = proxy;
-
-		proxy.ready
-			.then(() => initializeProxy(proxy))
+		runtime.ready
 			.then(() => {
-				setProxyReady(true);
-				console.log('[App] Proxy initialized and ready');
+				setProxyReady(runtime.mode !== 'unavailable');
 			})
 			.catch(error => {
 				console.error('[App] Proxy initialization failed', error);
 			});
-	}, [initializeProxy]);
+	}, [runtime]);
 
 	const recordSessionVisit = useCallback(
 		(entry: ReturnType<typeof createSessionHistoryEntry>) => {
@@ -332,17 +309,13 @@ const App = () => {
 			input: string,
 			options: NavigateSessionOptions = {}
 		) => {
-			const proxy = proxyRef.current;
+			if (!rawSessions.current.some(session => session.id === sessionId))
+				return;
+			const owner = { token: Symbol('navigation'), preparing: true };
+			navigationOwnersRef.current[sessionId] = owner;
 			const nextInput = input.trim();
 			const historyMode = options.historyMode ?? 'push';
-			const isInternalTarget = nextInput.length === 0;
-
-			switch (true) {
-				case !proxy && !isInternalTarget:
-					return;
-				default:
-					break;
-			}
+			let isInternalTarget = nextInput.length === 0;
 
 			try {
 				let resolvedUrl = '';
@@ -352,8 +325,18 @@ const App = () => {
 					case true:
 						break;
 					default: {
-						await proxy!.ready;
-						resolvedUrl = proxy!.search(nextInput);
+						await runtime.ready;
+						const template = await readSetting(
+							'search',
+							defaultSearchTemplate
+						);
+						const target = resolveNavigation(
+							formatInput(nextInput, template),
+							window.location.origin
+						);
+						resolvedUrl =
+							target.kind === 'internal' ? '' : target.url;
+						isInternalTarget = target.kind === 'internal';
 						isSearch = !isLikelyUrlInput(nextInput);
 					}
 				}
@@ -361,6 +344,12 @@ const App = () => {
 				const idx = rawSessions.current.findIndex(
 					session => session.id === sessionId
 				);
+				if (
+					navigationOwnersRef.current[sessionId] !== owner ||
+					idx === -1
+				)
+					return;
+				owner.preparing = false;
 
 				switch (idx !== -1) {
 					case true:
@@ -431,11 +420,15 @@ const App = () => {
 						break;
 				}
 			} catch (error) {
+				if (navigationOwnersRef.current[sessionId] !== owner) return;
+				owner.preparing = false;
 				console.error('[App] Session navigation failed', error);
+				finishSessionLoad(sessionId, 'error');
 			}
 		},
 		[
 			beginSessionLoad,
+			runtime,
 			finishSessionLoad,
 			recordSearchVisit,
 			recordSessionVisit,
@@ -498,6 +491,14 @@ const App = () => {
 
 	const handleSessionLocationChange = useCallback(
 		(sessionId: number, url: string, title: string) => {
+			// The prior document can still be observed while a selected Back/Forward
+			// target is loading. It is not a new visit and must not truncate history.
+			// Read live ownership, not a render's possibly stale loading snapshot.
+			if (
+				navigationOwnersRef.current[sessionId]?.preparing ||
+				loadTimersRef.current[sessionId]
+			)
+				return;
 			const nextUrl = url.trim();
 
 			switch (nextUrl.length === 0) {
@@ -645,7 +646,6 @@ const App = () => {
 	useEffect(() => {
 		const root = carouselRef.current;
 		if (!root) return;
-		const proxy = proxyRef.current;
 		for (const s of sessions) {
 			const iframe = root.querySelector<HTMLIFrameElement>(
 				`iframe[data-session-uid="${s.id}"]`
@@ -655,19 +655,15 @@ const App = () => {
 			if (iframe.dataset.sessionTarget === s.url) continue;
 			iframe.dataset.sessionTarget = s.url;
 
-			if (!s.url) {
-				if (iframe.getAttribute('src') !== newTabUrl) {
-					iframe.src = newTabUrl;
-				}
-				continue;
-			}
+			const owner = navigationOwnersRef.current[s.id];
 
-			void proxy?.navigate(iframe, s.url).catch(error => {
+			void runtime.navigate(iframe, s.url || newTabUrl).catch(error => {
+				if (navigationOwnersRef.current[s.id] !== owner) return;
 				console.error('[App] Session navigation failed', error);
 				finishSessionLoad(s.id, 'error');
 			});
 		}
-	}, [sessions, finishSessionLoad]);
+	}, [sessions, finishSessionLoad, runtime]);
 
 	const handleNavClick = (id: string) => {
 		navigate(id === 'home' ? '/' : `/${id}`);
@@ -702,6 +698,8 @@ const App = () => {
 				break;
 		}
 		rawSessions.current.splice(idx, 1);
+		delete navigationOwnersRef.current[id];
+		clearSessionLoadTimers(id);
 
 		if (rawSessions.current.length === 0) {
 			const fallbackId = nextIdRef.current++;
@@ -901,26 +899,21 @@ const App = () => {
 		const iframe = getActiveIframe();
 		if (!iframe) return;
 
-		const activeSessionData = rawSessions.current.find(
-			s => s.id === activeSession
-		);
-		if (!activeSessionData?.url) {
-			iframe.src = newTabUrl;
-			return;
-		}
-
 		beginSessionLoad(activeSession);
 
-		if (iframe.contentWindow) {
-			try {
-				iframe.contentWindow.location.reload();
-			} catch {
-				const currentSrc = iframe.src;
-				iframe.src = '';
-				iframe.src = currentSrc;
-			}
-		}
-	}, [getActiveIframe, activeSession, beginSessionLoad]);
+		void runtime
+			.navigate(iframe, activeHistoryEntry.url || newTabUrl)
+			.catch(() => {
+				finishSessionLoad(activeSession, 'error');
+			});
+	}, [
+		getActiveIframe,
+		activeSession,
+		activeHistoryEntry.url,
+		beginSessionLoad,
+		finishSessionLoad,
+		runtime
+	]);
 
 	const handleSessionRetry = useCallback(
 		(id: number) => {
@@ -932,17 +925,14 @@ const App = () => {
 			beginSessionLoad(id);
 			if (!iframe) return;
 
-			if (!data?.url) {
-				iframe.src = newTabUrl;
-				return;
-			}
-
-			void proxyRef.current?.navigate(iframe, data.url).catch(error => {
-				console.error('[App] Session retry failed', error);
-				finishSessionLoad(id, 'error');
-			});
+			void runtime
+				.navigate(iframe, data?.url || newTabUrl)
+				.catch(error => {
+					console.error('[App] Session retry failed', error);
+					finishSessionLoad(id, 'error');
+				});
 		},
-		[beginSessionLoad, finishSessionLoad]
+		[beginSessionLoad, finishSessionLoad, runtime]
 	);
 
 	const handleSessionHome = useCallback(
@@ -962,7 +952,7 @@ const App = () => {
 			const title = `Broken page: ${entry?.title || getHostLabel(url)}`;
 			const body = [
 				`URL: ${url}`,
-				`Proxy: ${proxyRef.current?.proxySetting ?? 'unknown'}`,
+				`Proxy: ${runtime.mode}`,
 				'',
 				'What went wrong?'
 			].join('\n');
@@ -972,7 +962,7 @@ const App = () => {
 				'_blank'
 			);
 		},
-		[sessionHistoryMap]
+		[sessionHistoryMap, runtime]
 	);
 
 	const handleToggleSavedGame = useCallback(() => {
@@ -1183,7 +1173,7 @@ const App = () => {
 									}}
 								>
 									<iframe
-										src={newTabUrl}
+										src={assetUrl(newTabUrl)}
 										data-session-id={index}
 										data-session-uid={s.id}
 										className="w-full h-full"
@@ -1192,7 +1182,7 @@ const App = () => {
 										}
 										style={{
 											borderRadius: 12,
-											border: '1px solid var(--color-border)'
+											border: 'none'
 										}}
 									/>
 									{load && (
@@ -1273,6 +1263,15 @@ const App = () => {
 			style={{ ...bgStyle, position: 'relative', zIndex: 1 }}
 		>
 			{particles && <SpaceStars />}
+			{runtime.mode === 'unavailable' && (
+				<p
+					role="alert"
+					className="fixed top-0 left-0 right-0 z-50 bg-black p-3 text-white"
+				>
+					{runtime.error ??
+						'Navigation is unavailable. Reload Space to reconnect or retry local startup.'}
+				</p>
+			)}
 
 			<div
 				className="relative flex flex-col h-full"
@@ -1341,6 +1340,16 @@ const App = () => {
 					onCloseSession={handleCloseSession}
 					alwaysVisible={isSpecialPage || !autoHideSidebar}
 				/>
+			</div>
+
+			<div className="blobs">
+				<div className="blob"></div>
+				<div className="blob"></div>
+				<div className="blob"></div>
+				<div className="blob"></div>
+				<div className="blob"></div>
+				<div className="blob"></div>
+				<div className="blob"></div>
 			</div>
 		</div>
 	);

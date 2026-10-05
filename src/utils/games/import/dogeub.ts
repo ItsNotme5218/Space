@@ -40,6 +40,8 @@ class DogeUBGames {
 					tags.push(...entry.Tag.map((t: string) => t.toLowerCase()));
 				}
 
+				if(!entry.Asset[0] || entry.Asset.length <= 0) return;
+
 				return {
 					name: entry.appName.trim(),
 					image,

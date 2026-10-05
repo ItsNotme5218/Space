@@ -1,9 +1,16 @@
-import * as BareMux from '@mercuryworkshop/bare-mux';
 import {
 	BareCompatibleClient,
 	type ProxyTransport
 } from '@mercuryworkshop/proxy-transports';
 import { SettingsAPI } from '@utils/settings';
+import { formatInput } from '../runtime/navigation';
+import { getSpaceConfig, getWispDomains } from '../runtime/config';
+import { generateWisp, probeWisp, resolveWisp } from '../runtime/wisp';
+import { apiUrl } from '../runtime/api';
+import { normalizeProxyEngine } from '../runtime/proxy-settings';
+import type { createProxyConfig } from '../runtime/codec';
+import { verifyBootstrapContext } from '../runtime/bootstrap';
+import { assetUrl, resolveAssetConfig } from '../runtime/asset-url';
 
 type ProxyTransportInstance = Partial<ProxyTransport>;
 
@@ -43,7 +50,6 @@ const loadScript = (src: string) =>
 	});
 
 interface ProxyInterface {
-	connection: BareMux.BareMuxConnection;
 	searchVar: string;
 	transportVar: string;
 	wispUrl: string;
@@ -65,7 +71,6 @@ interface ProxyInterface {
 }
 
 class Proxy implements ProxyInterface {
-	connection!: BareMux.BareMuxConnection;
 	searchVar!: string;
 	transportVar!: string;
 	wispUrl!: string;
@@ -73,85 +78,59 @@ class Proxy implements ProxyInterface {
 	config!: Record<string, any>;
 	swConfigSettings!: Record<string, any>;
 	proxySetting!: string;
-	isStaticBuild: boolean = false;
 	ready: Promise<void>;
 	scramConfig!: SJConfig;
 
 	private controller: ScramjetControllerInstance | null = null;
 	private frames = new WeakMap<HTMLIFrameElement, ScramjetFrameInstance>();
+	private imageFrame: ScramjetFrameInstance | null = null;
+	private imageWorker: ServiceWorker | null = null;
+	private imagesDisposed = false;
 	private transport: ProxyTransportInstance | null = null;
 	private registration: Promise<ServiceWorker> | null = null;
 	private controllerBoot: Promise<void> | null = null;
 	private keepalive: ReturnType<typeof setInterval> | null = null;
+	private bootstrap = verifyBootstrapContext(
+		window,
+		getSpaceConfig().buildId
+	);
 
 	constructor() {
-		this.connection = new BareMux.BareMuxConnection('/b/worker.js');
-
 		this.settings = new SettingsAPI();
 
 		this.ready = (async () => {
-			this.scramConfig = {
-				prefix: '/s/res/',
-				scramjetPath: '/s/scramjet.js',
-				wasmPath: '/s/scramjet.wasm',
-				injectPath: '/c/controller.inject.js',
-				codec: {
-					encode: url => {
-						if (!url) return url;
-						return encodeURIComponent(
-							url
-								.toString()
-								.split('')
-								.map((char, ind) =>
-									ind % 2
-										? String.fromCharCode(
-												char.charCodeAt(0) ^ 3
-											)
-										: char
-								)
-								.join('')
-						);
-					},
-
-					decode: url => {
-						if (!url) return url;
-						let [input, ...search] = url.split('?');
-
-						return (
-							decodeURIComponent(input)
-								.split('')
-								.map((char, ind) =>
-									ind % 2
-										? String.fromCharCode(
-												char.charCodeAt(0) ^ 3
-											)
-										: char
-								)
-								.join('') +
-							(search.length ? '?' + search.join('?') : '')
-						);
-					}
+			// Consume ownership failure immediately, before asynchronous settings work.
+			// A rejected handshake must remain fatal, never become standalone absence.
+			const bootstrap = await this.bootstrap;
+			// prepareRuntimeScripts loads the same authoritative classic script that
+			// sw.js imports. Never independently derive a worker prefix or codec.
+			const shared = (
+				globalThis as typeof globalThis & {
+					__SPACE_PROXY_CONFIG__?: ReturnType<
+						typeof createProxyConfig
+					>;
 				}
-			};
+			).__SPACE_PROXY_CONFIG__;
+			if (!shared)
+				throw new Error('Space proxy configuration was not loaded');
+			this.scramConfig = resolveAssetConfig(shared) as SJConfig;
 
 			this.swConfigSettings = {};
 			this.config = {
-				uv: {
-					type: 'sw',
-					file: '/sw.js',
-					config: window.__uv$config,
-					func: null
-				},
 				sj: {
 					type: 'sw',
-					file: '/sw.js',
+					file: assetUrl('/sw.js'),
 					config: this.scramConfig,
 					func: async () => {
 						await this.bootController();
 					}
 				}
 			};
-			this.proxySetting = (await this.settings.getItem('proxy')) ?? 'sj';
+			const storedProxySetting = await this.settings.getItem('proxy');
+			this.proxySetting = normalizeProxyEngine(storedProxySetting);
+			if (storedProxySetting !== this.proxySetting) {
+				await this.settings.setItem('proxy', this.proxySetting);
+			}
 
 			this.searchVar =
 				(await this.settings.getItem('search')) ||
@@ -159,21 +138,21 @@ class Proxy implements ProxyInterface {
 			this.transportVar =
 				(await this.settings.getItem('transports')) || 'libcurl';
 			this.wispUrl =
-				(await this.settings.getItem('wisp')) ||
-				(location.protocol === 'https:' ? 'wss' : 'ws') +
-					'://' +
-					location.host +
-					'/w/';
+				bootstrap?.wispUrl ??
+				(await resolveWisp(
+					getSpaceConfig(),
+					await this.settings.getItem('wisp'),
+					{
+						ping: probeWisp,
+						generate: () => generateWisp(getWispDomains())
+					}
+				));
 		})();
 	}
 
 	private async transportOptions(): Promise<Record<string, any>> {
-		const wispUrl =
-			this.wispUrl ||
-			(location.protocol === 'https:' ? 'wss' : 'ws') +
-				'://' +
-				location.host +
-				'/w/';
+		await this.ready;
+		const wispUrl = this.wispUrl;
 
 		const options: Record<string, any> = { wisp: wispUrl };
 
@@ -192,11 +171,13 @@ class Proxy implements ProxyInterface {
 		return options;
 	}
 
-	private async createTransport(): Promise<ProxyTransportInstance> {
+	private async createTransport(
+		options?: Record<string, any>
+	): Promise<ProxyTransportInstance> {
 		const transportFile =
 			TRANSPORT_MODULES[this.transportVar] || TRANSPORT_MODULES.libcurl;
 
-		const module = await import(/* @vite-ignore */ transportFile);
+		const module = await import(/* @vite-ignore */ assetUrl(transportFile));
 		const TransportClass: ProxyTransportConstructor =
 			module.default ?? module.LibcurlClient ?? module.EpoxyTransport;
 
@@ -206,7 +187,9 @@ class Proxy implements ProxyInterface {
 			);
 		}
 
-		const transport = new TransportClass(await this.transportOptions());
+		const transport = new TransportClass(
+			options ?? (await this.transportOptions())
+		);
 		if (!transport.ready && typeof transport.init === 'function') {
 			await transport.init();
 		}
@@ -215,13 +198,14 @@ class Proxy implements ProxyInterface {
 	}
 
 	private async bootController(): Promise<void> {
+		await this.assertBootstrapOwnership();
 		if (this.controllerBoot) return this.controllerBoot;
 
 		this.controllerBoot = (async () => {
 			const serviceworker = await this.registerSW(this.config.sj);
 
 			for (const src of SCRAMJET_SCRIPTS) {
-				await loadScript(src);
+				await loadScript(assetUrl(src));
 			}
 
 			const api = window.$scramjetController;
@@ -244,6 +228,7 @@ class Proxy implements ProxyInterface {
 			});
 
 			await this.controller.wait();
+			this.imageWorker = serviceworker;
 
 			if (this.keepalive === null) {
 				this.keepalive = setInterval(() => {
@@ -258,6 +243,7 @@ class Proxy implements ProxyInterface {
 
 		try {
 			await this.controllerBoot;
+			await this.assertBootstrapOwnership();
 		} catch (error) {
 			this.controllerBoot = null;
 			throw error;
@@ -265,15 +251,12 @@ class Proxy implements ProxyInterface {
 	}
 
 	async setTransports() {
-		const transportFile =
-			TRANSPORT_MODULES[this.transportVar] || TRANSPORT_MODULES.libcurl;
 		const options = await this.transportOptions();
-
-		await this.connection.setTransport(transportFile, [{ ...options }]);
+		const transport = await this.createTransport(options);
+		this.transport = transport;
 
 		if (this.controller) {
-			this.transport = await this.createTransport();
-			this.controller.setTransport(this.transport);
+			this.controller.setTransport(transport);
 		}
 
 		console.log('[Proxy] Transport set with options:', options);
@@ -285,39 +268,45 @@ class Proxy implements ProxyInterface {
 		await this.setTransports();
 	}
 
-	async getTransports() {
-		const transport = await this.connection.getTransport();
-		return transport;
+	search(input: string) {
+		return formatInput(input, this.searchVar);
 	}
 
-	search(input: string) {
-		input = input.trim();
-		const searchTemplate =
-			this.searchVar || 'https://search.brave.com/search?q=%s';
-
-		if (input.includes('.') && input.includes(' ')) {
-			return searchTemplate.replace('%s', encodeURIComponent(input));
+	dispose() {
+		this.imagesDisposed = true;
+		if (this.imageFrame && this.controller) {
+			const index = this.controller.frames.indexOf(this.imageFrame);
+			if (index !== -1) this.controller.frames.splice(index, 1);
+			this.imageFrame.element.remove();
+			this.imageFrame = null;
 		}
+		if (this.keepalive !== null) clearInterval(this.keepalive);
+		this.keepalive = null;
+	}
 
-		try {
-			return new URL(input).toString();
-		} catch (err) {
-			try {
-				const url = new URL(`http://${input}`);
-				if (url.hostname.includes('.')) {
-					return url.toString();
-				}
-				throw new Error('Invalid hostname');
-			} catch (err) {
-				return searchTemplate.replace('%s', encodeURIComponent(input));
-			}
-		}
+	/** One detached, registered frame owns all image requests for this runtime. */
+	imageUrl(url: string): string {
+		if (this.imagesDisposed || !this.controller || !this.scramConfig.codec)
+			return '';
+		if (
+			this.imageWorker &&
+			navigator.serviceWorker.controller !== this.imageWorker
+		)
+			return '';
+		// createStandaloneRuntime has awaited controller.wait() before exposing us.
+		// Never navigate or mount this iframe: only its registered request context is needed.
+		this.imageFrame ??= this.controller.createFrame();
+		return new URL(
+			this.imageFrame.prefix + this.scramConfig.codec.encode(url),
+			window.location.href
+		).href;
 	}
 
 	async attachFrame(
 		iframe: HTMLIFrameElement
 	): Promise<ScramjetFrameInstance> {
 		await this.bootController();
+		await this.assertBootstrapOwnership();
 
 		const existing = this.frames.get(iframe);
 		if (existing) return existing;
@@ -328,27 +317,29 @@ class Proxy implements ProxyInterface {
 		return frame;
 	}
 
-	async navigate(iframe: HTMLIFrameElement, url: string): Promise<void> {
+	async navigate(
+		iframe: HTMLIFrameElement,
+		url: string,
+		current: () => boolean = () => true
+	): Promise<void> {
 		const target = this.search(url);
 
-		switch (this.proxySetting) {
-			case 'sj': {
-				const frame = await this.attachFrame(iframe);
-				frame.go(target);
-				break;
-			}
-			default: {
-				await this.registerSW(this.config.uv);
-				await this.setTransports();
+		const frame = await this.attachFrame(iframe);
+		await this.assertBootstrapOwnership();
+		// Preparation may outlive this iframe's navigation generation.
+		if (!current()) return;
+		frame.go(target);
+	}
 
-				const uvConfig = window.__uv$config;
-				if (!uvConfig?.encodeUrl) {
-					throw new Error('[Proxy] Ultraviolet config is not loaded');
-				}
-
-				iframe.src = uvConfig.prefix + uvConfig.encodeUrl(target);
-			}
+	private async assertBootstrapOwnership() {
+		const bootstrap = await this.bootstrap;
+		if (
+			bootstrap &&
+			navigator.serviceWorker.controller !== bootstrap.worker
+		) {
+			throw new Error('Bootstrap worker control was lost');
 		}
+		return bootstrap;
 	}
 
 	async registerSW(swConfig: Record<any, any>): Promise<ServiceWorker> {
@@ -362,12 +353,26 @@ class Proxy implements ProxyInterface {
 			throw new Error('Service workers are unavailable in this browser');
 		}
 
-		if (this.registration) return this.registration;
+		const bootstrap = await this.assertBootstrapOwnership();
+		if (this.registration) {
+			const worker = await this.registration;
+			await this.assertBootstrapOwnership();
+			return worker;
+		}
 
 		this.registration = (async () => {
+			if (bootstrap) {
+				return bootstrap.worker;
+			}
 			const registration = await navigator.serviceWorker.register(
 				swConfig.file,
-				{ scope: '/', updateViaCache: 'none' }
+				{
+					scope: new URL(
+						assetUrl('/'),
+						globalThis.location?.href || 'http://localhost/'
+					).pathname,
+					updateViaCache: 'none'
+				}
 			);
 
 			try {
@@ -411,7 +416,9 @@ class Proxy implements ProxyInterface {
 		})();
 
 		try {
-			return await this.registration;
+			const worker = await this.registration;
+			await this.assertBootstrapOwnership();
+			return worker;
 		} catch (error) {
 			this.registration = null;
 			throw error;
@@ -436,6 +443,7 @@ class Proxy implements ProxyInterface {
 
 	async redirect(swConfig: Record<any, any>, proxySetting: string, url: any) {
 		const encodedUrl = await this.convertURL(swConfig, proxySetting, url);
+		await this.assertBootstrapOwnership();
 
 		const activeIframe: HTMLIFrameElement | null =
 			document.querySelector('iframe.active');
@@ -448,38 +456,14 @@ class Proxy implements ProxyInterface {
 	}
 
 	async convertURL(
-		swConfig: Record<any, any>,
-		proxySetting: string,
+		_swConfig: Record<any, any>,
+		_proxySetting: string,
 		url: string
 	) {
-		const swConfigSettings: Record<any, any> | null =
-			swConfig[proxySetting] ?? null;
-
-		if (!swConfigSettings) {
-			return this.search(url);
-		}
-
 		const target = this.search(url);
-
-		switch (proxySetting) {
-			case 'sj': {
-				await this.bootController();
-				const prefix =
-					this.controller?.prefix ?? this.scramConfig.prefix;
-				return prefix + this.scramConfig.codec!.encode(target);
-			}
-			default: {
-				await this.registerSW(swConfigSettings);
-				await this.setTransports();
-
-				const uvConfig = window.__uv$config;
-				if (!uvConfig?.encodeUrl) {
-					throw new Error('[Proxy] Ultraviolet config is not loaded');
-				}
-
-				return uvConfig.prefix + uvConfig.encodeUrl(target);
-			}
-		}
+		await this.bootController();
+		const prefix = this.controller?.prefix ?? this.scramConfig.prefix;
+		return prefix + this.scramConfig.codec!.encode(target);
 	}
 
 	async fetch(url: string, params?: any): Promise<string> {
@@ -549,20 +533,12 @@ class Proxy implements ProxyInterface {
 		return await this.settings.getItem('proxyServer');
 	}
 
-	async disableReflux() {
-		await this.settings.setItem('RefluxStatus', 'false');
-	}
-
-	async enableReflux() {
-		await this.settings.setItem('RefluxStatus', 'true');
-	}
-
-	async getRefluxStatus(): Promise<boolean> {
-		const status = await this.settings.getItem('RefluxStatus');
-		return status !== 'false';
-	}
-
 	async getAuthUrl(): Promise<string> {
+		const config = getSpaceConfig();
+		const configured = apiUrl('/auth', config);
+		if (configured === null)
+			throw new Error('Account APIs are unavailable in this deployment');
+		if (config.apiOrigin) return configured;
 		try {
 			const productionAuthUrl = await this.settings.getItem(
 				'production_auth_url'
@@ -570,19 +546,15 @@ class Proxy implements ProxyInterface {
 			if (productionAuthUrl && typeof productionAuthUrl === 'string') {
 				return productionAuthUrl;
 			}
-			//return "https://demoplussrv.night-x.com/auth" CORS is a bitch
-			return (
-				(location.protocol === 'https:' ? 'https://' : 'http://') +
-				location.host +
-				'/auth'
-			);
+			return new URL(configured, location.origin).href;
 		} catch (error) {
 			console.error('[Proxy] Error determining auth URL:', error);
-			return 'https://demoplussrv.night-x.com/auth';
+			throw error;
 		}
 	}
 
 	async checkAuthentication(): Promise<boolean> {
+		if (apiUrl('/auth', getSpaceConfig()) === null) return false;
 		try {
 			const module = await import(
 				/* @vite-ignore */

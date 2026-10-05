@@ -73,7 +73,7 @@ export const SessionOverlay = ({
 								border: '2px solid var(--color-border)'
 							}}
 						>
-							<Loader2 className="h-6 w-6 text-violet-300/90" />
+							<Loader2 className="h-6 w-6" style={{ color: 'var(--color-primary-light)' }} />
 						</motion.div>
 
 						<div className="space-y-1">

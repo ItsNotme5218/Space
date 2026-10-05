@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { Loading } from './components/Loading.tsx';
@@ -6,6 +6,24 @@ import indexStyles from './index.css?inline';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { launchAboutBlank, launchBlob, applyCloak } from './lib/cloak.ts';
 import { readSetting, initSettings } from './hooks/useLocalStorage';
+import {
+	createStandaloneRuntime,
+	selectRuntime,
+	type SpaceRuntime
+} from './runtime';
+import { initialView } from './runtime/entry-view';
+import { installFontRuntime } from '../srv/vite/font/runtime';
+import { reportSvgReady } from './runtime/svg-ready';
+import { shadowMode as getShadowMode } from './runtime/shadow-mode';
+import { injectSpaceAds } from './runtime/ads';
+import { assetUrl } from './runtime/asset-url';
+
+function SvgReady() {
+	useEffect(() => {
+		reportSvgReady(window);
+	}, []);
+	return null;
+}
 
 const GamesPage = lazy(() =>
 	import('./pages/GamesPage.tsx').then(m => ({ default: m.GamesPage }))
@@ -17,8 +35,75 @@ const PlaybackPage = lazy(() =>
 	import('./pages/PlaybackPage.tsx').then(m => ({ default: m.PlaybackPage }))
 );
 
+const ANALYTICS_TAG = 'G-3DTW1KTNCF';
+
+const installAnalytics = () => {
+	const win = window as unknown as {
+		dataLayer?: unknown[];
+		gtag?: (...args: unknown[]) => void;
+	};
+	win.dataLayer = win.dataLayer || [];
+	win.gtag =
+		win.gtag ??
+		function (...args: unknown[]) {
+			win.dataLayer!.push(args);
+		};
+	win.gtag('js', new Date());
+	win.gtag('config', ANALYTICS_TAG);
+	const tag = document.createElement('script');
+	tag.async = true;
+	// Package-relative so static subpath mounts stay in-package.
+	tag.src = assetUrl('/api/tag');
+	// Fall back on static hosts; never proxy collection requests. Final
+	// fallback executes the build-baked copy when both loads fail.
+	tag.onerror = () => {
+		tag.onerror = null;
+		const direct = document.createElement('script');
+		direct.async = true;
+		direct.src = `https://www.googletagmanager.com/gtag/js?id=${ANALYTICS_TAG}`;
+		direct.onerror = () => {
+			fetch(new URL('tag-fallback.js', location.href).toString())
+				.then(response => {
+					if (!response.ok) throw new Error('fallback unavailable');
+					return response.text();
+				})
+				.then(code => {
+					const inline = document.createElement('script');
+					inline.textContent = code;
+					(document.head ?? document.documentElement).appendChild(
+						inline
+					);
+				})
+				.catch(() => {
+					try {
+						const baked =
+							document.getElementById('ddx-gtag-inline');
+						if (!baked?.textContent) return;
+						const bin = atob(baked.textContent.replace(/\s+/g, ''));
+						const bytes = new Uint8Array(bin.length);
+						for (let i = 0; i < bin.length; i++)
+							bytes[i] = bin.charCodeAt(i);
+						const inline = document.createElement('script');
+						inline.textContent = new TextDecoder().decode(bytes);
+						(document.head ?? document.documentElement).appendChild(
+							inline
+						);
+					} catch {
+					} finally {
+						document.getElementById('ddx-gtag-inline')?.remove();
+					}
+				});
+		};
+		(document.head ?? document.documentElement).appendChild(direct);
+	};
+	// SVG host documents may not have a head; the stub and queued
+	// commands above are installed regardless.
+	document.head?.appendChild(tag);
+};
+
 const boot = async () => {
 	await initSettings();
+	installAnalytics();
 
 	if (window === window.top) {
 		const params = new URLSearchParams(window.location.search);
@@ -40,7 +125,12 @@ const boot = async () => {
 		}
 	}
 
-	await initShadowApp();
+	if (window === window.top) injectSpaceAds();
+	const runtime = await selectRuntime(window, () =>
+		createStandaloneRuntime(prepareRuntimeScripts)
+	);
+	window.proxy = runtime;
+	await initShadowApp(runtime);
 };
 
 const originalDocumentOpen = document.open.bind(document);
@@ -51,7 +141,7 @@ const originalDocumentClose = document.close.bind(document);
 let shadowRoot: ShadowRoot | null = null;
 let shadowDocument: Document | null = null;
 
-const runtimeScriptSources = ['/u/config.js'];
+const runtimeScriptSources = [assetUrl('/space-runtime.js')];
 
 const loadRuntimeScript = (src: string) =>
 	new Promise<void>((resolve, reject) => {
@@ -95,6 +185,7 @@ const prepareRuntimeScripts = async () => {
 			await loadRuntimeScript(src);
 		} catch (error) {
 			console.error('[runtime] script load failed', src, error);
+			throw error;
 		}
 	}
 };
@@ -112,32 +203,40 @@ const patchDocument = () => {
 	});
 
 	Object.defineProperty(document, 'write', {
-		value: (text: string) => {
+		value: (...text: Parameters<typeof document.write>) => {
+			// The SVG bootstrap owns insertion into the outer foreignObject body.
+			// Ad scripts must not be redirected into the app's closed shadow root.
+			if (document.contentType === 'image/svg+xml') {
+				return originalDocumentWrite(...text);
+			}
 			if (shadowRoot) {
 				const temp = document.createElement('div');
-				temp.innerHTML = text;
+				temp.innerHTML = text.join('');
 				while (temp.firstChild) {
 					shadowRoot.appendChild(temp.firstChild);
 				}
 				return;
 			}
-			return originalDocumentWrite(text);
+			return originalDocumentWrite(...text);
 		},
 		writable: true,
 		configurable: true
 	});
 
 	Object.defineProperty(document, 'writeln', {
-		value: (text: string) => {
+		value: (...text: Parameters<typeof document.writeln>) => {
+			if (document.contentType === 'image/svg+xml') {
+				return originalDocumentWriteln(...text);
+			}
 			if (shadowRoot) {
 				const temp = document.createElement('div');
-				temp.innerHTML = text + '\n';
+				temp.innerHTML = text.join('') + '\n';
 				while (temp.firstChild) {
 					shadowRoot.appendChild(temp.firstChild);
 				}
 				return;
 			}
-			return originalDocumentWriteln(text);
+			return originalDocumentWriteln(...text);
 		},
 		writable: true,
 		configurable: true
@@ -155,20 +254,26 @@ const patchDocument = () => {
 	});
 };
 
-const initShadowApp = async () => {
+const initShadowApp = async (runtime: SpaceRuntime) => {
 	const staticShell = document.getElementById('static-shell');
 	if (staticShell) {
 		staticShell.style.display = 'none';
 	}
 
 	const appHost = document.getElementById('app-host')!;
-	shadowRoot = appHost.attachShadow({ mode: 'open' });
+	shadowRoot = appHost.attachShadow({
+		mode: getShadowMode(import.meta.env.DEV)
+	});
 
 	const styleSheet = document.createElement('style');
 	styleSheet.textContent = indexStyles;
 	shadowRoot.appendChild(styleSheet);
-
-	await prepareRuntimeScripts();
+	// Font readiness must never block app startup; failure keeps original text.
+	void installFontRuntime(shadowRoot).then(fonts => {
+		window.addEventListener('pagehide', event => {
+			if (!event.persisted) fonts.dispose();
+		});
+	});
 
 	const root = document.createElement('div');
 	root.id = 'root';
@@ -181,12 +286,11 @@ const initShadowApp = async () => {
 	shadowDocument = document.implementation.createHTMLDocument('');
 
 	patchDocument();
-	window.doc = shadowRoot;
-
 	createRoot(root).render(
-		<MemoryRouter initialEntries={['/']}>
+		<MemoryRouter initialEntries={[initialView(window.location.search)]}>
+			<SvgReady />
 			<Routes>
-				<Route path="/" element={<App />}>
+				<Route path="/" element={<App runtime={runtime} />}>
 					<Route
 						path="games"
 						element={

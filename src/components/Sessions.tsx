@@ -84,20 +84,20 @@ export const Sessions = ({
 							whileHover={{
 								scale: 1.1,
 								boxShadow: isActive
-									? '0 0 15px 3px rgba(139, 92, 246, 0.4), inset 0 0 10px rgba(203, 166, 247, 0.3)'
-									: '0 0 10px 1px rgba(139, 92, 246, 0.2), inset 0 0 5px rgba(203, 166, 247, 0.1)'
+									? '0 0 15px 3px color-mix(in srgb, var(--color-primary) 40%, transparent), inset 0 0 10px color-mix(in srgb, var(--color-primary-light) 30%, transparent)'
+									: '0 0 10px 1px color-mix(in srgb, var(--color-primary) 20%, transparent), inset 0 0 5px color-mix(in srgb, var(--color-primary-light) 10%, transparent)'
 							}}
 							whileTap={{ scale: 0.92 }}
 							className="relative mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
 							style={{
 								background: isActive
-									? 'rgba(139, 92, 246, 0.2)'
+									? 'color-mix(in srgb, var(--color-primary) 20%, transparent)'
 									: 'rgba(26, 26, 26, 0.8)',
 								border: isActive
-									? '1px solid rgba(203, 166, 247, 0.5)'
+									? '1px solid color-mix(in srgb, var(--color-primary-light) 50%, transparent)'
 									: '1px solid rgba(45, 45, 58, 0.5)',
 								boxShadow: isActive
-									? '0 0 12px 2px rgba(139, 92, 246, 0.3), inset 0 0 8px rgba(203, 166, 247, 0.2)'
+									? '0 0 12px 2px color-mix(in srgb, var(--color-primary) 30%, transparent), inset 0 0 8px color-mix(in srgb, var(--color-primary-light) 20%, transparent)'
 									: 'inset 0 1px 1px rgba(255,255,255,0.03)'
 							}}
 							transition={{ duration: 0.2 }}
@@ -127,12 +127,13 @@ export const Sessions = ({
 											duration: 0.2
 										}}
 									>
-										<X className="w-4 h-4 text-violet-300" />
+										<X className="w-4 h-4" style={{ color: 'var(--color-primary-light)' }} />
 									</motion.div>
 								) : (
 									<span
 										key={`label-${session.id}`}
-										className={`text-sm font-medium ${isActive ? 'text-violet-300' : 'text-zinc-500'}`}
+										className={`text-sm font-medium ${isActive ? '' : 'text-zinc-500'}`}
+										style={isActive ? { color: 'var(--color-primary-light)' } : undefined}
 									>
 										{index + 1}
 									</span>
@@ -145,9 +146,9 @@ export const Sessions = ({
 									initial={false}
 									style={{
 										background:
-											'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(203, 166, 247, 0.05) 100%)',
+											'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent) 0%, color-mix(in srgb, var(--color-primary-light) 5%, transparent) 100%)',
 										outline:
-											'1px solid rgba(203, 166, 247, 0.3)'
+											'1px solid color-mix(in srgb, var(--color-primary-light) 30%, transparent)'
 									}}
 									transition={{
 										type: 'spring',

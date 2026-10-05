@@ -22,6 +22,9 @@ import { writeSetting } from '../hooks/useLocalStorage';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { launchAboutBlank, launchBlob, normalizeUrl } from '../lib/cloak';
 import bgPresets from '../json/backgrounds.json';
+import { apiAvailability } from '../runtime/api';
+import { normalizeProxyDisplay } from '../runtime/proxy-settings';
+import { hexToHsv, hsvToHex, type HsvColor } from '../runtime/accent-color';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 28 };
 const soft = { type: 'spring' as const, stiffness: 200, damping: 22 };
@@ -151,11 +154,11 @@ const Select = ({
 											: '0.75rem',
 										color:
 											o === value
-												? '#a78bfa'
+												? 'var(--color-primary-light)'
 												: 'rgba(255,255,255,0.4)',
 										backgroundColor:
 											o === value
-												? 'rgba(139,92,246,0.08)'
+												? 'color-mix(in srgb, var(--color-primary) 8%, transparent)'
 												: 'transparent'
 									}}
 									onMouseEnter={e => {
@@ -370,7 +373,10 @@ const CustomCloakInputs = () => {
 									initial={{ opacity: 0, x: -6 }}
 									animate={{ opacity: 1, x: 0 }}
 									exit={{ opacity: 0, x: -6 }}
-									className="text-xs text-purple-400/70"
+									className="text-xs"
+									style={{
+										color: 'var(--color-primary-light)'
+									}}
 								>
 									Saved
 								</motion.span>
@@ -455,7 +461,10 @@ const CustomCloakInputs = () => {
 									initial={{ opacity: 0, x: -6 }}
 									animate={{ opacity: 1, x: 0 }}
 									exit={{ opacity: 0, x: -6 }}
-									className="text-xs text-purple-400/70"
+									className="text-xs"
+									style={{
+										color: 'var(--color-primary-light)'
+									}}
 								>
 									Saved
 								</motion.span>
@@ -582,6 +591,172 @@ const presetColors = [
 	'#533483'
 ];
 
+const AccentColorControl = () => {
+	const [themeColor, setThemeColor] = useLocalStorage(
+		'themeColor',
+		'#8b5cf6'
+	);
+	const [pickerOpen, setPickerOpen] = useState(false);
+	const [hsv, setHsv] = useState<HsvColor>(() => hexToHsv(themeColor));
+	const closePicker = useCallback(() => setPickerOpen(false), []);
+	const pickerRef = useClickOutside<HTMLDivElement>(closePicker);
+
+	useEffect(() => setHsv(hexToHsv(themeColor)), [themeColor]);
+
+	const setColor = (color: string) => {
+		setThemeColor(color);
+		setHsv(hexToHsv(color));
+	};
+
+	const setColorFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+		const bounds = event.currentTarget.getBoundingClientRect();
+		const saturation = Math.min(
+			1,
+			Math.max(0, (event.clientX - bounds.left) / bounds.width)
+		);
+		const value =
+			1 -
+			Math.min(
+				1,
+				Math.max(0, (event.clientY - bounds.top) / bounds.height)
+			);
+		const next = { ...hsv, saturation, value };
+		setHsv(next);
+		setThemeColor(hsvToHex(next));
+	};
+
+	const setHue = (hue: number) => {
+		const next = { ...hsv, hue };
+		setHsv(next);
+		setThemeColor(hsvToHex(next));
+	};
+
+	return (
+		<div className="flex items-center gap-2.5">
+			{['#8b5cf6', '#ec4899', '#06b6d4', '#22c55e', '#f59e0b'].map(
+				color => (
+					<button
+						key={color}
+						type="button"
+						aria-label={`Set accent color ${color}`}
+						aria-pressed={themeColor.toLowerCase() === color}
+						onClick={() => setColor(color)}
+						className="w-7 h-7 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/20 transition-all duration-150"
+						style={{
+							background: color,
+							outline:
+								themeColor.toLowerCase() === color
+									? '2px solid white'
+									: undefined
+						}}
+					/>
+				)
+			)}
+			<div ref={pickerRef} className="relative">
+				<button
+					type="button"
+					aria-label="Choose custom accent color"
+					aria-expanded={pickerOpen}
+					onClick={() => setPickerOpen(open => !open)}
+					className="w-7 h-7 rounded-full cursor-pointer border-2 border-white/40"
+					style={{ background: themeColor }}
+				/>
+				{pickerOpen && (
+					<div
+						className="absolute right-0 top-10 z-50 w-60 rounded-2xl p-4 shadow-2xl"
+						style={{
+							background: 'var(--color-surface)',
+							border: '1px solid var(--color-border)'
+						}}
+					>
+						<div
+							role="slider"
+							aria-label="Accent saturation and brightness"
+							aria-valuetext={`${Math.round(hsv.saturation * 100)}% saturation, ${Math.round(hsv.value * 100)}% brightness`}
+							tabIndex={0}
+							onPointerDown={event => {
+								event.currentTarget.setPointerCapture(
+									event.pointerId
+								);
+								setColorFromPointer(event);
+							}}
+							onPointerMove={event => {
+								if (
+									event.currentTarget.hasPointerCapture(
+										event.pointerId
+									)
+								)
+									setColorFromPointer(event);
+							}}
+							onKeyDown={event => {
+								const step = event.shiftKey ? 0.1 : 0.02;
+								const next = { ...hsv };
+								if (event.key === 'ArrowLeft')
+									next.saturation = Math.max(
+										0,
+										next.saturation - step
+									);
+								else if (event.key === 'ArrowRight')
+									next.saturation = Math.min(
+										1,
+										next.saturation + step
+									);
+								else if (event.key === 'ArrowUp')
+									next.value = Math.min(1, next.value + step);
+								else if (event.key === 'ArrowDown')
+									next.value = Math.max(0, next.value - step);
+								else return;
+								event.preventDefault();
+								setHsv(next);
+								setThemeColor(hsvToHex(next));
+							}}
+							className="relative h-36 w-full rounded-lg cursor-crosshair touch-none outline-none focus-visible:ring-2 focus-visible:ring-white"
+							style={{
+								background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${hsv.hue} 100% 50%))`
+							}}
+						>
+							<span
+								className="absolute w-3.5 h-3.5 -ml-1.75 -mt-1.75 rounded-full border-2 border-white shadow"
+								style={{
+									left: `${hsv.saturation * 100}%`,
+									top: `${(1 - hsv.value) * 100}%`
+								}}
+							/>
+						</div>
+						<label className="mt-4 flex items-center gap-3 text-xs text-white/50">
+							Hue
+							<input
+								aria-label="Accent hue"
+								type="range"
+								min="0"
+								max="359"
+								value={Math.round(hsv.hue) % 360}
+								onChange={event =>
+									setHue(Number(event.target.value))
+								}
+								className="min-w-0 flex-1"
+								style={{
+									background:
+										'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'
+								}}
+							/>
+						</label>
+						<div className="mt-3 flex items-center gap-2">
+							<span
+								className="w-5 h-5 rounded-full border border-white/20"
+								style={{ background: themeColor }}
+							/>
+							<output className="text-xs text-white/50 font-mono uppercase">
+								{themeColor}
+							</output>
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+};
+
 const BackgroundSelector = () => {
 	const [bgMode, setBgMode] = useLocalStorage('bgMode', 'solid');
 	const [bgValue, setBgValue] = useLocalStorage('bgValue', '#000000');
@@ -669,7 +844,7 @@ const BackgroundSelector = () => {
 									background: c,
 									border:
 										bgMode === 'solid' && bgValue === c
-											? '2px solid rgba(139,92,246,0.6)'
+											? '2px solid color-mix(in srgb, var(--color-primary) 60%, transparent)'
 											: '2px solid rgba(255,255,255,0.06)'
 								}}
 							/>
@@ -716,7 +891,7 @@ const BackgroundSelector = () => {
 								style={{
 									border:
 										bgMode === 'image' && bgValue === bg.url
-											? '2px solid rgba(139,92,246,0.6)'
+											? '2px solid color-mix(in srgb, var(--color-primary) 60%, transparent)'
 											: '2px solid rgba(255,255,255,0.06)'
 								}}
 							>
@@ -749,7 +924,10 @@ const BackgroundSelector = () => {
 									initial={{ opacity: 0, x: -6 }}
 									animate={{ opacity: 1, x: 0 }}
 									exit={{ opacity: 0, x: -6 }}
-									className="text-xs text-purple-400/70"
+									className="text-xs"
+									style={{
+										color: 'var(--color-primary-light)'
+									}}
 								>
 									Saved
 								</motion.span>
@@ -857,7 +1035,7 @@ const AppearPanel = () => {
 	const [particles, setParticles] = useLocalStorage('particles', true);
 	const [autoHideSidebar, setAutoHideSidebar] = useLocalStorage(
 		'autoHideSidebar',
-		true
+		false
 	);
 	const [clock12h, setClock12h] = useLocalStorage('clock12h', false);
 	const [clockLock, setClockLock] = useLocalStorage('clockLock', false);
@@ -905,23 +1083,7 @@ const AppearPanel = () => {
 					label="Accent Color"
 					desc="Primary color used across the UI"
 				>
-					<div className="flex gap-2.5">
-						{[
-							'#8b5cf6',
-							'#ec4899',
-							'#06b6d4',
-							'#22c55e',
-							'#f59e0b'
-						].map(c => (
-							<button
-								key={c}
-								className="w-7 h-7 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/20 transition-all duration-150"
-								style={{
-									background: c
-								}}
-							/>
-						))}
-					</div>
+					<AccentColorControl />
 				</Row>
 			</Section>
 		</div>
@@ -968,8 +1130,7 @@ const PerfPanel = () => {
 };
 
 const proxyKeyMap: Record<string, string> = {
-	Scramjet: 'sj',
-	Ultraviolet: 'uv'
+	Scramjet: 'sj'
 };
 
 const transportKeyMap: Record<string, string> = {
@@ -992,24 +1153,34 @@ const ProxyPanel = () => {
 		'Libcurl'
 	);
 	const [engine, setEngine] = useLocalStorage('searchEngine', 'Brave');
+	const proxyDisplay = normalizeProxyDisplay(proxy);
+
+	useEffect(() => {
+		if (proxy !== proxyDisplay) {
+			setProxy(proxyDisplay);
+		}
+	}, [proxy, proxyDisplay, setProxy]);
 
 	const handleProxyChange = (v: string) => {
-		setProxy(v);
-		const mapped = proxyKeyMap[v];
+		if (window.proxy?.mode !== 'standalone') return;
+		const display = normalizeProxyDisplay(v);
+		setProxy(display);
+		const mapped = proxyKeyMap[display];
 		if (mapped) {
 			writeSetting('proxy', mapped);
-			if (window.proxy) window.proxy.proxySetting = mapped;
+			if (window.proxy.local) window.proxy.local.proxySetting = mapped;
 		}
 	};
 
 	const handleTransportChange = (v: string) => {
+		if (window.proxy?.mode !== 'standalone') return;
 		setTransport(v);
 		const mapped = transportKeyMap[v];
 		if (mapped) {
 			writeSetting('transports', mapped);
-			if (window.proxy) {
-				window.proxy.transportVar = mapped;
-				window.proxy.setTransports();
+			if (window.proxy.local) {
+				window.proxy.local.transportVar = mapped;
+				void window.proxy.local.setTransports();
 			}
 		}
 	};
@@ -1019,34 +1190,41 @@ const ProxyPanel = () => {
 		const url = searchEngineUrls[v];
 		if (url) {
 			writeSetting('search', url);
-			if (window.proxy) window.proxy.searchVar = url;
 		}
 	};
 
 	return (
 		<div className="flex flex-col gap-12">
-			<Section title="Backend" delay={0.0}>
-				<Row
-					label="Proxy Backend"
-					desc="The core proxy engine powering your sessions"
-				>
-					<Select
-						value={proxy}
-						options={['Scramjet', 'Ultraviolet']}
-						onChange={handleProxyChange}
-					/>
-				</Row>
-				<Row
-					label="Transport"
-					desc="Network transport layer for data transfer"
-				>
-					<Select
-						value={transport}
-						options={['Libcurl', 'Epoxy']}
-						onChange={handleTransportChange}
-					/>
-				</Row>
-			</Section>
+			{window.proxy?.mode === 'standalone' ? (
+				<Section title="Backend" delay={0.0}>
+					<Row
+						label="Proxy Backend"
+						desc="The core proxy engine powering your sessions"
+					>
+						<Select
+							value={proxyDisplay}
+							options={['Scramjet']}
+							onChange={handleProxyChange}
+						/>
+					</Row>
+					<Row
+						label="Transport"
+						desc="Network transport layer for data transfer"
+					>
+						<Select
+							value={transport}
+							options={['Libcurl', 'Epoxy']}
+							onChange={handleTransportChange}
+						/>
+					</Row>
+				</Section>
+			) : (
+				<p>
+					Navigation is handled by the surrounding proxy. Local proxy
+					and transport controls are unavailable; reload to reconnect
+					if the session is lost.
+				</p>
+			)}
 
 			<Section title="Search" delay={0.06}>
 				<Row
@@ -1089,6 +1267,22 @@ const AboutPanel = () => (
 				<Btn variant="ghost">Open</Btn>
 			</Row>
 		</Section>
+
+		<Section title="Credits" delay={0.12}>
+			<Row
+				label="Game sources"
+				desc="Libraries contributing to the active game catalog"
+			>
+				<ul
+					className="text-sm text-white/50"
+					aria-label="Game-source credits"
+				>
+					{['Truffled', 'gn-math', 'Selenite', 'Velara'].map(name => (
+						<li key={name}>{name}</li>
+					))}
+				</ul>
+			</Row>
+		</Section>
 	</div>
 );
 
@@ -1103,6 +1297,7 @@ const panels: Record<string, () => ReactNode> = {
 export const SettingsPage = () => {
 	const [active, setActive] = useState('cloak');
 	const Panel = panels[active] ?? CloakPanel;
+	const unavailableApis = apiAvailability();
 
 	return (
 		<div className="h-full w-full overflow-y-auto">
@@ -1124,6 +1319,12 @@ export const SettingsPage = () => {
 				>
 					Manage cloaking, proxy, and display preferences
 				</motion.p>
+
+				{unavailableApis && (
+					<p role="status" className="text-sm text-white/50 mb-6">
+						{unavailableApis}
+					</p>
+				)}
 
 				<LayoutGroup>
 					<motion.nav

@@ -2,8 +2,6 @@ import { cp, mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
-import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
-import { baremuxPath as baremuxWorkerPath } from '@nightnetwork/bm-plusworker/path';
 
 const require = createRequire(import.meta.url);
 
@@ -36,31 +34,6 @@ const copyEntries = [
 		type: 'directory',
 		source: dirOf('@mercuryworkshop/scramjet-utils'),
 		destination: workspacePath('public', 'ut')
-	},
-	{
-		type: 'file',
-		source: resolve(uvPath, 'uv.bundle.js'),
-		destination: workspacePath('public', 'u', 'bundle.js')
-	},
-	{
-		type: 'file',
-		source: resolve(uvPath, 'uv.client.js'),
-		destination: workspacePath('public', 'u', 'client.js')
-	},
-	{
-		type: 'file',
-		source: resolve(uvPath, 'uv.handler.js'),
-		destination: workspacePath('public', 'u', 'handler.js')
-	},
-	{
-		type: 'file',
-		source: resolve(uvPath, 'uv.sw.js'),
-		destination: workspacePath('public', 'u', 'worker.js')
-	},
-	{
-		type: 'file',
-		source: resolve(baremuxWorkerPath, 'worker.js'),
-		destination: workspacePath('public', 'b', 'worker.js')
 	}
 ];
 

@@ -23,8 +23,6 @@ const springSoft = { type: 'spring' as const, stiffness: 420, damping: 30 };
 
 const font = "'DM Sans', 'Inter', system-ui, sans-serif";
 
-const accent = '#8b5cf6';
-
 const getGreeting = (): string => {
 	const hour = new Date().getHours();
 	switch (true) {
@@ -443,7 +441,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 								className="absolute text-[14px] font-medium"
 								style={{
 									fontFamily: font,
-									color: 'rgba(139, 92, 246, 0.7)',
+									color: 'color-mix(in srgb, var(--color-primary) 70%, transparent)',
 									letterSpacing: '0.1em',
 									right: 0,
 									top: 4,
@@ -508,7 +506,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 									width: 14,
 									height: 14,
 									color: searchFocused
-										? 'rgba(139, 92, 246, 0.9)'
+										? 'var(--color-primary)'
 										: 'rgba(255, 255, 255, 0.35)',
 									transition: 'color 0.2s'
 								}}
@@ -527,7 +525,7 @@ export const NewTab = ({ onNavigate }: NewTabProps) => {
 								fontFamily: font,
 								letterSpacing: '0.005em',
 								color: 'rgba(255, 255, 255, 0.88)',
-								caretColor: accent
+								caretColor: 'var(--color-primary)'
 							}}
 						/>
 					</motion.div>

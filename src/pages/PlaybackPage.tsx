@@ -198,11 +198,11 @@ const SearchEntry = ({
 		<div
 			className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
 			style={{
-				background: 'rgba(139,92,246,0.1)',
-				border: '1px solid rgba(139,92,246,0.15)'
+				background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+				border: '1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)'
 			}}
 		>
-			<Clock className="w-3.5 h-3.5 text-violet-300/60" />
+			<Clock className="w-3.5 h-3.5" style={{ color: 'color-mix(in srgb, var(--color-primary-light) 60%, transparent)' }} />
 		</div>
 
 		<div className="flex-1 min-w-0">

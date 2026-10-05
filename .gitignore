@@ -41,3 +41,7 @@ public/u/worker.js
 
 # Local reference checkouts
 references/
+
+# Local browser verification output
+test-results/
+playwright-report/
