@@ -35,32 +35,8 @@ const PlaybackPage = lazy(() =>
 	import('./pages/PlaybackPage.tsx').then(m => ({ default: m.PlaybackPage }))
 );
 
-const ANALYTICS_TAG = 'G-3DTW1KTNCF';
-
-const installAnalytics = () => {
-	const win = window as unknown as {
-		dataLayer?: unknown[];
-		gtag?: (...args: unknown[]) => void;
-	};
-	win.dataLayer = win.dataLayer || [];
-	win.gtag =
-		win.gtag ??
-		function (...args: unknown[]) {
-			win.dataLayer!.push(args);
-		};
-	win.gtag('js', new Date());
-	win.gtag('config', ANALYTICS_TAG);
-	const tag = document.createElement('script');
-	tag.async = true;
-	tag.src = `https://www.googletagmanager.com/gtag/js?id=${ANALYTICS_TAG}`;
-	// SVG host documents may not have a head; the stub and queued
-	// commands above are installed regardless.
-	(document.head ?? document.documentElement).appendChild(tag);
-};
-
 const boot = async () => {
 	await initSettings();
-	installAnalytics();
 
 	if (window === window.top) {
 		const params = new URLSearchParams(window.location.search);
