@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { convertHtmlToSvg } from '../../../srv/vite/svg';
+import { convertHtmlToSvg } from './svg';
 
 // Adapted from Nebula's build/svgHost.ts (AGPL-3.0, see LICENSE).
 // Readiness is application-owned and is not a proxy capability assertion.
