@@ -1,11 +1,31 @@
 *.md
-public/,/*
-public/!/*
-public/@/*
-public/$/*
 package-lock.json
 node_modules/**
 pnpm-lock.yaml
 .gitignore
 .gitattributes
 LICENSE
+dist/**
+styles/dist/**
+.astro/**
+*.lockb
+.env
+
+# vendored runtime assets copied from node_modules by scripts/sync-runtime-assets.mjs
+# and srv/vite/copy.ts (viteStaticCopy) - reformatting them just churns the diff
+# every time they're re-synced
+public/ep/**
+public/l/**
+public/u/**
+public/s/**
+public/b/**
+public/r/**
+public/en/**
+public/p/**
+
+# decoy landing shell, kept byte-for-byte as authored
+index.html
+
+# copied byte-for-byte from gg-bypass/, not authored to this repo's style
+gg-bypass/**
+public/gg-bypass.js

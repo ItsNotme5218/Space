@@ -1,0 +1,9 @@
+Roboto Regular version 2.001047 (2015)
+Copyright 2015 Google Inc. All Rights Reserved.
+Designer: Christian Robertson. Roboto is a trademark of Google.
+Licensed under the Apache License, Version 2.0; see LICENSE.txt.
+
+The source Roboto-Regular.ttf is unmodified, copied from Nebula's inspected asset.
+Space's generated SpacePresentation WOFF2 is a modified derivative (2026-09-30):
+ASCII subset glyphs remapped to private-use codepoints; deterministic timestamps.
+Original font licensing/copyright metadata is retained in the generated font.

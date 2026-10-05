@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Controlled acceptance game</title>
+<style>body { background: white; color: #111; font: 16px system-ui; }</style>
+<h1>Controlled acceptance game</h1>
+<output id="level">first</output>
+<a href="/game/second">Second level</a>
+<output id="asset">loading</output>
+<script>fetch('/game/asset.txt').then(r => r.text()).then(text => document.getElementById('asset').textContent = text);</script>

@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="EduSecurify provides advanced learning platform solutions with enterprise-grade security, content filtering, and comprehensive student safety tools for educational institutions."
+		/>
+		<meta
+			name="keywords"
+			content="educational security, learning platform, student safety, content filtering, school security, education technology, edtech, student protection"
+		/>
+		<meta name="author" content="EduSecurify" />
+		<meta name="robots" content="index, follow" />
+		<meta name="theme-color" content="#667eea" />
+		<link rel="canonical" href="https://example.com/edu.html" />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:title"
+			content="EduSecurify - Advanced Learning Platform"
+		/>
+		<meta
+			property="og:description"
+			content="Enterprise-grade security and learning management solutions for educational institutions. Protect students with content filtering and comprehensive analytics."
+		/>
+		<meta property="og:url" content="https://example.com/edu.html" />
+		<meta property="og:site_name" content="EduSecurify" />
+		<meta
+			property="og:image"
+			content="https://example.com/images/og-image.jpg"
+		/>
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta
+			property="og:image:alt"
+			content="EduSecurify Advanced Learning Platform"
+		/>
+		<meta property="og:locale" content="en_US" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta
+			name="twitter:title"
+			content="EduSecurify - Advanced Learning Platform"
+		/>
+		<meta
+			name="twitter:description"
+			content="Enterprise-grade security and learning management solutions for educational institutions."
+		/>
+		<meta
+			name="twitter:image"
+			content="https://example.com/images/twitter-card.jpg"
+		/>
+		<meta name="twitter:image:alt" content="EduSecurify Platform" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		/>
+		<title>EduSecurify - Advanced Learning Platform</title>
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "SoftwareApplication",
+				"name": "EduSecurify",
+				"applicationCategory": "EducationalApplication",
+				"operatingSystem": "Web",
+				"offers": {
+					"@type": "AggregateOffer",
+					"priceCurrency": "USD",
+					"lowPrice": "499",
+					"highPrice": "1299"
+				},
+				"description": "Advanced learning platform with enterprise-grade security for educational institutions",
+				"provider": {
+					"@type": "Organization",
+					"name": "EduSecurify"
+				},
+				"aggregateRating": {
+					"@type": "AggregateRating",
+					"ratingValue": "4.8",
+					"ratingCount": "2500"
+				}
+			}
+		</script>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link
+			href="https://fonts.googleapis.com/icon?family=Material+Icons"
+			rel="stylesheet"
+		/>
+		<style>
+			#app-host {
+				display: contents;
+			}
+
+			body {
+				font-family:
+					'Space Grotesk',
+					'Inter',
+					system-ui,
+					-apple-system,
+					BlinkMacSystemFont,
+					'Segoe UI',
+					'Roboto',
+					'Oxygen',
+					'Ubuntu',
+					sans-serif !important;
+				background: radial-gradient(
+					ellipse at top,
+					#1a1a2e 0%,
+					#0a0a0a 50%
+				);
+			}
+
+			nav {
+				backdrop-filter: blur(20px);
+				-webkit-backdrop-filter: blur(20px);
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+			}
+
+			nav.scrolled {
+				backdrop-filter: blur(24px);
+				-webkit-backdrop-filter: blur(24px);
+				background: rgba(10, 10, 10, 0.95);
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+			}
+
+			.gradient-text {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+
+			.btn-primary {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				position: relative;
+				overflow: hidden;
+			}
+
+			.btn-primary::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(
+					90deg,
+					transparent,
+					rgba(255, 255, 255, 0.2),
+					transparent
+				);
+				transition: left 0.5s;
+			}
+
+			.btn-primary:hover::before {
+				left: 100%;
+			}
+
+			.btn-primary:hover {
+				box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+				transform: translateY(-2px);
+			}
+
+			.stat-number,
+			.logo,
+			.footer-logo {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+
+			.feature-icon {
+				background: linear-gradient(
+					135deg,
+					rgba(102, 126, 234, 0.15) 0%,
+					rgba(118, 75, 162, 0.15) 100%
+				);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+			}
+
+			.feature-card {
+				position: relative;
+				overflow: hidden;
+			}
+
+			.feature-card::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 2px;
+				background: linear-gradient(
+					90deg,
+					transparent,
+					#667eea,
+					transparent
+				);
+				transform: translateX(-100%);
+				transition: transform 0.6s ease;
+			}
+
+			.feature-card:hover::before {
+				transform: translateX(100%);
+			}
+
+			.stat-card {
+				background: linear-gradient(
+					135deg,
+					rgba(255, 255, 255, 0.03) 0%,
+					rgba(255, 255, 255, 0.01) 100%
+				);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				position: relative;
+			}
+
+			.stat-card::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				border-radius: inherit;
+				padding: 1px;
+				background: linear-gradient(
+					135deg,
+					rgba(102, 126, 234, 0.3),
+					transparent
+				);
+				-webkit-mask:
+					linear-gradient(#fff 0 0) content-box,
+					linear-gradient(#fff 0 0);
+				-webkit-mask-composite: xor;
+				mask-composite: exclude;
+				opacity: 0;
+				transition: opacity 0.3s;
+			}
+
+			.stat-card:hover::after {
+				opacity: 1;
+			}
+
+			.cta-section {
+				background: linear-gradient(
+					135deg,
+					rgba(102, 126, 234, 0.08) 0%,
+					rgba(118, 75, 162, 0.08) 100%
+				);
+				position: relative;
+			}
+
+			.cta-section::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: radial-gradient(
+					circle at 50% 50%,
+					rgba(102, 126, 234, 0.1),
+					transparent 70%
+				);
+			}
+
+			.grid-bg {
+				background-image: linear-gradient(
+						rgba(102, 126, 234, 0.03) 1px,
+						transparent 1px
+					),
+					linear-gradient(
+						90deg,
+						rgba(102, 126, 234, 0.03) 1px,
+						transparent 1px
+					);
+				background-size: 50px 50px;
+			}
+
+			@keyframes fadeInUp {
+				from {
+					opacity: 0;
+					transform: translateY(30px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			@keyframes fadeInDown {
+				from {
+					opacity: 0;
+					transform: translateY(-30px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			@keyframes float {
+				0%,
+				100% {
+					transform: translateY(0px);
+				}
+				50% {
+					transform: translateY(-10px);
+				}
+			}
+
+			.hero-badge {
+				animation:
+					fadeInDown 0.8s ease,
+					float 3s ease-in-out infinite;
+			}
+
+			.hero h1 {
+				animation: fadeInUp 0.8s ease;
+			}
+
+			.hero p {
+				animation: fadeInUp 0.8s ease 0.2s backwards;
+			}
+
+			.hero-cta {
+				animation: fadeInUp 0.8s ease 0.4s backwards;
+			}
+
+			.section-divider {
+				height: 1px;
+				background: linear-gradient(
+					90deg,
+					transparent,
+					rgba(102, 126, 234, 0.3),
+					transparent
+				);
+				margin: 4rem 0;
+			}
+		</style>
+	</head>
+	<body class="text-white overflow-x-hidden relative">
+		<div id="static-shell">
+			<nav
+				id="navbar"
+				class="fixed top-0 w-full bg-[rgba(10,10,10,0.25)] border-b border-white/10 px-[5%] py-4 z-[1000] transition-all duration-500"
+			>
+				<div
+					class="max-w-[1400px] mx-auto flex justify-between items-center h-12"
+				>
+					<div
+						class="logo text-2xl font-bold tracking-tight w-[250px]"
+					>
+						EduSecurify
+					</div>
+					<ul
+						class="nav-links flex gap-8 list-none md:flex hidden items-center h-12"
+					>
+						<li>
+							<a
+								href="features.html"
+								class="text-[#b8b8b8] no-underline text-[0.95rem] font-medium hover:text-white transition-colors"
+								>Features</a
+							>
+						</li>
+						<li>
+							<a
+								href="security.html"
+								class="text-[#b8b8b8] no-underline text-[0.95rem] font-medium hover:text-white transition-colors"
+								>Security</a
+							>
+						</li>
+						<li>
+							<a
+								href="pricing.html"
+								class="text-[#b8b8b8] no-underline text-[0.95rem] font-medium hover:text-white transition-colors"
+								>Pricing</a
+							>
+						</li>
+						<li>
+							<a
+								href="#resources"
+								class="text-[#b8b8b8] no-underline text-[0.95rem] font-medium hover:text-white transition-colors"
+								>Resources</a
+							>
+						</li>
+					</ul>
+					<div class="flex gap-4 items-center h-12 w-[250px]">
+						<button
+							class="px-6 py-2 border border-white/20 bg-transparent text-white rounded-md cursor-pointer text-sm font-medium transition-all hover:bg-white/10 hover:border-white/30"
+						>
+							Sign In
+						</button>
+						<button
+							class="btn-primary px-6 py-2 border-none text-white rounded-md cursor-pointer text-sm font-medium transition-all hover:-translate-y-0.5"
+						>
+							Get Started
+						</button>
+					</div>
+				</div>
+			</nav>
+
+			<section
+				class="hero mt-32 pt-20 pb-[100px] px-[5%] max-w-[1400px] mx-auto text-center relative grid-bg"
+			>
+				<div
+					class="hero-badge w-fit mx-auto px-5 py-2.5 bg-[rgba(102,126,234,0.12)] border border-[rgba(102,126,234,0.4)] rounded-full text-[#667eea] text-[0.85rem] font-semibold mb-10 shadow-lg shadow-purple-500/10 flex items-center gap-2 justify-center"
+				>
+					<span class="material-icons text-base">lock</span>
+					Enterprise-Grade Security for Education
+				</div>
+				<h1
+					class="text-7xl font-black leading-[1.1] mb-8 md:text-5xl tracking-tight"
+				>
+					The Future of <br />
+					<span class="gradient-text">Secure Learning</span>
+				</h1>
+				<p
+					class="text-xl text-[#c0c0c0] max-w-[750px] mx-auto mb-14 leading-relaxed md:text-lg"
+				>
+					Empower your institution with advanced monitoring, content
+					filtering, and security tools designed for modern education.
+				</p>
+				<div
+					class="hero-cta flex gap-5 justify-center md:flex-col md:items-center"
+				>
+					<button
+						class="btn-primary px-12 py-4 text-lg rounded-xl border-none text-white cursor-pointer font-semibold transition-all duration-300 shadow-lg shadow-purple-600/30"
+						onclick="window.location.href = 'features.html'"
+					>
+						Start Free Trial →
+					</button>
+					<button
+						class="px-12 py-4 text-lg rounded-xl border border-white/20 bg-white/5 text-white cursor-pointer font-semibold transition-all duration-300 hover:bg-white/10 hover:border-white/40 backdrop-blur-sm"
+						onclick="window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'"
+					>
+						Watch Demo
+					</button>
+				</div>
+			</section>
+
+			<section
+				class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6 px-[5%] py-[80px] max-w-[1400px] mx-auto"
+			>
+				<div
+					class="stat-card rounded-2xl p-10 text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+				>
+					<div class="stat-number text-6xl font-black mb-3">10K+</div>
+					<div class="text-[#c0c0c0] text-base font-medium">
+						Schools Protected
+					</div>
+				</div>
+				<div
+					class="stat-card rounded-2xl p-10 text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+				>
+					<div class="stat-number text-6xl font-black mb-3">5M+</div>
+					<div class="text-[#c0c0c0] text-base font-medium">
+						Students Secure
+					</div>
+				</div>
+				<div
+					class="stat-card rounded-2xl p-10 text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+				>
+					<div class="stat-number text-6xl font-black mb-3">
+						99.9%
+					</div>
+					<div class="text-[#c0c0c0] text-base font-medium">
+						Uptime SLA
+					</div>
+				</div>
+				<div
+					class="stat-card rounded-2xl p-10 text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+				>
+					<div class="stat-number text-6xl font-black mb-3">24/7</div>
+					<div class="text-[#c0c0c0] text-base font-medium">
+						Support Available
+					</div>
+				</div>
+			</section>
+
+			<section
+				class="px-[5%] py-[120px] max-w-[1400px] mx-auto relative"
+				id="features"
+			>
+				<div class="section-divider"></div>
+				<div class="text-center mb-20">
+					<h2
+						class="text-5xl font-black mb-5 md:text-4xl tracking-tight"
+					>
+						Everything You Need
+					</h2>
+					<p class="text-xl text-[#c0c0c0] max-w-[650px] mx-auto">
+						Comprehensive security and management tools built for
+						educational environments
+					</p>
+				</div>
+				<div
+					class="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6"
+				>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>shield</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Advanced Filtering
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Industry-leading content filtering powered by AI to
+							keep students safe online while allowing educational
+							content.
+						</p>
+					</div>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>bar_chart</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Real-Time Analytics
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Monitor student activity, track engagement, and gain
+							insights with comprehensive analytics dashboards.
+						</p>
+					</div>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>verified_user</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Zero Trust Security
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Enterprise-grade security architecture with
+							end-to-end encryption and compliance certifications.
+						</p>
+					</div>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>flash_on</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Lightning Fast
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Global edge network ensures minimal latency and
+							maximum performance for all users worldwide.
+						</p>
+					</div>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>policy</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Smart Policies
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Create custom filtering policies based on grade
+							level, time of day, and user groups with ease.
+						</p>
+					</div>
+					<div
+						class="feature-card bg-white/[0.02] border border-white/10 rounded-3xl p-12 transition-all duration-500 cursor-pointer hover:bg-white/[0.06] hover:border-[#667eea]/40 hover:-translate-y-3 hover:shadow-[0_25px_50px_rgba(102,126,234,0.2)] group"
+					>
+						<div
+							class="feature-icon w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:scale-110 transition-transform duration-300"
+						>
+							<span class="material-icons text-4xl text-[#667eea]"
+								>integration_instructions</span
+							>
+						</div>
+						<h3
+							class="text-2xl font-bold mb-5 group-hover:text-[#667eea] transition-colors"
+						>
+							Seamless Integration
+						</h3>
+						<p class="text-[#b8b8b8] leading-relaxed">
+							Works with Google Workspace, Microsoft 365, Canvas,
+							and all major learning management systems.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<section
+				class="cta-section px-[5%] py-[120px] text-center border-t border-b border-white/10 relative"
+			>
+				<div class="relative z-10">
+					<h2
+						class="text-6xl font-black mb-8 md:text-4xl tracking-tight"
+					>
+						Ready to Get Started?
+					</h2>
+					<p class="text-2xl text-[#c0c0c0] mb-12 max-w-2xl mx-auto">
+						Join thousands of schools protecting students and
+						enhancing learning
+					</p>
+					<button
+						class="btn-primary px-14 py-5 text-xl rounded-xl border-none text-white cursor-pointer font-bold transition-all duration-300 shadow-2xl shadow-purple-600/40"
+						onclick="window.location.href = 'features.html'"
+					>
+						Start Your Free Trial →
+					</button>
+				</div>
+			</section>
+
+			<footer
+				class="relative px-[5%] py-20 border-t border-white/10 overflow-hidden"
+			>
+				<div class="absolute inset-0 opacity-20">
+					<div
+						class="absolute top-0 left-0 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"
+					></div>
+					<div
+						class="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"
+					></div>
+				</div>
+
+				<div class="max-w-[1400px] mx-auto relative z-10">
+					<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+						<div class="lg:col-span-2">
+							<div
+								class="footer-logo text-3xl font-black mb-6 tracking-tight"
+							>
+								EduSecurify
+							</div>
+							<p
+								class="text-[#c0c0c0] leading-relaxed text-lg mb-8 max-w-md"
+							>
+								Leading the future of educational security with
+								innovative solutions trusted by institutions
+								worldwide.
+							</p>
+							<div class="flex gap-4">
+								<a
+									href="#"
+									class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1"
+									><span class="material-icons text-white"
+										>work</span
+									></a
+								>
+								<a
+									href="#"
+									class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1"
+									><span class="material-icons text-white"
+										>school</span
+									></a
+								>
+								<a
+									href="#"
+									class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1"
+									><span class="material-icons text-white"
+										>email</span
+									></a
+								>
+							</div>
+						</div>
+
+						<div
+							class="bg-white/[0.02] border border-white/10 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-purple-500/30 transition-all"
+						>
+							<h4
+								class="text-base font-bold mb-5 text-white flex items-center gap-2"
+							>
+								<span class="material-icons text-base"
+									>inventory_2</span
+								>
+								Product
+							</h4>
+							<ul class="list-none space-y-3">
+								<li>
+									<a
+										href="features.html"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Features</a
+									>
+								</li>
+								<li>
+									<a
+										href="pricing.html"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Pricing</a
+									>
+								</li>
+								<li>
+									<a
+										href="security.html"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Security</a
+									>
+								</li>
+								<li>
+									<a
+										href="#"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Integrations</a
+									>
+								</li>
+							</ul>
+						</div>
+
+						<div
+							class="bg-white/[0.02] border border-white/10 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-purple-500/30 transition-all"
+						>
+							<h4
+								class="text-base font-bold mb-5 text-white flex items-center gap-2"
+							>
+								<span class="material-icons text-base"
+									>menu_book</span
+								>
+								Resources
+							</h4>
+							<ul class="list-none space-y-3">
+								<li>
+									<a
+										href="#"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Documentation</a
+									>
+								</li>
+								<li>
+									<a
+										href="#"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ API Reference</a
+									>
+								</li>
+								<li>
+									<a
+										href="#"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Support</a
+									>
+								</li>
+								<li>
+									<a
+										href="#"
+										class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+										>→ Status</a
+									>
+								</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="grid md:grid-cols-2 gap-6 mb-16">
+						<div
+							class="bg-white/[0.02] border border-white/10 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-purple-500/30 transition-all"
+						>
+							<h4
+								class="text-base font-bold mb-5 text-white flex items-center gap-2"
+							>
+								<span class="material-icons text-base"
+									>business</span
+								>
+								Company
+							</h4>
+							<div class="grid grid-cols-2 gap-x-6 gap-y-3">
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ About</a
+								>
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ Blog</a
+								>
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ Careers</a
+								>
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ Contact</a
+								>
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ Press Kit</a
+								>
+								<a
+									href="#"
+									class="text-[#c0c0c0] no-underline text-sm transition-colors hover:text-[#667eea] hover:translate-x-1 inline-block"
+									>→ Partners</a
+								>
+							</div>
+						</div>
+
+						<div
+							class="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-2xl p-6"
+						>
+							<h4
+								class="text-base font-bold mb-3 text-white flex items-center gap-2"
+							>
+								<span class="material-icons text-base"
+									>mail_outline</span
+								>
+								Stay Updated
+							</h4>
+							<p class="text-[#c0c0c0] text-sm mb-4">
+								Get the latest security updates and product
+								news.
+							</p>
+							<div class="flex gap-2">
+								<input
+									type="email"
+									placeholder="your@email.com"
+									class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50"
+								/>
+								<button
+									class="btn-primary px-6 py-2 text-sm rounded-lg border-none text-white cursor-pointer font-medium transition-all"
+								>
+									Subscribe
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div
+						class="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/10"
+					>
+						<p class="text-[#888] text-sm">
+							&copy; 2026 EduSecurify. All rights reserved.
+						</p>
+						<div class="flex gap-6 text-sm">
+							<a
+								href="#"
+								class="text-[#888] hover:text-[#667eea] transition-colors"
+								>Privacy Policy</a
+							>
+							<a
+								href="#"
+								class="text-[#888] hover:text-[#667eea] transition-colors"
+								>Terms of Service</a
+							>
+							<a
+								href="#"
+								class="text-[#888] hover:text-[#667eea] transition-colors"
+								>Cookie Policy</a
+							>
+						</div>
+					</div>
+				</div>
+			</footer>
+
+			<script>
+				const navbar = document.getElementById('navbar');
+				let lastScroll = 0;
+
+				window.addEventListener('scroll', () => {
+					const currentScroll = window.pageYOffset;
+
+					if (currentScroll > 50) {
+						navbar.classList.add('scrolled');
+					} else {
+						navbar.classList.remove('scrolled');
+					}
+
+					lastScroll = currentScroll;
+				});
+
+				document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+					anchor.addEventListener('click', function (e) {
+						e.preventDefault();
+						const target = document.querySelector(
+							this.getAttribute('href')
+						);
+						if (target) {
+							target.scrollIntoView({
+								behavior: 'smooth',
+								block: 'start'
+							});
+						}
+					});
+				});
+
+				const observerOptions = {
+					threshold: 0.5,
+					rootMargin: '0px 0px -100px 0px'
+				};
+
+				const observer = new IntersectionObserver(entries => {
+					entries.forEach(entry => {
+						if (entry.isIntersecting) {
+							entry.target.style.animation =
+								'fadeInUp 0.6s ease forwards';
+						}
+					});
+				}, observerOptions);
+
+				document
+					.querySelectorAll('.stat-card, .feature-card')
+					.forEach(card => {
+						observer.observe(card);
+					});
+
+				document.querySelectorAll('.feature-card').forEach(card => {
+					card.addEventListener('mouseenter', function () {
+						this.style.transform = 'translateY(-8px) scale(1.02)';
+					});
+
+					card.addEventListener('mouseleave', function () {
+						this.style.transform = 'translateY(0) scale(1)';
+					});
+				});
+
+				document.querySelectorAll('button').forEach(button => {
+					button.addEventListener('click', function () {
+						console.log('Button clicked:', this.textContent);
+					});
+				});
+			</script>
+		</div>
+		<div id="app-host"></div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
+</html>
